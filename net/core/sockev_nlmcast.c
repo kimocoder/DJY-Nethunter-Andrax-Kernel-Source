@@ -129,7 +129,7 @@ static int __init sockev_client_init(void)
 	int rc;
 
 	registration_status = 1;
-	rc = sockev_register_notify(&sockev_notifier_client);
+	//rc = sockev_register_notify(&sockev_notifier_client);
 	if (rc != 0) {
 		registration_status = 0;
 		pr_err("%s(): Failed to register cb (%d)\n", __func__, rc);
@@ -138,7 +138,7 @@ static int __init sockev_client_init(void)
 	if (!socknlmsgsk) {
 		pr_err("%s(): Failed to initialize netlink socket\n", __func__);
 		if (registration_status)
-			sockev_unregister_notify(&sockev_notifier_client);
+			//sockev_unregister_notify(&sockev_notifier_client);
 		registration_status = 0;
 	}
 
@@ -147,8 +147,8 @@ static int __init sockev_client_init(void)
 
 static void __exit sockev_client_exit(void)
 {
-	if (registration_status)
-		sockev_unregister_notify(&sockev_notifier_client);
+	//if (registration_status)
+		//sockev_unregister_notify(&sockev_notifier_client);
 }
 
 module_init(sockev_client_init)
