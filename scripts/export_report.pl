@@ -7,7 +7,6 @@
 # Usage: export_report.pl -k Module.symvers [-o report_file ] -f *.mod.c
 #
 
-use warnings;
 use Getopt::Std;
 use strict;
 

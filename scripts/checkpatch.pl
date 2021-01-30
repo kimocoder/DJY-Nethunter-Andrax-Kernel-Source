@@ -6,7 +6,6 @@
 # Licensed under the terms of the GNU GPL License version 2
 
 use strict;
-use warnings;
 use POSIX;
 use File::Basename;
 use Cwd 'abs_path';
