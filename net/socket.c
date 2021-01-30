@@ -3374,6 +3374,18 @@ int kernel_sock_shutdown(struct socket *sock, enum sock_shutdown_cmd how)
 }
 EXPORT_SYMBOL(kernel_sock_shutdown);
 
+int sockev_register_notify(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_register(&sockev_notifier_list, nb);
+}
+EXPORT_SYMBOL(sockev_register_notify);
+
+int sockev_unregister_notify(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_unregister(&sockev_notifier_list, nb);
+}
+EXPORT_SYMBOL(sockev_unregister_notify);
+
 /* This routine returns the IP overhead imposed by a socket i.e.
  * the length of the underlying IP header, depending on whether
  * this is an IPv4 or IPv6 socket and the length from IP options turned
@@ -3419,4 +3431,3 @@ u32 kernel_sock_ip_overhead(struct sock *sk)
 	}
 }
 EXPORT_SYMBOL(kernel_sock_ip_overhead);
-
