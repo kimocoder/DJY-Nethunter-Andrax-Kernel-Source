@@ -30,6 +30,7 @@
 #include <linux/types.h>
 #include <linux/list.h>
 #include <linux/string.h>
+#include <linux/delay.h>
 
 #include <target/target_core_base.h>
 #include <target/target_core_fabric.h>
@@ -894,6 +895,293 @@ static void ibmvscsis_reset_queue(struct scsi_info *vscsi)
 			if (rc != ADAPT_SUCCESS) {
 				pr_debug("reset_queue: reg_crq rc %ld\n", rc);
 
+<<<<<<< HEAD
+		case ERR_DISCONNECT_RECONNECT:
+			switch (new_state) {
+			case UNCONFIGURING:
+			case ERR_DISCONNECT:
+				vscsi->new_state = new_state;
+				break;
+			default:
+				break;
+			}
+			break;
+
+		case WAIT_ENABLED:
+		case WAIT_IDLE:
+		case WAIT_CONNECTION:
+		case CONNECTED:
+		case SRP_PROCESSING:
+			vscsi->new_state = new_state;
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	pr_debug("Leaving post_disconnect: flags 0x%x, new_state 0x%x\n",
+		 vscsi->flags, vscsi->new_state);
+}
+
+/**
+ * ibmvscsis_handle_init_compl_msg() - Respond to an Init Complete Message
+ * @vscsi:	Pointer to our adapter structure
+ *
+ * Must be called with interrupt lock held.
+ */
+static long ibmvscsis_handle_init_compl_msg(struct scsi_info *vscsi)
+{
+	long rc = ADAPT_SUCCESS;
+
+	switch (vscsi->state) {
+	case NO_QUEUE:
+	case ERR_DISCONNECT:
+	case ERR_DISCONNECT_RECONNECT:
+	case ERR_DISCONNECTED:
+	case UNCONFIGURING:
+	case UNDEFINED:
+		rc = ERROR;
+		break;
+
+	case WAIT_CONNECTION:
+		vscsi->state = CONNECTED;
+		break;
+
+	case WAIT_IDLE:
+	case SRP_PROCESSING:
+	case CONNECTED:
+	case WAIT_ENABLED:
+	default:
+		rc = ERROR;
+		dev_err(&vscsi->dev, "init_msg: invalid state %d to get init compl msg\n",
+			vscsi->state);
+		ibmvscsis_post_disconnect(vscsi, ERR_DISCONNECT_RECONNECT, 0);
+		break;
+	}
+
+	return rc;
+}
+
+/**
+ * ibmvscsis_handle_init_msg() - Respond to an Init Message
+ * @vscsi:	Pointer to our adapter structure
+ *
+ * Must be called with interrupt lock held.
+ */
+static long ibmvscsis_handle_init_msg(struct scsi_info *vscsi)
+{
+	long rc = ADAPT_SUCCESS;
+
+	switch (vscsi->state) {
+	case WAIT_CONNECTION:
+		rc = ibmvscsis_send_init_message(vscsi, INIT_COMPLETE_MSG);
+		switch (rc) {
+		case H_SUCCESS:
+			vscsi->state = CONNECTED;
+			break;
+
+		case H_PARAMETER:
+			dev_err(&vscsi->dev, "init_msg: failed to send, rc %ld\n",
+				rc);
+			ibmvscsis_post_disconnect(vscsi, ERR_DISCONNECT, 0);
+			break;
+
+		case H_DROPPED:
+			dev_err(&vscsi->dev, "init_msg: failed to send, rc %ld\n",
+				rc);
+			rc = ERROR;
+			ibmvscsis_post_disconnect(vscsi,
+						  ERR_DISCONNECT_RECONNECT, 0);
+			break;
+
+		case H_CLOSED:
+			pr_warn("init_msg: failed to send, rc %ld\n", rc);
+			rc = 0;
+			break;
+		}
+		break;
+
+	case UNDEFINED:
+		rc = ERROR;
+		break;
+
+	case UNCONFIGURING:
+		break;
+
+	case WAIT_ENABLED:
+	case CONNECTED:
+	case SRP_PROCESSING:
+	case WAIT_IDLE:
+	case NO_QUEUE:
+	case ERR_DISCONNECT:
+	case ERR_DISCONNECT_RECONNECT:
+	case ERR_DISCONNECTED:
+	default:
+		rc = ERROR;
+		dev_err(&vscsi->dev, "init_msg: invalid state %d to get init msg\n",
+			vscsi->state);
+		ibmvscsis_post_disconnect(vscsi, ERR_DISCONNECT_RECONNECT, 0);
+		break;
+	}
+
+	return rc;
+}
+
+/**
+ * ibmvscsis_init_msg() - Respond to an init message
+ * @vscsi:	Pointer to our adapter structure
+ * @crq:	Pointer to CRQ element containing the Init Message
+ *
+ * EXECUTION ENVIRONMENT:
+ *	Interrupt, interrupt lock held
+ */
+static long ibmvscsis_init_msg(struct scsi_info *vscsi, struct viosrp_crq *crq)
+{
+	long rc = ADAPT_SUCCESS;
+
+	pr_debug("init_msg: state 0x%hx\n", vscsi->state);
+
+	rc = h_vioctl(vscsi->dds.unit_id, H_GET_PARTNER_INFO,
+		      (u64)vscsi->map_ioba | ((u64)PAGE_SIZE << 32), 0, 0, 0,
+		      0);
+	if (rc == H_SUCCESS) {
+		vscsi->client_data.partition_number =
+			be64_to_cpu(*(u64 *)vscsi->map_buf);
+		pr_debug("init_msg, part num %d\n",
+			 vscsi->client_data.partition_number);
+	} else {
+		pr_debug("init_msg h_vioctl rc %ld\n", rc);
+		rc = ADAPT_SUCCESS;
+	}
+
+	if (crq->format == INIT_MSG) {
+		rc = ibmvscsis_handle_init_msg(vscsi);
+	} else if (crq->format == INIT_COMPLETE_MSG) {
+		rc = ibmvscsis_handle_init_compl_msg(vscsi);
+	} else {
+		rc = ERROR;
+		dev_err(&vscsi->dev, "init_msg: invalid format %d\n",
+			(uint)crq->format);
+		ibmvscsis_post_disconnect(vscsi, ERR_DISCONNECT_RECONNECT, 0);
+	}
+
+	return rc;
+}
+
+/**
+ * ibmvscsis_establish_new_q() - Establish new CRQ queue
+ * @vscsi:	Pointer to our adapter structure
+ *
+ * Must be called with interrupt lock held.
+ */
+static long ibmvscsis_establish_new_q(struct scsi_info *vscsi)
+{
+	long rc = ADAPT_SUCCESS;
+	uint format;
+
+	vscsi->flags &= PRESERVE_FLAG_FIELDS;
+	vscsi->rsp_q_timer.timer_pops = 0;
+	vscsi->debit = 0;
+	vscsi->credit = 0;
+
+	rc = vio_enable_interrupts(vscsi->dma_dev);
+	if (rc) {
+		pr_warn("establish_new_q: failed to enable interrupts, rc %ld\n",
+			rc);
+		return rc;
+	}
+
+	rc = ibmvscsis_check_init_msg(vscsi, &format);
+	if (rc) {
+		dev_err(&vscsi->dev, "establish_new_q: check_init_msg failed, rc %ld\n",
+			rc);
+		return rc;
+	}
+
+	if (format == UNUSED_FORMAT) {
+		rc = ibmvscsis_send_init_message(vscsi, INIT_MSG);
+		switch (rc) {
+		case H_SUCCESS:
+		case H_DROPPED:
+		case H_CLOSED:
+			rc = ADAPT_SUCCESS;
+			break;
+
+		case H_PARAMETER:
+		case H_HARDWARE:
+			break;
+
+		default:
+			vscsi->state = UNDEFINED;
+			rc = H_HARDWARE;
+			break;
+		}
+	} else if (format == INIT_MSG) {
+		rc = ibmvscsis_handle_init_msg(vscsi);
+	}
+
+	return rc;
+}
+
+/**
+ * ibmvscsis_reset_queue() - Reset CRQ Queue
+ * @vscsi:	Pointer to our adapter structure
+ *
+ * This function calls h_free_q and then calls h_reg_q and does all
+ * of the bookkeeping to get us back to where we can communicate.
+ *
+ * Actually, we don't always call h_free_crq.  A problem was discovered
+ * where one partition would close and reopen his queue, which would
+ * cause his partner to get a transport event, which would cause him to
+ * close and reopen his queue, which would cause the original partition
+ * to get a transport event, etc., etc.  To prevent this, we don't
+ * actually close our queue if the client initiated the reset, (i.e.
+ * either we got a transport event or we have detected that the client's
+ * queue is gone)
+ *
+ * EXECUTION ENVIRONMENT:
+ *	Process environment, called with interrupt lock held
+ */
+static void ibmvscsis_reset_queue(struct scsi_info *vscsi)
+{
+	int bytes;
+	long rc = ADAPT_SUCCESS;
+
+	pr_debug("reset_queue: flags 0x%x\n", vscsi->flags);
+
+	/* don't reset, the client did it for us */
+	if (vscsi->flags & (CLIENT_FAILED | TRANS_EVENT)) {
+		vscsi->flags &= PRESERVE_FLAG_FIELDS;
+		vscsi->rsp_q_timer.timer_pops = 0;
+		vscsi->debit = 0;
+		vscsi->credit = 0;
+		vscsi->state = WAIT_CONNECTION;
+		vio_enable_interrupts(vscsi->dma_dev);
+	} else {
+		rc = ibmvscsis_free_command_q(vscsi);
+		if (rc == ADAPT_SUCCESS) {
+			vscsi->state = WAIT_CONNECTION;
+
+			bytes = vscsi->cmd_q.size * PAGE_SIZE;
+			rc = h_reg_crq(vscsi->dds.unit_id,
+				       vscsi->cmd_q.crq_token, bytes);
+			if (rc == H_CLOSED || rc == H_SUCCESS) {
+				rc = ibmvscsis_establish_new_q(vscsi);
+			}
+
+			if (rc != ADAPT_SUCCESS) {
+				pr_debug("reset_queue: reg_crq rc %ld\n", rc);
+
+				vscsi->state = ERR_DISCONNECTED;
+				vscsi->flags |= RESPONSE_Q_DOWN;
+				ibmvscsis_free_command_q(vscsi);
+			}
+		} else {
+			vscsi->state = ERR_DISCONNECTED;
+			vscsi->flags |= RESPONSE_Q_DOWN;
+		}
+=======
 				vscsi->state = ERR_DISCONNECTED;
 				vscsi->flags |= RESPONSE_Q_DOWN;
 				ibmvscsis_free_command_q(vscsi);
@@ -936,8 +1224,46 @@ static void ibmvscsis_free_cmd_resources(struct scsi_info *vscsi,
 		dev_err(&vscsi->dev, "free_cmd_resources unknown type %d\n",
 			cmd->type);
 		break;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
+	}
+}
+
+<<<<<<< HEAD
+/**
+ * ibmvscsis_free_cmd_resources() - Free command resources
+ * @vscsi:	Pointer to our adapter structure
+ * @cmd:	Command which is not longer in use
+ *
+ * Must be called with interrupt lock held.
+ */
+static void ibmvscsis_free_cmd_resources(struct scsi_info *vscsi,
+					 struct ibmvscsis_cmd *cmd)
+{
+	struct iu_entry *iue = cmd->iue;
+
+	switch (cmd->type) {
+	case TASK_MANAGEMENT:
+	case SCSI_CDB:
+		/*
+		 * When the queue goes down this value is cleared, so it
+		 * cannot be cleared in this general purpose function.
+		 */
+		if (vscsi->debit)
+			vscsi->debit -= 1;
+		break;
+	case ADAPTER_MAD:
+		vscsi->flags &= ~PROCESSING_MAD;
+		break;
+	case UNSET_TYPE:
+		break;
+	default:
+		dev_err(&vscsi->dev, "free_cmd_resources unknown type %d\n",
+			cmd->type);
+		break;
 	}
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	cmd->iue = NULL;
 	list_add_tail(&cmd->list, &vscsi->free_cmd);
 	srp_iu_put(iue);
@@ -1697,7 +2023,7 @@ static void srp_snd_msg_failed(struct scsi_info *vscsi, long rc)
 		if (!vscsi->rsp_q_timer.started) {
 			if (vscsi->rsp_q_timer.timer_pops <
 			    MAX_TIMER_POPS) {
-				kt = ktime_set(0, WAIT_NANO_SECONDS);
+				kt = WAIT_NANO_SECONDS;
 			} else {
 				/*
 				 * slide the timeslice if the maximum
@@ -1818,7 +2144,12 @@ static void ibmvscsis_send_messages(struct scsi_info *vscsi)
 					if (cmd->flags & CMD_FAST_FAIL)
 						crq->status = VIOSRP_ADAPTER_FAIL;
 
+<<<<<<< HEAD
 					crq->IU_length = cpu_to_be16(cmd->rsp.len);
+=======
+			pr_debug("send_messages: cmd %p, tag 0x%llx, rc %ld\n",
+				 cmd, be64_to_cpu(cmd->rsp.tag), rc);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 					rc = h_send_crq(vscsi->dma_dev->unit_address,
 							be64_to_cpu(msg_hi),
@@ -3345,7 +3676,11 @@ static int ibmvscsis_probe(struct vio_dev *vdev,
 	snprintf(vscsi->eye, sizeof(vscsi->eye), "VSCSI %s", vdev->name);
 
 	vscsi->dds.unit_id = vdev->unit_address;
+<<<<<<< HEAD
 	strscpy(vscsi->dds.partition_name, partition_name,
+=======
+	strncpy(vscsi->dds.partition_name, partition_name,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		sizeof(vscsi->dds.partition_name));
 	vscsi->dds.partition_num = partition_number;
 

@@ -1325,7 +1325,7 @@ static int xc5000_init(struct dvb_frontend *fe)
 	return 0;
 }
 
-static int xc5000_release(struct dvb_frontend *fe)
+static void xc5000_release(struct dvb_frontend *fe)
 {
 	struct xc5000_priv *priv = fe->tuner_priv;
 
@@ -1345,8 +1345,6 @@ static int xc5000_release(struct dvb_frontend *fe)
 	mutex_unlock(&xc5000_list_mutex);
 
 	fe->tuner_priv = NULL;
-
-	return 0;
 }
 
 static int xc5000_set_config(struct dvb_frontend *fe, void *priv_cfg)

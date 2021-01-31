@@ -10,8 +10,11 @@
  *   incremented on each iteration by the number of bytes stored in
  *   the skb.
  *
+<<<<<<< HEAD
  * - Detaches any eBPF program previously attached to the cgroup
  *
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  * - Attaches the new program to a cgroup using BPF_PROG_ATTACH
  *
  * - Every second, reads map[0] and map[1] to see how many bytes and
@@ -38,6 +41,11 @@ enum {
 	MAP_KEY_BYTES,
 };
 
+<<<<<<< HEAD
+=======
+char bpf_log_buf[BPF_LOG_BUF_SIZE];
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static int prog_load(int map_fd, int verdict)
 {
 	struct bpf_insn prog[] = {
@@ -68,13 +76,22 @@ static int prog_load(int map_fd, int verdict)
 		BPF_MOV64_IMM(BPF_REG_0, verdict), /* r0 = verdict */
 		BPF_EXIT_INSN(),
 	};
+<<<<<<< HEAD
 
 	return bpf_prog_load(BPF_PROG_TYPE_CGROUP_SKB,
 			     prog, sizeof(prog), "GPL", 0);
+=======
+	size_t insns_cnt = sizeof(prog) / sizeof(struct bpf_insn);
+
+	return bpf_load_program(BPF_PROG_TYPE_CGROUP_SKB,
+				prog, insns_cnt, "GPL", 0,
+				bpf_log_buf, BPF_LOG_BUF_SIZE);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static int usage(const char *argv0)
 {
+<<<<<<< HEAD
 	printf("Usage: %s <cg-path> <egress|ingress> [drop]\n", argv0);
 	return EXIT_FAILURE;
 }
@@ -104,6 +121,18 @@ int main(int argc, char **argv)
 		printf("Failed to open cgroup path: '%s'\n", strerror(errno));
 		return EXIT_FAILURE;
 	}
+=======
+	printf("Usage: %s [-d] [-D] <cg-path> <egress|ingress>\n", argv0);
+	printf("	-d	Drop Traffic\n");
+	printf("	-D	Detach filter, and exit\n");
+	return EXIT_FAILURE;
+}
+
+static int attach_filter(int cg_fd, int type, int verdict)
+{
+	int prog_fd, map_fd, ret, key;
+	long long pkt_cnt, byte_cnt;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	map_fd = bpf_create_map(BPF_MAP_TYPE_ARRAY,
 				sizeof(key), sizeof(byte_cnt),
@@ -121,15 +150,20 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+<<<<<<< HEAD
 	ret = bpf_prog_detach(cg_fd, type);
 	printf("bpf_prog_detach() returned '%s' (%d)\n", strerror(errno), errno);
 
 	ret = bpf_prog_attach(prog_fd, cg_fd, type, 0);
+=======
+	ret = bpf_prog_attach(prog_fd, cg_fd, type);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (ret < 0) {
 		printf("Failed to attach prog to cgroup: '%s'\n",
 		       strerror(errno));
 		return EXIT_FAILURE;
 	}
+<<<<<<< HEAD
 
 	while (1) {
 		key = MAP_KEY_PACKETS;
@@ -137,6 +171,14 @@ int main(int argc, char **argv)
 
 		key = MAP_KEY_BYTES;
 		assert(bpf_lookup_elem(map_fd, &key, &byte_cnt) == 0);
+=======
+	while (1) {
+		key = MAP_KEY_PACKETS;
+		assert(bpf_map_lookup_elem(map_fd, &key, &pkt_cnt) == 0);
+
+		key = MAP_KEY_BYTES;
+		assert(bpf_map_lookup_elem(map_fd, &key, &byte_cnt) == 0);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 		printf("cgroup received %lld packets, %lld bytes\n",
 		       pkt_cnt, byte_cnt);
@@ -145,3 +187,51 @@ int main(int argc, char **argv)
 
 	return EXIT_SUCCESS;
 }
+<<<<<<< HEAD
+=======
+
+int main(int argc, char **argv)
+{
+	int detach_only = 0, verdict = 1;
+	enum bpf_attach_type type;
+	int opt, cg_fd, ret;
+
+	while ((opt = getopt(argc, argv, "Dd")) != -1) {
+		switch (opt) {
+		case 'd':
+			verdict = 0;
+			break;
+		case 'D':
+			detach_only = 1;
+			break;
+		default:
+			return usage(argv[0]);
+		}
+	}
+
+	if (argc - optind < 2)
+		return usage(argv[0]);
+
+	if (strcmp(argv[optind + 1], "ingress") == 0)
+		type = BPF_CGROUP_INET_INGRESS;
+	else if (strcmp(argv[optind + 1], "egress") == 0)
+		type = BPF_CGROUP_INET_EGRESS;
+	else
+		return usage(argv[0]);
+
+	cg_fd = open(argv[optind], O_DIRECTORY | O_RDONLY);
+	if (cg_fd < 0) {
+		printf("Failed to open cgroup path: '%s'\n", strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+	if (detach_only) {
+		ret = bpf_prog_detach(cg_fd, type);
+		printf("bpf_prog_detach() returned '%s' (%d)\n",
+		       strerror(errno), errno);
+	} else
+		ret = attach_filter(cg_fd, type, verdict);
+
+	return ret;
+}
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

@@ -29,7 +29,7 @@
 #ifdef __powerpc__
 #include <altivec.h>
 #endif
-#include "../utils.h"
+#include "utils.h"
 
 static unsigned int timeout = 30;
 

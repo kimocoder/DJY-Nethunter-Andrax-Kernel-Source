@@ -26,6 +26,13 @@
 
 #include <uapi/linux/mmc/mmc.h>
 
+  /* class 11 */
+#define MMC_QUE_TASK_PARAMS      44   /* ac   [20:16] task id    R1  */
+#define MMC_QUE_TASK_ADDR        45   /* ac   [31:0] data addr   R1  */
+#define MMC_EXECUTE_READ_TASK    46   /* adtc [20:16] task id    R1  */
+#define MMC_EXECUTE_WRITE_TASK   47   /* adtc [20:16] task id    R1  */
+#define MMC_CMDQ_TASK_MGMT       48   /* ac   [20:16] task id    R1b */
+
 static inline bool mmc_op_multi(u32 opcode)
 {
 	return opcode == MMC_WRITE_MULTIPLE_BLOCK ||
@@ -215,8 +222,12 @@ struct _mmc_csd {
  * EXT_CSD fields
  */
 
+<<<<<<< HEAD
 #define EXT_CSD_CMDQ			15	/* R/W */
 #define EXT_CSD_BARRIER_CTRL		31      /* R/W */
+=======
+#define EXT_CSD_CMDQ_MODE_EN		15	/* R/W */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #define EXT_CSD_FLUSH_CACHE		32      /* W */
 #define EXT_CSD_CACHE_CTRL		33      /* R/W */
 #define EXT_CSD_POWER_OFF_NOTIFICATION	34	/* R/W */
@@ -277,12 +288,17 @@ struct _mmc_csd {
 #define EXT_CSD_CACHE_SIZE		249	/* RO, 4 bytes */
 #define EXT_CSD_PWR_CL_DDR_200_360	253	/* RO */
 #define EXT_CSD_FIRMWARE_VERSION	254	/* RO, 8 bytes */
+<<<<<<< HEAD
 #define EXT_CSD_PRE_EOL_INFO		267	/* RO */
 #define EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A	268	/* RO */
 #define EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B	269	/* RO */
 #define EXT_CSD_CMDQ_DEPTH		307	/* RO */
 #define EXT_CSD_CMDQ_SUPPORT		308	/* RO */
 #define EXT_CSD_BARRIER_SUPPORT		486	/* RO */
+=======
+#define EXT_CSD_CMDQ_DEPTH		307	/* RO */
+#define EXT_CSD_CMDQ_SUPPORT		308	/* RO */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #define EXT_CSD_SUPPORTED_MODE		493	/* RO */
 #define EXT_CSD_TAG_UNIT_SIZE		498	/* RO */
 #define EXT_CSD_DATA_TAG_SUPPORT	499	/* RO */
@@ -392,6 +408,13 @@ struct _mmc_csd {
  * BKOPS modes
  */
 #define EXT_CSD_MANUAL_BKOPS_MASK	0x01
+
+/*
+ * Command Queue
+ */
+#define EXT_CSD_CMDQ_MODE_ENABLED	BIT(0)
+#define EXT_CSD_CMDQ_DEPTH_MASK		GENMASK(4, 0)
+#define EXT_CSD_CMDQ_SUPPORTED		BIT(0)
 
 /*
  * MMC_SWITCH access modes

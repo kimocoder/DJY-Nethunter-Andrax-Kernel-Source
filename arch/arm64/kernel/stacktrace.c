@@ -214,12 +214,15 @@ static noinline void __save_stack_trace(struct task_struct *tsk,
 		trace->entries[trace->nr_entries++] = ULONG_MAX;
 
 	put_task_stack(tsk);
+<<<<<<< HEAD
 }
 EXPORT_SYMBOL(save_stack_trace_tsk);
 
 void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
 {
 	__save_stack_trace(tsk, trace, 1);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 void save_stack_trace(struct stack_trace *trace)

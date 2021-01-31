@@ -276,7 +276,9 @@
 #define H_COP			0x304
 #define H_GET_MPP_X		0x314
 #define H_SET_MODE		0x31C
-#define MAX_HCALL_OPCODE	H_SET_MODE
+#define H_CLEAR_HPT		0x358
+#define H_SIGNAL_SYS_RESET	0x380
+#define MAX_HCALL_OPCODE	H_SIGNAL_SYS_RESET
 
 /* H_VIOCTL functions */
 #define H_GET_VIOA_DUMP_SIZE	0x01
@@ -307,6 +309,7 @@
 #define H_SET_MODE_RESOURCE_ADDR_TRANS_MODE	3
 #define H_SET_MODE_RESOURCE_LE			4
 
+<<<<<<< HEAD
 /* H_GET_CPU_CHARACTERISTICS return values */
 #define H_CPU_CHAR_SPEC_BAR_ORI31	(1ull << 63) // IBM bit 0
 #define H_CPU_CHAR_BCCTRL_SERIALISED	(1ull << 62) // IBM bit 1
@@ -322,6 +325,12 @@
 #define H_CPU_BEHAV_L1D_FLUSH_PR	(1ull << 62) // IBM bit 1
 #define H_CPU_BEHAV_BNDS_CHK_SPEC_BAR	(1ull << 61) // IBM bit 2
 #define H_CPU_BEHAV_FLUSH_COUNT_CACHE	(1ull << 58) // IBM bit 5
+=======
+/* Values for argument to H_SIGNAL_SYS_RESET */
+#define H_SIGNAL_SYS_RESET_ALL			-1
+#define H_SIGNAL_SYS_RESET_ALL_OTHERS		-2
+/* >= 0 values are CPU number */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
@@ -430,6 +439,7 @@ static inline unsigned int get_longbusy_msecs(int longbusy_rc)
 	}
 }
 
+<<<<<<< HEAD
 #ifdef CONFIG_PPC_PSERIES
 extern int CMO_PrPSP;
 extern int CMO_SecPSP;
@@ -456,6 +466,8 @@ struct h_cpu_char_result {
 	u64 behaviour;
 };
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif /* __ASSEMBLY__ */
 #endif /* __KERNEL__ */
 #endif /* _ASM_POWERPC_HVCALL_H */

@@ -17,7 +17,11 @@
 #include <linux/linkage.h>
 
 #include <asm/cache.h>
+<<<<<<< HEAD
 #include <asm/uaccess.h>
+=======
+#include <linux/uaccess.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /*
  * Copy to user space from a kernel buffer (alignment handled by the hardware)
@@ -63,10 +67,17 @@
 
 end	.req	x5
 ENTRY(__arch_copy_to_user)
+<<<<<<< HEAD
 	uaccess_enable_not_uao x3, x4, x5
 	add	end, x0, x2
 #include "copy_template.S"
 	uaccess_disable_not_uao x3, x4
+=======
+	uaccess_enable_not_uao x3, x4
+	add	end, x0, x2
+#include "copy_template.S"
+	uaccess_disable_not_uao x3
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	mov	x0, #0
 	ret
 ENDPROC(__arch_copy_to_user)

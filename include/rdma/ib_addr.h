@@ -208,6 +208,7 @@ static inline void iboe_addr_get_sgid(struct rdma_dev_addr *dev_addr,
 	dev = dev_get_by_index(&init_net, dev_addr->bound_dev_if);
 	if (dev) {
 		ip4 = in_dev_get(dev);
+<<<<<<< HEAD
 		if (ip4 && ip4->ifa_list && ip4->ifa_list->ifa_address)
 			ipv6_addr_set_v4mapped(ip4->ifa_list->ifa_address,
 					       (struct in6_addr *)gid);
@@ -215,6 +216,13 @@ static inline void iboe_addr_get_sgid(struct rdma_dev_addr *dev_addr,
 		if (ip4)
 			in_dev_put(ip4);
 
+=======
+		if (ip4 && ip4->ifa_list && ip4->ifa_list->ifa_address) {
+			ipv6_addr_set_v4mapped(ip4->ifa_list->ifa_address,
+					       (struct in6_addr *)gid);
+			in_dev_put(ip4);
+		}
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		dev_put(dev);
 	}
 }

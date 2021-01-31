@@ -80,7 +80,10 @@
 #include <linux/integrity.h>
 #include <linux/proc_ns.h>
 #include <linux/io.h>
+<<<<<<< HEAD
 #include <linux/kaiser.h>
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #include <linux/cache.h>
 
 #include <asm/io.h>
@@ -449,6 +452,8 @@ void __init parse_early_param(void)
 	done = 1;
 }
 
+void __init __weak arch_post_acpi_subsys_init(void) { }
+
 void __init __weak smp_setup_processor_id(void)
 {
 }
@@ -657,6 +662,7 @@ asmlinkage __visible void __init start_kernel(void)
 	check_bugs();
 
 	acpi_subsystem_init();
+	arch_post_acpi_subsys_init();
 	sfi_init_late();
 
 	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
@@ -989,7 +995,7 @@ static int __ref kernel_init(void *unused)
 		return 0;
 
 	panic("No working init found.  Try passing init= option to kernel. "
-	      "See Linux Documentation/init.txt for guidance.");
+	      "See Linux Documentation/admin-guide/init.rst for guidance.");
 }
 
 static noinline void __init kernel_init_freeable(void)

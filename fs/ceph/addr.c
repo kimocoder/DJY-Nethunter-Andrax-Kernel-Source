@@ -478,7 +478,9 @@ out:
  * only snap context we are allowed to write back.
  */
 static struct ceph_snap_context *get_oldest_context(struct inode *inode,
-						    loff_t *snap_size)
+						    loff_t *snap_size,
+						    u64 *truncate_size,
+						    u32 *truncate_seq)
 {
 	struct ceph_inode_info *ci = ceph_inode(inode);
 	struct ceph_snap_context *snapc = NULL;
@@ -492,6 +494,10 @@ static struct ceph_snap_context *get_oldest_context(struct inode *inode,
 			snapc = ceph_get_snap_context(capsnap->context);
 			if (snap_size)
 				*snap_size = capsnap->size;
+			if (truncate_size)
+				*truncate_size = capsnap->truncate_size;
+			if (truncate_seq)
+				*truncate_seq = capsnap->truncate_seq;
 			break;
 		}
 	}
@@ -499,6 +505,10 @@ static struct ceph_snap_context *get_oldest_context(struct inode *inode,
 		snapc = ceph_get_snap_context(ci->i_head_snapc);
 		dout(" head snapc %p has %d dirty pages\n",
 		     snapc, ci->i_wrbuffer_ref_head);
+		if (truncate_size)
+			*truncate_size = capsnap->truncate_size;
+		if (truncate_seq)
+			*truncate_seq = capsnap->truncate_seq;
 	}
 	spin_unlock(&ci->i_ceph_lock);
 	return snapc;
@@ -541,7 +551,8 @@ static int writepage_nounlock(struct page *page, struct writeback_control *wbc)
 		dout("writepage %p page %p not dirty?\n", inode, page);
 		goto out;
 	}
-	oldest = get_oldest_context(inode, &snap_size);
+	oldest = get_oldest_context(inode, &snap_size,
+				    &truncate_size, &truncate_seq);
 	if (snapc->seq > oldest->seq) {
 		dout("writepage %p page %p snapc %p not writeable - noop\n",
 		     inode, page, snapc);
@@ -552,12 +563,8 @@ static int writepage_nounlock(struct page *page, struct writeback_control *wbc)
 	}
 	ceph_put_snap_context(oldest);
 
-	spin_lock(&ci->i_ceph_lock);
-	truncate_seq = ci->i_truncate_seq;
-	truncate_size = ci->i_truncate_size;
 	if (snap_size == -1)
 		snap_size = i_size_read(inode);
-	spin_unlock(&ci->i_ceph_lock);
 
 	/* is this a partial page at end of file? */
 	if (page_off >= snap_size) {
@@ -804,7 +811,8 @@ retry:
 	/* find oldest snap context with dirty data */
 	ceph_put_snap_context(snapc);
 	snap_size = -1;
-	snapc = get_oldest_context(inode, &snap_size);
+	snapc = get_oldest_context(inode, &snap_size,
+				   &truncate_size, &truncate_seq);
 	if (!snapc) {
 		/* hmm, why does writepages get called when there
 		   is no dirty data? */
@@ -814,11 +822,7 @@ retry:
 	dout(" oldest snapc is %p seq %lld (%d snaps)\n",
 	     snapc, snapc->seq, snapc->num_snaps);
 
-	spin_lock(&ci->i_ceph_lock);
-	truncate_seq = ci->i_truncate_seq;
-	truncate_size = ci->i_truncate_size;
 	i_size = i_size_read(inode);
-	spin_unlock(&ci->i_ceph_lock);
 
 	if (last_snapc && snapc != last_snapc) {
 		/* if we switched to a newer snapc, restart our scan at the
@@ -1152,7 +1156,8 @@ out:
 static int context_is_writeable_or_written(struct inode *inode,
 					   struct ceph_snap_context *snapc)
 {
-	struct ceph_snap_context *oldest = get_oldest_context(inode, NULL);
+	struct ceph_snap_context *oldest = get_oldest_context(inode, NULL,
+							      NULL, NULL);
 	int ret = !oldest || snapc->seq <= oldest->seq;
 
 	ceph_put_snap_context(oldest);
@@ -1197,7 +1202,7 @@ retry_locked:
 		 * this page is already dirty in another (older) snap
 		 * context!  is it writeable now?
 		 */
-		oldest = get_oldest_context(inode, NULL);
+		oldest = get_oldest_context(inode, NULL, NULL, NULL);
 
 		if (snapc->seq > oldest->seq) {
 			ceph_put_snap_context(oldest);
@@ -1307,25 +1312,27 @@ static int ceph_write_end(struct file *file, struct address_space *mapping,
 			  struct page *page, void *fsdata)
 {
 	struct inode *inode = file_inode(file);
-	unsigned from = pos & (PAGE_SIZE - 1);
 	int check_cap = 0;
 
 	dout("write_end file %p inode %p page %p %d~%d (%d)\n", file,
 	     inode, page, (int)pos, (int)copied, (int)len);
 
 	/* zero the stale part of the page if we did a short copy */
-	if (copied < len)
-		zero_user_segment(page, from+copied, len);
+	if (!PageUptodate(page)) {
+		if (copied < len) {
+			copied = 0;
+			goto out;
+		}
+		SetPageUptodate(page);
+	}
 
 	/* did file size increase? */
 	if (pos+copied > i_size_read(inode))
 		check_cap = ceph_inode_set_size(inode, pos+copied);
 
-	if (!PageUptodate(page))
-		SetPageUptodate(page);
-
 	set_page_dirty(page);
 
+out:
 	unlock_page(page);
 	put_page(page);
 
@@ -1937,6 +1944,15 @@ int ceph_pool_perm_check(struct ceph_inode_info *ci, int need)
 	s64 pool;
 	struct ceph_string *pool_ns;
 	int ret, flags;
+
+	if (ci->i_vino.snap != CEPH_NOSNAP) {
+		/*
+		 * Pool permission check needs to write to the first object.
+		 * But for snapshot, head of the first object may have alread
+		 * been deleted. Skip check to avoid creating orphan object.
+		 */
+		return 0;
+	}
 
 	if (ceph_test_mount_opt(ceph_inode_to_client(&ci->vfs_inode),
 				NOPOOLPERM))

@@ -366,6 +366,10 @@ struct sock {
 		struct sk_buff	*tail;
 	} sk_backlog;
 #define sk_rmem_alloc sk_backlog.rmem_alloc
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	int			sk_forward_alloc;
 #ifdef CONFIG_NET_RX_BUSY_POLL
 	unsigned int		sk_ll_usec;
@@ -395,7 +399,10 @@ struct sock {
 	struct sk_buff_head	sk_write_queue;
 	__s32			sk_peek_off;
 	int			sk_write_pending;
+<<<<<<< HEAD
 	u32			sk_pacing_status; /* see enum sk_pacing */
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	long			sk_sndtimeo;
 	struct timer_list	sk_timer;
 	__u32			sk_priority;
@@ -414,6 +421,21 @@ struct sock {
 	 * Because of non atomicity rules, all
 	 * changes are protected by socket lock.
 	 */
+	unsigned int		__sk_flags_offset[0];
+#ifdef __BIG_ENDIAN_BITFIELD
+#define SK_FL_PROTO_SHIFT  16
+#define SK_FL_PROTO_MASK   0x00ff0000
+
+#define SK_FL_TYPE_SHIFT   0
+#define SK_FL_TYPE_MASK    0x0000ffff
+#else
+#define SK_FL_PROTO_SHIFT  8
+#define SK_FL_PROTO_MASK   0x0000ff00
+
+#define SK_FL_TYPE_SHIFT   16
+#define SK_FL_TYPE_MASK    0xffff0000
+#endif
+
 	kmemcheck_bitfield_begin(flags);
 	unsigned int		sk_padding : 2,
 				sk_no_check_tx : 1,
@@ -922,7 +944,20 @@ static inline void sock_rps_record_flow_hash(__u32 hash)
 static inline void sock_rps_record_flow(const struct sock *sk)
 {
 #ifdef CONFIG_RPS
-	sock_rps_record_flow_hash(sk->sk_rxhash);
+	if (static_key_false(&rfs_needed)) {
+		/* Reading sk->sk_rxhash might incur an expensive cache line
+		 * miss.
+		 *
+		 * TCP_ESTABLISHED does cover almost all states where RFS
+		 * might be useful, and is cheaper [1] than testing :
+		 *	IPv4: inet_sk(sk)->inet_daddr
+		 * 	IPv6: ipv6_addr_any(&sk->sk_v6_daddr)
+		 * OR	an additional socket flag
+		 * [1] : sk_state and sk_prot are in the same cache line.
+		 */
+		if (sk->sk_state == TCP_ESTABLISHED)
+			sock_rps_record_flow_hash(sk->sk_rxhash);
+	}
 #endif
 }
 
@@ -942,14 +977,16 @@ static inline void sock_rps_reset_rxhash(struct sock *sk)
 #endif
 }
 
-#define sk_wait_event(__sk, __timeo, __condition)			\
+#define sk_wait_event(__sk, __timeo, __condition, __wait)		\
 	({	int __rc;						\
 		release_sock(__sk);					\
 		__rc = __condition;					\
 		if (!__rc) {						\
-			*(__timeo) = schedule_timeout(*(__timeo));	\
+			*(__timeo) = wait_woken(__wait,			\
+						TASK_INTERRUPTIBLE,	\
+						*(__timeo));		\
 		}							\
-		sched_annotate_sleep();						\
+		sched_annotate_sleep();					\
 		lock_sock(__sk);					\
 		__rc = __condition;					\
 		__rc;							\
@@ -1190,11 +1227,6 @@ static inline void sk_enter_memory_pressure(struct sock *sk)
 	sk->sk_prot->enter_memory_pressure(sk);
 }
 
-static inline long sk_prot_mem_limits(const struct sock *sk, int index)
-{
-	return sk->sk_prot->sysctl_mem[index];
-}
-
 static inline long
 sk_memory_allocated(const struct sock *sk)
 {
@@ -1304,13 +1336,31 @@ static inline struct inode *SOCK_INODE(struct socket *socket)
 /*
  * Functions for memory accounting
  */
+int __sk_mem_raise_allocated(struct sock *sk, int size, int amt, int kind);
 int __sk_mem_schedule(struct sock *sk, int size, int kind);
+void __sk_mem_reduce_allocated(struct sock *sk, int amount);
 void __sk_mem_reclaim(struct sock *sk, int amount);
 
-#define SK_MEM_QUANTUM ((int)PAGE_SIZE)
+/* We used to have PAGE_SIZE here, but systems with 64KB pages
+ * do not necessarily have 16x time more memory than 4KB ones.
+ */
+#define SK_MEM_QUANTUM 4096
 #define SK_MEM_QUANTUM_SHIFT ilog2(SK_MEM_QUANTUM)
 #define SK_MEM_SEND	0
 #define SK_MEM_RECV	1
+
+/* sysctl_mem values are in pages, we convert them in SK_MEM_QUANTUM units */
+static inline long sk_prot_mem_limits(const struct sock *sk, int index)
+{
+	long val = sk->sk_prot->sysctl_mem[index];
+
+#if PAGE_SIZE > SK_MEM_QUANTUM
+	val <<= PAGE_SHIFT - SK_MEM_QUANTUM_SHIFT;
+#elif PAGE_SIZE < SK_MEM_QUANTUM
+	val >>= SK_MEM_QUANTUM_SHIFT - PAGE_SHIFT;
+#endif
+	return val;
+}
 
 static inline int sk_mem_pages(int amt)
 {
@@ -1816,13 +1866,13 @@ static inline int skb_do_copy_data_nocache(struct sock *sk, struct sk_buff *skb,
 {
 	if (skb->ip_summed == CHECKSUM_NONE) {
 		__wsum csum = 0;
-		if (csum_and_copy_from_iter(to, copy, &csum, from) != copy)
+		if (!csum_and_copy_from_iter_full(to, copy, &csum, from))
 			return -EFAULT;
 		skb->csum = csum_block_add(skb->csum, csum, offset);
 	} else if (sk->sk_route_caps & NETIF_F_NOCACHE_COPY) {
-		if (copy_from_iter_nocache(to, copy, from) != copy)
+		if (!copy_from_iter_full_nocache(to, copy, from))
 			return -EFAULT;
-	} else if (copy_from_iter(to, copy, from) != copy)
+	} else if (!copy_from_iter_full(to, copy, from))
 		return -EFAULT;
 
 	return 0;
@@ -1985,6 +2035,8 @@ void sk_reset_timer(struct sock *sk, struct timer_list *timer,
 
 void sk_stop_timer(struct sock *sk, struct timer_list *timer);
 
+int __sk_queue_drop_skb(struct sock *sk, struct sk_buff *skb,
+			unsigned int flags);
 int __sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb);
 int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb);
 
@@ -2146,7 +2198,8 @@ struct sock_skb_cb {
 static inline void
 sock_skb_set_dropcount(const struct sock *sk, struct sk_buff *skb)
 {
-	SOCK_SKB_CB(skb)->dropcount = atomic_read(&sk->sk_drops);
+	SOCK_SKB_CB(skb)->dropcount = sock_flag(sk, SOCK_RXQ_OVFL) ?
+						atomic_read(&sk->sk_drops) : 0;
 }
 
 static inline void sk_drops_add(struct sock *sk, const struct sk_buff *skb)
@@ -2203,8 +2256,8 @@ sock_recv_timestamp(struct msghdr *msg, struct sock *sk, struct sk_buff *skb)
 	 */
 	if (sock_flag(sk, SOCK_RCVTSTAMP) ||
 	    (sk->sk_tsflags & SOF_TIMESTAMPING_RX_SOFTWARE) ||
-	    (kt.tv64 && sk->sk_tsflags & SOF_TIMESTAMPING_SOFTWARE) ||
-	    (hwtstamps->hwtstamp.tv64 &&
+	    (kt && sk->sk_tsflags & SOF_TIMESTAMPING_SOFTWARE) ||
+	    (hwtstamps->hwtstamp &&
 	     (sk->sk_tsflags & SOF_TIMESTAMPING_RAW_HARDWARE)))
 		__sock_recv_timestamp(msg, sk, skb);
 	else

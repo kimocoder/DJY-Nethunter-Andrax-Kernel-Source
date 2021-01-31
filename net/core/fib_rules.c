@@ -576,10 +576,15 @@ int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr *nlh)
 
 	if (tb[FRA_UID_RANGE]) {
 		range = nla_get_kuid_range(tb);
+<<<<<<< HEAD
 		if (!uid_range_set(&range)) {
 			err = -EINVAL;
 			goto errout;
 		}
+=======
+		if (!uid_range_set(&range))
+			goto errout;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	} else {
 		range = fib_kuid_range_unset;
 	}

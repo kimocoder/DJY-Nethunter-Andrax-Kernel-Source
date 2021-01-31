@@ -2049,7 +2049,7 @@ static struct attribute *adt7316_event_attributes[] = {
 	NULL,
 };
 
-static struct attribute_group adt7316_event_attribute_group = {
+static const struct attribute_group adt7316_event_attribute_group = {
 	.attrs = adt7316_event_attributes,
 	.name = "events",
 };
@@ -2070,7 +2070,7 @@ static struct attribute *adt7516_event_attributes[] = {
 	NULL,
 };
 
-static struct attribute_group adt7516_event_attribute_group = {
+static const struct attribute_group adt7516_event_attribute_group = {
 	.attrs = adt7516_event_attributes,
 	.name = "events",
 };

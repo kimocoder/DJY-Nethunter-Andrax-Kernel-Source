@@ -292,7 +292,7 @@ static int ak8974_await_drdy(struct ak8974 *ak8974)
 	return 0;
 }
 
-static int ak8974_getresult(struct ak8974 *ak8974, s16 *result)
+static int ak8974_getresult(struct ak8974 *ak8974, __le16 *result)
 {
 	unsigned int src;
 	int ret;
@@ -400,7 +400,7 @@ static int ak8974_selftest(struct ak8974 *ak8974)
 static int ak8974_get_u16_val(struct ak8974 *ak8974, u8 reg, u16 *val)
 {
 	int ret;
-	u16 bulk;
+	__le16 bulk;
 
 	ret = regmap_bulk_read(ak8974->map, reg, &bulk, 2);
 	if (ret)
@@ -458,7 +458,7 @@ static int ak8974_read_raw(struct iio_dev *indio_dev,
 			   long mask)
 {
 	struct ak8974 *ak8974 = iio_priv(indio_dev);
-	s16 hw_values[3];
+	__le16 hw_values[3];
 	int ret = -EINVAL;
 
 	pm_runtime_get_sync(&ak8974->i2c->dev);
@@ -499,6 +499,10 @@ static void ak8974_fill_buffer(struct iio_dev *indio_dev)
 {
 	struct ak8974 *ak8974 = iio_priv(indio_dev);
 	int ret;
+<<<<<<< HEAD
+=======
+	__le16 hw_values[8]; /* Three axes + 64bit padding */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	pm_runtime_get_sync(&ak8974->i2c->dev);
 	mutex_lock(&ak8974->lock);

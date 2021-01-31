@@ -196,10 +196,34 @@ enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
 	update_saved_ttbr0(tsk, &init_mm);
 }
 
+<<<<<<< HEAD
+static inline void __switch_mm(struct mm_struct *next)
+=======
+#ifdef CONFIG_ARM64_SW_TTBR0_PAN
+static inline void update_saved_ttbr0(struct task_struct *tsk,
+				      struct mm_struct *mm)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
+{
+	if (system_uses_ttbr0_pan()) {
+		BUG_ON(mm->pgd == swapper_pg_dir);
+		task_thread_info(tsk)->ttbr0 =
+			virt_to_phys(mm->pgd) | ASID(mm) << 48;
+	}
+}
+#else
+static inline void update_saved_ttbr0(struct task_struct *tsk,
+				      struct mm_struct *mm)
+{
+}
+#endif
+
+<<<<<<< HEAD
+=======
 static inline void __switch_mm(struct mm_struct *next)
 {
 	unsigned int cpu = smp_processor_id();
 
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/*
 	 * init_mm.pgd does not contain any user mappings and it is always
 	 * active for kernel addresses in TTBR1. Just set the reserved TTBR0.
@@ -223,9 +247,17 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	 * Update the saved TTBR0_EL1 of the scheduled-in task as the previous
 	 * value may have not been initialised yet (activate_mm caller) or the
 	 * ASID has changed since the last run (following the context switch
+<<<<<<< HEAD
 	 * of another thread of the same process).
 	 */
 	update_saved_ttbr0(tsk, next);
+=======
+	 * of another thread of the same process). Avoid setting the reserved
+	 * TTBR0_EL1 to swapper_pg_dir (init_mm; e.g. via idle_task_exit).
+	 */
+	if (next != &init_mm)
+		update_saved_ttbr0(tsk, next);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 #define deactivate_mm(tsk,mm)	do { } while (0)

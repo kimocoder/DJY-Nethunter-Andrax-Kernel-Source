@@ -266,7 +266,10 @@ static void pppol2tp_recv(struct l2tp_session *session, struct sk_buff *skb, int
 	return;
 
 no_sock:
+<<<<<<< HEAD
 	rcu_read_unlock();
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	l2tp_info(session, L2TP_MSG_DATA, "%s: no socket\n", session->name);
 	kfree_skb(skb);
 }
@@ -871,9 +874,14 @@ static int pppol2tp_session_create(struct net *net, struct l2tp_tunnel *tunnel,
 
 	pppol2tp_session_init(session);
 
+<<<<<<< HEAD
 	error = l2tp_session_register(session, tunnel);
 	if (error < 0)
 		goto err_sess;
+=======
+	l2tp_info(session, L2TP_MSG_CONTROL, "%s: created\n",
+		  session->name);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	return 0;
 
@@ -1326,7 +1334,11 @@ static int pppol2tp_session_setsockopt(struct sock *sk,
 			err = -EINVAL;
 			break;
 		}
+<<<<<<< HEAD
 		session->recv_seq = val ? -1 : 0;
+=======
+		session->recv_seq = !!val;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		l2tp_info(session, L2TP_MSG_CONTROL,
 			  "%s: set recv_seq=%d\n",
 			  session->name, session->recv_seq);
@@ -1337,7 +1349,7 @@ static int pppol2tp_session_setsockopt(struct sock *sk,
 			err = -EINVAL;
 			break;
 		}
-		session->send_seq = val ? -1 : 0;
+		session->send_seq = !!val;
 		{
 			struct pppox_sock *po = pppox_sk(sk);
 
@@ -1355,7 +1367,11 @@ static int pppol2tp_session_setsockopt(struct sock *sk,
 			err = -EINVAL;
 			break;
 		}
+<<<<<<< HEAD
 		session->lns_mode = val ? -1 : 0;
+=======
+		session->lns_mode = !!val;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		l2tp_info(session, L2TP_MSG_CONTROL,
 			  "%s: set lns_mode=%d\n",
 			  session->name, session->lns_mode);

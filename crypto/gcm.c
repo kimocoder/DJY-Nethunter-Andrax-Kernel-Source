@@ -573,7 +573,7 @@ static int crypto_gcm_init_tfm(struct crypto_aead *tfm)
 	if (IS_ERR(ghash))
 		return PTR_ERR(ghash);
 
-	ctr = crypto_spawn_skcipher2(&ictx->ctr);
+	ctr = crypto_spawn_skcipher(&ictx->ctr);
 	err = PTR_ERR(ctr);
 	if (IS_ERR(ctr))
 		goto err_free_hash;
@@ -661,19 +661,29 @@ static int crypto_gcm_create_common(struct crypto_template *tmpl,
 		goto err_drop_ghash;
 
 	crypto_set_skcipher_spawn(&ctx->ctr, aead_crypto_instance(inst));
-	err = crypto_grab_skcipher2(&ctx->ctr, ctr_name, 0,
-				    crypto_requires_sync(algt->type,
-							 algt->mask));
+	err = crypto_grab_skcipher(&ctx->ctr, ctr_name, 0,
+				   crypto_requires_sync(algt->type,
+							algt->mask));
 	if (err)
 		goto err_drop_ghash;
 
 	ctr = crypto_spawn_skcipher_alg(&ctx->ctr);
 
+<<<<<<< HEAD
 	/* The skcipher algorithm must be CTR mode, using 16-byte blocks. */
 	err = -EINVAL;
 	if (strncmp(ctr->base.cra_name, "ctr(", 4) != 0 ||
 	    crypto_skcipher_alg_ivsize(ctr) != 16 ||
 	    ctr->base.cra_blocksize != 1)
+=======
+	/* We only support 16-byte blocks. */
+	err = -EINVAL;
+	if (crypto_skcipher_alg_ivsize(ctr) != 16)
+		goto out_put_ctr;
+
+	/* Not a stream cipher? */
+	if (ctr->base.cra_blocksize != 1)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		goto out_put_ctr;
 
 	err = -ENAMETOOLONG;

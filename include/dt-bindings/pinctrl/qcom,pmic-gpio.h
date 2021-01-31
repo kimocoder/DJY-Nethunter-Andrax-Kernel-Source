@@ -94,6 +94,7 @@
 #define PMA8084_GPIO_S4			2
 #define PMA8084_GPIO_L6			3
 
+<<<<<<< HEAD
 /* ATEST MUX selection for analog-pass-through mode */
 #define PMIC_GPIO_AOUT_ATEST1		0
 #define PMIC_GPIO_AOUT_ATEST2		1
@@ -105,6 +106,11 @@
 #define PMIC_GPIO_DIN_DTEST2		1
 #define PMIC_GPIO_DIN_DTEST3		2
 #define PMIC_GPIO_DIN_DTEST4		3
+=======
+#define PM8994_GPIO_VPH			0
+#define PM8994_GPIO_S4			2
+#define PM8994_GPIO_L12			3
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* To be used with "function" */
 #define PMIC_GPIO_FUNC_NORMAL		"normal"

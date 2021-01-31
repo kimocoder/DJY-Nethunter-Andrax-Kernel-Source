@@ -323,6 +323,20 @@ static const struct dmi_system_id video_detect_dmi_table[] = {
 		DMI_MATCH(DMI_PRODUCT_NAME, "Dell System XPS L702X"),
 		},
 	},
+<<<<<<< HEAD
+=======
+	{
+	/* https://bugzilla.redhat.com/show_bug.cgi?id=1204476 */
+	/* https://bugs.launchpad.net/ubuntu/+source/linux-lts-trusty/+bug/1416940 */
+	.callback = video_detect_force_native,
+	.ident = "HP Pavilion dv6",
+	.matches = {
+		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv6 Notebook PC"),
+		},
+	},
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	{ },
 };
 

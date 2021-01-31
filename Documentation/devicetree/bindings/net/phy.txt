@@ -35,6 +35,12 @@ Optional Properties:
 - broken-turn-around: If set, indicates the PHY device does not correctly
   release the turn around line low at the end of a MDIO transaction.
 
+<<<<<<< HEAD
+=======
+- enet-phy-lane-swap: If set, indicates the PHY will swap the TX/RX lanes to
+  compensate for the board being designed with the lanes swapped.
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 - eee-broken-100tx:
 - eee-broken-1000t:
 - eee-broken-10gt:

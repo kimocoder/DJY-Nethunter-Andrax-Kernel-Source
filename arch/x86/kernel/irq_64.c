@@ -17,7 +17,6 @@
 #include <linux/uaccess.h>
 #include <linux/smp.h>
 #include <asm/io_apic.h>
-#include <asm/idle.h>
 #include <asm/apic.h>
 
 int sysctl_panic_on_stackoverflow;

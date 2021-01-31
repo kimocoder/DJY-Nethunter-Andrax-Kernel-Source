@@ -2177,6 +2177,18 @@ enum cfg80211_connect_params_changed {
 };
 
 /**
+ * enum cfg80211_connect_params_changed - Connection parameters being updated
+ *
+ * This enum provides information of all connect parameters that
+ * have to be updated as part of update_connect_params() call.
+ *
+ * @UPDATE_ASSOC_IES: Indicates whether association request IEs are updated
+ */
+enum cfg80211_connect_params_changed {
+	UPDATE_ASSOC_IES		= BIT(0),
+};
+
+/**
  * enum wiphy_params_flags - set_wiphy_params bitfield values
  * @WIPHY_PARAM_RETRY_SHORT: wiphy->retry_short has changed
  * @WIPHY_PARAM_RETRY_LONG: wiphy->retry_long has changed
@@ -2776,9 +2788,22 @@ struct cfg80211_update_owe_info {
  *	BSS, i.e., this impacts only subsequent (re)associations. The bits in
  *	changed are defined in &enum cfg80211_connect_params_changed.
  *	(invoked with the wireless_dev mutex held)
- * @disconnect: Disconnect from the BSS/ESS. Once done, call
- *	cfg80211_disconnected().
+ * @update_connect_params: Update the connect parameters while connected to a
+ *	BSS. The updated parameters can be used by driver/firmware for
+ *	subsequent BSS selection (roaming) decisions and to form the
+ *	Authentication/(Re)Association Request frames. This call does not
+ *	request an immediate disassociation or reassociation with the current
+ *	BSS, i.e., this impacts only subsequent (re)associations. The bits in
+ *	changed are defined in &enum cfg80211_connect_params_changed.
  *	(invoked with the wireless_dev mutex held)
+<<<<<<< HEAD
+=======
+ * @disconnect: Disconnect from the BSS/ESS or stop connection attempts if
+ *      connection is in progress. Once done, call cfg80211_disconnected() in
+ *      case connection was already established (invoked with the
+ *      wireless_dev mutex held), otherwise call cfg80211_connect_timeout().
+ *
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  * @join_ibss: Join the specified IBSS (or create if necessary). Once done, call
  *	cfg80211_ibss_joined(), also call that function when changing BSSID due
  *	to a merge.
@@ -2947,6 +2972,7 @@ struct cfg80211_update_owe_info {
  *	All other parameters must be ignored.
  *
  * @set_multicast_to_unicast: configure multicast to unicast conversion for BSS
+<<<<<<< HEAD
  *
  * @external_auth: indicates result of offloaded authentication processing from
  *     user space
@@ -2954,6 +2980,8 @@ struct cfg80211_update_owe_info {
  * @update_owe_info: Provide updated OWE info to driver. Driver implementing SME
  *	but offloading OWE processing to the user space will get the updated
  *	DH IE through this interface.
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  */
 struct cfg80211_ops {
 	int	(*suspend)(struct wiphy *wiphy, struct cfg80211_wowlan *wow);
@@ -3238,10 +3266,13 @@ struct cfg80211_ops {
 	int	(*set_multicast_to_unicast)(struct wiphy *wiphy,
 					    struct net_device *dev,
 					    const bool enabled);
+<<<<<<< HEAD
 	int     (*external_auth)(struct wiphy *wiphy, struct net_device *dev,
 				 struct cfg80211_external_auth_params *params);
 	int	(*update_owe_info)(struct wiphy *wiphy, struct net_device *dev,
 				   struct cfg80211_update_owe_info *owe_info);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 };
 
 /*
@@ -4021,8 +4052,8 @@ struct cfg80211_cached_keys;
  * @beacon_interval: beacon interval used on this device for transmitting
  *	beacons, 0 when not valid
  * @address: The address for this device, valid only if @netdev is %NULL
- * @p2p_started: true if this is a P2P Device that has been started
- * @nan_started: true if this is a NAN interface that has been started
+ * @is_running: true if this is a non-netdev device that has been started, e.g.
+ *	the P2P Device.
  * @cac_started: true if DFS channel availability check has been started
  * @cac_start_time: timestamp (jiffies) when the dfs state was entered.
  * @cac_time_ms: CAC time in ms
@@ -4057,7 +4088,7 @@ struct wireless_dev {
 
 	struct mutex mtx;
 
-	bool use_4addr, p2p_started, nan_started;
+	bool use_4addr, is_running;
 
 	u8 address[ETH_ALEN] __aligned(sizeof(u16));
 
@@ -4116,6 +4147,13 @@ static inline u8 *wdev_address(struct wireless_dev *wdev)
 	if (wdev->netdev)
 		return wdev->netdev->dev_addr;
 	return wdev->address;
+}
+
+static inline bool wdev_running(struct wireless_dev *wdev)
+{
+	if (wdev->netdev)
+		return netif_running(wdev->netdev);
+	return wdev->is_running;
 }
 
 /**
@@ -4423,6 +4461,27 @@ const u8 *cfg80211_find_ie_match(u8 eid, const u8 *ies, int len,
 static inline const u8 *cfg80211_find_ie(u8 eid, const u8 *ies, int len)
 {
 	return cfg80211_find_ie_match(eid, ies, len, NULL, 0, 0);
+}
+
+/**
+ * cfg80211_find_ext_ie - find information element with EID Extension in data
+ *
+ * @ext_eid: element ID Extension
+ * @ies: data consisting of IEs
+ * @len: length of data
+ *
+ * Return: %NULL if the extended element ID could not be found or if
+ * the element is invalid (claims to be longer than the given
+ * data), or a pointer to the first byte of the requested
+ * element, that is the byte containing the element ID.
+ *
+ * Note: There are no checks on the element length other than
+ * having to fit into the given data.
+ */
+static inline const u8 *cfg80211_find_ext_ie(u8 ext_eid, const u8 *ies, int len)
+{
+	return cfg80211_find_ie_match(WLAN_EID_EXTENSION, ies, len,
+				      &ext_eid, 1, 2);
 }
 
 /**
@@ -4862,7 +4921,8 @@ void cfg80211_auth_timeout(struct net_device *dev, const u8 *addr);
  *	moves to cfg80211 in this call
  * @buf: authentication frame (header + body)
  * @len: length of the frame data
- * @uapsd_queues: bitmap of ACs configured to uapsd. -1 if n/a.
+ * @uapsd_queues: bitmap of queues configured for uapsd. Same format
+ *	as the AC bitmap in the QoS info field
  *
  * After being asked to associate via cfg80211_ops::assoc() the driver must
  * call either this function or cfg80211_auth_timeout().

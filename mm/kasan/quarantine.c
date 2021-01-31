@@ -190,7 +190,14 @@ void quarantine_put(struct kasan_free_meta *info, struct kmem_cache *cache)
 	if (unlikely(q->bytes > QUARANTINE_PERCPU_SIZE)) {
 		qlist_move_all(q, &temp);
 
+<<<<<<< HEAD
 		spin_lock(&quarantine_lock);
+=======
+	local_irq_restore(flags);
+
+	if (unlikely(!qlist_empty(&temp))) {
+		spin_lock_irqsave(&quarantine_lock, flags);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		WRITE_ONCE(quarantine_size, quarantine_size + temp.bytes);
 		qlist_move_all(&temp, &global_quarantine[quarantine_tail]);
 		if (global_quarantine[quarantine_tail].bytes >=
@@ -203,7 +210,11 @@ void quarantine_put(struct kasan_free_meta *info, struct kmem_cache *cache)
 			if (new_tail != quarantine_head)
 				quarantine_tail = new_tail;
 		}
+<<<<<<< HEAD
 		spin_unlock(&quarantine_lock);
+=======
+		spin_unlock_irqrestore(&quarantine_lock, flags);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	local_irq_restore(flags);
@@ -311,6 +322,7 @@ void quarantine_remove_cache(struct kmem_cache *cache)
 	on_each_cpu(per_cpu_remove_cache, cache, 1);
 
 	spin_lock_irqsave(&quarantine_lock, flags);
+<<<<<<< HEAD
 	for (i = 0; i < QUARANTINE_BATCHES; i++) {
 		if (qlist_empty(&global_quarantine[i]))
 			continue;
@@ -320,6 +332,10 @@ void quarantine_remove_cache(struct kmem_cache *cache)
 		cond_resched();
 		spin_lock_irqsave(&quarantine_lock, flags);
 	}
+=======
+	for (i = 0; i < QUARANTINE_BATCHES; i++)
+		qlist_move_cache(&global_quarantine[i], &to_free, cache);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	spin_unlock_irqrestore(&quarantine_lock, flags);
 
 	qlist_free_all(&to_free, cache);

@@ -132,8 +132,13 @@ static struct quirk_entry quirk_asus_forceals = {
 	.wmi_force_als_set = true,
 };
 
+static struct quirk_entry quirk_asus_x550lb = {
+	.xusb2pr = 0x01D9,
+};
+
 static int dmi_matched(const struct dmi_system_id *dmi)
 {
+	pr_info("Identified laptop model '%s'\n", dmi->ident);
 	quirks = dmi->driver_data;
 	return 1;
 }
@@ -434,6 +439,7 @@ static const struct dmi_system_id asus_quirks[] = {
 	},
 	{
 		.callback = dmi_matched,
+<<<<<<< HEAD
 		.ident = "ASUSTeK COMPUTER INC. UX330UAK",
 		.matches = {
 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
@@ -443,6 +449,8 @@ static const struct dmi_system_id asus_quirks[] = {
 	},
 	{
 		.callback = dmi_matched,
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		.ident = "ASUSTeK COMPUTER INC. X550LB",
 		.matches = {
 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
@@ -450,6 +458,7 @@ static const struct dmi_system_id asus_quirks[] = {
 		},
 		.driver_data = &quirk_asus_x550lb,
 	},
+<<<<<<< HEAD
 	{
 		.callback = dmi_matched,
 		.ident = "ASUSTeK COMPUTER INC. UX430UQ",
@@ -459,6 +468,8 @@ static const struct dmi_system_id asus_quirks[] = {
 		},
 		.driver_data = &quirk_asus_forceals,
 	},
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	{},
 };
 

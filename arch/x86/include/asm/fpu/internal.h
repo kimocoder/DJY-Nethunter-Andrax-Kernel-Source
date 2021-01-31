@@ -482,17 +482,28 @@ extern int copy_fpstate_to_sigframe(void __user *buf, void __user *fp, int size)
 DECLARE_PER_CPU(struct fpu *, fpu_fpregs_owner_ctx);
 
 /*
- * Must be run with preemption disabled: this clears the fpu_fpregs_owner_ctx,
- * on this CPU.
+ * The in-register FPU state for an FPU context on a CPU is assumed to be
+ * valid if the fpu->last_cpu matches the CPU, and the fpu_fpregs_owner_ctx
+ * matches the FPU.
  *
- * This will disable any lazy FPU state restore of the current FPU state,
- * but if the current thread owns the FPU, it will still be saved by.
+ * If the FPU register state is valid, the kernel can skip restoring the
+ * FPU state from memory.
+ *
+ * Any code that clobbers the FPU registers or updates the in-memory
+ * FPU state for a task MUST let the rest of the kernel know that the
+ * FPU registers are no longer valid for this task.
+ *
+ * Either one of these invalidation functions is enough. Invalidate
+ * a resource you control: CPU if using the CPU for something else
+ * (with preemption disabled), FPU for the current task, or a task that
+ * is prevented from running by the current task.
  */
-static inline void __cpu_disable_lazy_restore(unsigned int cpu)
+static inline void __cpu_invalidate_fpregs_state(void)
 {
-	per_cpu(fpu_fpregs_owner_ctx, cpu) = NULL;
+	__this_cpu_write(fpu_fpregs_owner_ctx, NULL);
 }
 
+<<<<<<< HEAD
 static inline int fpu_want_lazy_restore(struct fpu *fpu, unsigned int cpu)
 {
 	return fpu == this_cpu_read_stable(fpu_fpregs_owner_ctx) && cpu == fpu->last_cpu;
@@ -500,6 +511,23 @@ static inline int fpu_want_lazy_restore(struct fpu *fpu, unsigned int cpu)
 
 
 static inline void __fpregs_deactivate(struct fpu *fpu)
+=======
+static inline void __fpu_invalidate_fpregs_state(struct fpu *fpu)
+{
+	fpu->last_cpu = -1;
+}
+
+static inline int fpregs_state_valid(struct fpu *fpu, unsigned int cpu)
+{
+	return fpu == this_cpu_read_stable(fpu_fpregs_owner_ctx) && cpu == fpu->last_cpu;
+}
+
+/*
+ * These generally need preemption protection to work,
+ * do try to avoid using these on their own:
+ */
+static inline void fpregs_deactivate(struct fpu *fpu)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	WARN_ON_FPU(!fpu->fpregs_active);
 
@@ -508,7 +536,11 @@ static inline void __fpregs_deactivate(struct fpu *fpu)
 	trace_x86_fpu_regs_deactivated(fpu);
 }
 
+<<<<<<< HEAD
 static inline void __fpregs_activate(struct fpu *fpu)
+=======
+static inline void fpregs_activate(struct fpu *fpu)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	WARN_ON_FPU(fpu->fpregs_active);
 
@@ -533,6 +565,7 @@ static inline int fpregs_active(void)
 }
 
 /*
+<<<<<<< HEAD
  * These generally need preemption protection to work,
  * do try to avoid using these on their own.
  */
@@ -547,22 +580,22 @@ static inline void fpregs_deactivate(struct fpu *fpu)
 }
 
 /*
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  * FPU state switching for scheduling.
  *
  * This is a two-stage process:
  *
- *  - switch_fpu_prepare() saves the old state and
- *    sets the new state of the CR0.TS bit. This is
- *    done within the context of the old process.
+ *  - switch_fpu_prepare() saves the old state.
+ *    This is done within the context of the old process.
  *
  *  - switch_fpu_finish() restores the new state as
  *    necessary.
  */
-typedef struct { int preload; } fpu_switch_t;
-
-static inline fpu_switch_t
-switch_fpu_prepare(struct fpu *old_fpu, struct fpu *new_fpu, int cpu)
+static inline void
+switch_fpu_prepare(struct fpu *old_fpu, int cpu)
 {
+<<<<<<< HEAD
 	fpu_switch_t fpu;
 
 	/*
@@ -572,6 +605,8 @@ switch_fpu_prepare(struct fpu *old_fpu, struct fpu *new_fpu, int cpu)
 	fpu.preload = static_cpu_has(X86_FEATURE_FPU) &&
 		      new_fpu->fpstate_active;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (old_fpu->fpregs_active) {
 		if (!copy_fpregs_to_fpstate(old_fpu))
 			old_fpu->last_cpu = -1;
@@ -581,6 +616,7 @@ switch_fpu_prepare(struct fpu *old_fpu, struct fpu *new_fpu, int cpu)
 		/* But leave fpu_fpregs_owner_ctx! */
 		old_fpu->fpregs_active = 0;
 		trace_x86_fpu_regs_deactivated(old_fpu);
+<<<<<<< HEAD
 
 		/* Don't change CR0.TS if we just switch! */
 		if (fpu.preload) {
@@ -599,6 +635,10 @@ switch_fpu_prepare(struct fpu *old_fpu, struct fpu *new_fpu, int cpu)
 		}
 	}
 	return fpu;
+=======
+	} else
+		old_fpu->last_cpu = -1;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 /*
@@ -606,15 +646,19 @@ switch_fpu_prepare(struct fpu *old_fpu, struct fpu *new_fpu, int cpu)
  */
 
 /*
- * By the time this gets called, we've already cleared CR0.TS and
- * given the process the FPU if we are going to preload the FPU
- * state - all we need to do is to conditionally restore the register
- * state itself.
+ * Set up the userspace FPU context for the new task, if the task
+ * has used the FPU.
  */
-static inline void switch_fpu_finish(struct fpu *new_fpu, fpu_switch_t fpu_switch)
+static inline void switch_fpu_finish(struct fpu *new_fpu, int cpu)
 {
-	if (fpu_switch.preload)
-		copy_kernel_to_fpregs(&new_fpu->state);
+	bool preload = static_cpu_has(X86_FEATURE_FPU) &&
+		       new_fpu->fpstate_active;
+
+	if (preload) {
+		if (!fpregs_state_valid(new_fpu, cpu))
+			copy_kernel_to_fpregs(&new_fpu->state);
+		fpregs_activate(new_fpu);
+	}
 }
 
 /*

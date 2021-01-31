@@ -40,12 +40,6 @@
 #include <asm/nospec-branch.h>
 #include <linux/err.h>
 
-/* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
-#include <linux/elf-em.h>
-#define AUDIT_ARCH_X86_64			(EM_X86_64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-#define __AUDIT_ARCH_64BIT			0x80000000
-#define __AUDIT_ARCH_LE				0x40000000
-
 .code64
 .section .entry.text, "ax"
 
@@ -411,6 +405,7 @@ END(irq_entries_start)
 	ALLOC_PT_GPREGS_ON_STACK
 	SAVE_C_REGS
 	SAVE_EXTRA_REGS
+	ENCODE_FRAME_POINTER
 
 	testb	$3, CS(%rsp)
 	jz	1f
@@ -929,6 +924,7 @@ ENTRY(xen_failsafe_callback)
 	ALLOC_PT_GPREGS_ON_STACK
 	SAVE_C_REGS
 	SAVE_EXTRA_REGS
+	ENCODE_FRAME_POINTER
 	jmp	error_exit
 END(xen_failsafe_callback)
 
@@ -976,6 +972,7 @@ ENTRY(paranoid_entry)
 	cld
 	SAVE_C_REGS 8
 	SAVE_EXTRA_REGS 8
+	ENCODE_FRAME_POINTER 8
 	movl	$1, %ebx
 	movl	$MSR_GS_BASE, %ecx
 	rdmsr
@@ -1055,6 +1052,7 @@ ENTRY(error_entry)
 	cld
 	SAVE_C_REGS 8
 	SAVE_EXTRA_REGS 8
+<<<<<<< HEAD
 	/*
 	 * error_entry() always returns with a kernel gsbase and
 	 * CR3.  We must also have a kernel CR3/gsbase before
@@ -1062,6 +1060,10 @@ ENTRY(error_entry)
 	 * the kernel CR3 here.
 	 */
 	SWITCH_KERNEL_CR3
+=======
+	ENCODE_FRAME_POINTER 8
+	xorl	%ebx, %ebx
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	testb	$3, CS+8(%rsp)
 	jz	.Lerror_kernelspace
 
@@ -1245,6 +1247,7 @@ ENTRY(nmi)
 	pushq	%r13		/* pt_regs->r13 */
 	pushq	%r14		/* pt_regs->r14 */
 	pushq	%r15		/* pt_regs->r15 */
+	ENCODE_FRAME_POINTER
 
 	/*
 	 * At this point we no longer need to worry about stack damage
@@ -1279,12 +1282,16 @@ ENTRY(nmi)
 
 	/*
 	 * Return back to user mode.  We must *not* do the normal exit
+<<<<<<< HEAD
 	 * work, because we don't want to enable interrupts.  Do not
 	 * switch to user CR3: we might be going back to kernel code
 	 * that had a user CR3 set.
+=======
+	 * work, because we don't want to enable interrupts.
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	 */
 	SWAPGS
-	jmp	restore_c_regs_and_iret
+	jmp	restore_regs_and_iret
 
 .Lnmi_from_kernel:
 	/*

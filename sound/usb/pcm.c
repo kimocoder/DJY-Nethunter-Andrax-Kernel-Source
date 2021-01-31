@@ -342,6 +342,7 @@ static int set_sync_ep_implicit_fb_quirk(struct snd_usb_substream *subs,
 	case USB_ID(0x0763, 0x2080): /* M-Audio FastTrack Ultra */
 	case USB_ID(0x0763, 0x2081):
 		ep = 0x81;
+<<<<<<< HEAD
 		ifnum = 2;
 		goto add_sync_ep_from_ifnum;
 	case USB_ID(0x2466, 0x8003): /* Fractal Audio Axe-Fx II */
@@ -352,6 +353,25 @@ static int set_sync_ep_implicit_fb_quirk(struct snd_usb_substream *subs,
 		ep = 0x81;
 		ifnum = 1;
 		goto add_sync_ep_from_ifnum;
+=======
+		iface = usb_ifnum_to_if(dev, 2);
+
+		if (!iface || iface->num_altsetting == 0)
+			return -EINVAL;
+
+		alts = &iface->altsetting[1];
+		goto add_sync_ep;
+	case USB_ID(0x2466, 0x8003):
+		ep = 0x86;
+		iface = usb_ifnum_to_if(dev, 2);
+
+		if (!iface || iface->num_altsetting == 0)
+			return -EINVAL;
+
+		alts = &iface->altsetting[1];
+		goto add_sync_ep;
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	if (attr == USB_ENDPOINT_SYNC_ASYNC &&
@@ -898,17 +918,18 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		goto unlock;
 
-	iface = usb_ifnum_to_if(subs->dev, subs->cur_audiofmt->iface);
-	alts = &iface->altsetting[subs->cur_audiofmt->altset_idx];
-	ret = snd_usb_init_sample_rate(subs->stream->chip,
-				       subs->cur_audiofmt->iface,
-				       alts,
-				       subs->cur_audiofmt,
-				       subs->cur_rate);
-	if (ret < 0)
-		goto unlock;
-
 	if (subs->need_setup_ep) {
+
+		iface = usb_ifnum_to_if(subs->dev, subs->cur_audiofmt->iface);
+		alts = &iface->altsetting[subs->cur_audiofmt->altset_idx];
+		ret = snd_usb_init_sample_rate(subs->stream->chip,
+					       subs->cur_audiofmt->iface,
+					       alts,
+					       subs->cur_audiofmt,
+					       subs->cur_rate);
+		if (ret < 0)
+			goto unlock;
+
 		ret = configure_endpoint(subs);
 		if (ret < 0)
 			goto unlock;

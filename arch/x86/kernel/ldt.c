@@ -45,11 +45,15 @@ static void __free_ldt_struct(struct ldt_struct *ldt)
 }
 
 /* The caller must call finalize_ldt_struct on the result. LDT starts zeroed. */
-static struct ldt_struct *alloc_ldt_struct(int size)
+static struct ldt_struct *alloc_ldt_struct(unsigned int size)
 {
 	struct ldt_struct *new_ldt;
+<<<<<<< HEAD
 	int alloc_size;
 	int ret;
+=======
+	unsigned int alloc_size;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (size > LDT_ENTRIES)
 		return NULL;
@@ -112,7 +116,15 @@ static void free_ldt_struct(struct ldt_struct *ldt)
 	kaiser_remove_mapping((unsigned long)ldt->entries,
 			      ldt->size * LDT_ENTRY_SIZE);
 	paravirt_free_ldt(ldt->entries, ldt->size);
+<<<<<<< HEAD
 	__free_ldt_struct(ldt);
+=======
+	if (ldt->size * LDT_ENTRY_SIZE > PAGE_SIZE)
+		vfree_atomic(ldt->entries);
+	else
+		free_page((unsigned long)ldt->entries);
+	kfree(ldt);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 /*
@@ -223,11 +235,11 @@ static int read_default_ldt(void __user *ptr, unsigned long bytecount)
 static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
 {
 	struct mm_struct *mm = current->mm;
+	struct ldt_struct *new_ldt, *old_ldt;
+	unsigned int oldsize, newsize;
+	struct user_desc ldt_info;
 	struct desc_struct ldt;
 	int error;
-	struct user_desc ldt_info;
-	int oldsize, newsize;
-	struct ldt_struct *new_ldt, *old_ldt;
 
 	error = -EINVAL;
 	if (bytecount != sizeof(ldt_info))
@@ -265,7 +277,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
 
 	old_ldt = mm->context.ldt;
 	oldsize = old_ldt ? old_ldt->size : 0;
-	newsize = max((int)(ldt_info.entry_number + 1), oldsize);
+	newsize = max(ldt_info.entry_number + 1, oldsize);
 
 	error = -ENOMEM;
 	new_ldt = alloc_ldt_struct(newsize);

@@ -178,12 +178,18 @@ static void poll_one_napi(struct napi_struct *napi)
 static void poll_napi(struct net_device *dev)
 {
 	struct napi_struct *napi;
+	int cpu = smp_processor_id();
 
+<<<<<<< HEAD
 	list_for_each_entry_rcu(napi, &dev->napi_list, dev_list) {
 		if (napi->poll_owner != smp_processor_id() &&
 		    spin_trylock(&napi->poll_lock)) {
+=======
+	list_for_each_entry(napi, &dev->napi_list, dev_list) {
+		if (cmpxchg(&napi->poll_owner, -1, cpu) == -1) {
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			poll_one_napi(napi);
-			spin_unlock(&napi->poll_lock);
+			smp_store_release(&napi->poll_owner, -1);
 		}
 	}
 }

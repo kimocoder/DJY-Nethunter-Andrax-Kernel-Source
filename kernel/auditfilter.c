@@ -363,6 +363,7 @@ static int audit_field_valid(struct audit_entry *entry, struct audit_field *f)
 	case AUDIT_EXIT:
 	case AUDIT_SUCCESS:
 	case AUDIT_INODE:
+	case AUDIT_SESSIONID:
 		/* bit ops are only useful on syscall args */
 		if (f->op == Audit_bitmask || f->op == Audit_bittest)
 			return -EINVAL;
@@ -477,6 +478,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
 			if (!gid_valid(f->gid))
 				goto exit_free;
 			break;
+		case AUDIT_SESSIONID:
 		case AUDIT_ARCH:
 			f->val = f_val;
 			entry->rule.arch_f = f;
@@ -1081,8 +1083,7 @@ static void audit_log_rule_change(char *action, struct audit_krule *rule, int re
 		return;
 	audit_log_format(ab, "auid=%u ses=%u" ,loginuid, sessionid);
 	audit_log_task_context(ab);
-	audit_log_format(ab, " op=");
-	audit_log_string(ab, action);
+	audit_log_format(ab, " op=%s", action);
 	audit_log_key(ab, rule->filterkey);
 	audit_log_format(ab, " list=%d res=%d", rule->listnr, res);
 	audit_log_end(ab);

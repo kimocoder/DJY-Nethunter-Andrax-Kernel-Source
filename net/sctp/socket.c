@@ -4445,10 +4445,7 @@ int sctp_transport_walk_start(struct rhashtable_iter *iter)
 {
 	int err;
 
-	err = rhashtable_walk_init(&sctp_transport_hashtable, iter,
-				   GFP_KERNEL);
-	if (err)
-		return err;
+	rhltable_walk_enter(&sctp_transport_hashtable, iter);
 
 	err = rhashtable_walk_start(iter);
 	if (err && err != -EAGAIN) {
@@ -4538,19 +4535,24 @@ int sctp_transport_lookup_process(int (*cb)(struct sctp_transport *, void *),
 				  const union sctp_addr *paddr, void *p)
 {
 	struct sctp_transport *transport;
-	int err = -ENOENT;
+	int err;
 
 	rcu_read_lock();
 	transport = sctp_addrs_lookup_transport(net, laddr, paddr);
+<<<<<<< HEAD
 	if (!transport || !sctp_transport_hold(transport)) {
 		rcu_read_unlock();
 		goto out;
 	}
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	rcu_read_unlock();
+	if (!transport)
+		return -ENOENT;
+
 	err = cb(transport, p);
 	sctp_transport_put(transport);
 
-out:
 	return err;
 }
 EXPORT_SYMBOL_GPL(sctp_transport_lookup_process);

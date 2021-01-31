@@ -155,6 +155,7 @@ config UIO_MF624
 
 	  If you compile this as a module, it will be called uio_mf624.
 
+<<<<<<< HEAD
 config UIO_MSM_SHAREDMEM
 	bool "MSM shared memory driver"
 	default n
@@ -162,4 +163,15 @@ config UIO_MSM_SHAREDMEM
 	  Provides the clients with their respective alloted shared memory
 	  addresses which are used as transport buffer.
 
+=======
+config UIO_HV_GENERIC
+	tristate "Generic driver for Hyper-V VMBus"
+	depends on HYPERV
+	help
+	  Generic driver that you can bind, dynamically, to any
+	  Hyper-V VMBus device. It is useful to provide direct access
+	  to network and storage devices from userspace.
+
+	  If you compile this as a module, it will be called uio_hv_generic.
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 endif

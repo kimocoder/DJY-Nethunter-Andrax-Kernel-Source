@@ -10,9 +10,7 @@
 #include <asm/ppc-opcode.h>
 #include <asm/firmware.h>
 
-#ifndef __ASSEMBLY__
-#error __FILE__ should only be used in assembler files
-#else
+#ifdef __ASSEMBLY__
 
 #define SZL			(BITS_PER_LONG/8)
 
@@ -265,10 +263,14 @@ n:
  * latter is for those that incdentially must be excluded from probing
  * and allows them to be linked at more optimal location within text.
  */
+#ifdef CONFIG_KPROBES
 #define _ASM_NOKPROBE_SYMBOL(entry)			\
 	.pushsection "_kprobe_blacklist","aw";		\
 	PPC_LONG (entry) ;				\
 	.popsection
+#else
+#define _ASM_NOKPROBE_SYMBOL(entry)
+#endif
 
 #define FUNC_START(name)	_GLOBAL(name)
 #define FUNC_END(name)
@@ -779,6 +781,7 @@ END_FTR_SECTION_IFCLR(CPU_FTR_601)
 	.long 0xa6037b7d; /* mtsrr1 r11				*/ \
 	.long 0x2400004c  /* rfid				*/
 #endif /* !CONFIG_PPC_BOOK3E */
+
 #endif /*  __ASSEMBLY__ */
 
 /*
@@ -791,6 +794,7 @@ END_FTR_SECTION_IFCLR(CPU_FTR_601)
 	stringify_in_c(.long (_target) - . ;)	\
 	stringify_in_c(.previous)
 
+<<<<<<< HEAD
 #ifdef CONFIG_PPC_FSL_BOOK3E
 #define BTB_FLUSH(reg)			\
 	lis reg,BUCSR_INIT@h;		\
@@ -801,4 +805,6 @@ END_FTR_SECTION_IFCLR(CPU_FTR_601)
 #define BTB_FLUSH(reg)
 #endif /* CONFIG_PPC_FSL_BOOK3E */
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif /* _ASM_POWERPC_PPC_ASM_H */

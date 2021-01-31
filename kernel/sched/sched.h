@@ -628,11 +628,18 @@ struct dl_rq {
 
 #ifdef CONFIG_SMP
 
+<<<<<<< HEAD
 struct max_cpu_capacity {
 	raw_spinlock_t lock;
 	unsigned long val;
 	int cpu;
 };
+=======
+static inline bool sched_asym_prefer(int a, int b)
+{
+	return arch_asym_cpu_priority(a) > arch_asym_cpu_priority(b);
+}
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /*
  * We add the notion of a root-domain which will be used to define per-domain
@@ -1163,7 +1170,10 @@ struct sched_group_capacity {
 	 * for a single CPU.
 	 */
 	unsigned long capacity;
+<<<<<<< HEAD
 	unsigned long max_capacity; /* Max per-cpu capacity in group */
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	unsigned long min_capacity; /* Min per-CPU capacity in group */
 	unsigned long next_update;
 	int imbalance; /* XXX unrelated to capacity but shared group state */
@@ -1177,7 +1187,11 @@ struct sched_group {
 
 	unsigned int group_weight;
 	struct sched_group_capacity *sgc;
+<<<<<<< HEAD
 	const struct sched_group_energy *sge;
+=======
+	int asym_prefer_cpu;		/* cpu of highest priority in group */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/*
 	 * The CPUs this group covers.

@@ -443,6 +443,12 @@ int __init xen_evtchn_fifo_init(void)
 
 	evtchn_ops = &evtchn_ops_fifo;
 
+<<<<<<< HEAD
+=======
+	cpuhp_setup_state_nocalls(CPUHP_XEN_EVTCHN_PREPARE,
+				  "xen/evtchn:prepare",
+				  xen_evtchn_cpu_prepare, xen_evtchn_cpu_dead);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 out:
 	put_cpu();
 	return ret;

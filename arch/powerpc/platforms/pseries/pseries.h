@@ -79,6 +79,27 @@ extern struct pci_controller_ops pseries_pci_controller_ops;
 
 unsigned long pseries_memory_block_size(void);
 
+<<<<<<< HEAD
 void pseries_setup_rfi_flush(void);
+=======
+extern int CMO_PrPSP;
+extern int CMO_SecPSP;
+extern unsigned long CMO_PageSize;
+
+static inline int cmo_get_primary_psp(void)
+{
+	return CMO_PrPSP;
+}
+
+static inline int cmo_get_secondary_psp(void)
+{
+	return CMO_SecPSP;
+}
+
+static inline unsigned long cmo_get_page_size(void)
+{
+	return CMO_PageSize;
+}
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #endif /* _PSERIES_PSERIES_H */

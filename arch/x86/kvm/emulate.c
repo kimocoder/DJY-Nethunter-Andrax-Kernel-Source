@@ -160,9 +160,11 @@
 #define Src2GS      (OpGS << Src2Shift)
 #define Src2Mask    (OpMask << Src2Shift)
 #define Mmx         ((u64)1 << 40)  /* MMX Vector instruction */
+#define AlignMask   ((u64)7 << 41)
 #define Aligned     ((u64)1 << 41)  /* Explicitly aligned (e.g. MOVDQA) */
-#define Unaligned   ((u64)1 << 42)  /* Explicitly unaligned (e.g. MOVDQU) */
-#define Avx         ((u64)1 << 43)  /* Advanced Vector Extensions */
+#define Unaligned   ((u64)2 << 41)  /* Explicitly unaligned (e.g. MOVDQU) */
+#define Avx         ((u64)3 << 41)  /* Advanced Vector Extensions */
+#define Aligned16   ((u64)4 << 41)  /* Aligned to 16 byte boundary (e.g. FXSAVE) */
 #define Fastop      ((u64)1 << 44)  /* Use opcode::u.fastop */
 #define NoWrite     ((u64)1 << 45)  /* No writeback */
 #define SrcWrite    ((u64)1 << 46)  /* Write back src operand */
@@ -660,6 +662,7 @@ static void set_segment_selector(struct x86_emulate_ctxt *ctxt, u16 selector,
  */
 static unsigned insn_alignment(struct x86_emulate_ctxt *ctxt, unsigned size)
 {
+<<<<<<< HEAD
 	if (likely(size < 16))
 		return 1;
 
@@ -673,6 +676,23 @@ static unsigned insn_alignment(struct x86_emulate_ctxt *ctxt, unsigned size)
 		return 16;
 	else
 		return size;
+=======
+	u64 alignment = ctxt->d & AlignMask;
+
+	if (likely(size < 16))
+		return 1;
+
+	switch (alignment) {
+	case Unaligned:
+	case Avx:
+		return 1;
+	case Aligned16:
+		return 16;
+	case Aligned:
+	default:
+		return size;
+	}
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static __always_inline int __linearize(struct x86_emulate_ctxt *ctxt,
@@ -4009,7 +4029,11 @@ static int em_fxsave(struct x86_emulate_ctxt *ctxt)
 	else
 		size = offsetof(struct fxregs_state, xmm_space[0]);
 
+<<<<<<< HEAD
 	return segmented_write_std(ctxt, ctxt->memop.addr.mem, &fx_state, size);
+=======
+	return segmented_write(ctxt, ctxt->memop.addr.mem, &fx_state, size);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static int fxrstor_fixup(struct x86_emulate_ctxt *ctxt,
@@ -4051,7 +4075,11 @@ static int em_fxrstor(struct x86_emulate_ctxt *ctxt)
 	if (rc != X86EMUL_CONTINUE)
 		return rc;
 
+<<<<<<< HEAD
 	rc = segmented_read_std(ctxt, ctxt->memop.addr.mem, &fx_state, 512);
+=======
+	rc = segmented_read(ctxt, ctxt->memop.addr.mem, &fx_state, 512);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (rc != X86EMUL_CONTINUE)
 		return rc;
 

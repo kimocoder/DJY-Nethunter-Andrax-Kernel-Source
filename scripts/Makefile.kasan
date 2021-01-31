@@ -37,6 +37,10 @@ else
 
 endif
 
+<<<<<<< HEAD
 CFLAGS_KASAN_NOSANITIZE := -fno-builtin
 
+=======
+CFLAGS_KASAN += $(call cc-option, -fsanitize-address-use-after-scope)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 endif

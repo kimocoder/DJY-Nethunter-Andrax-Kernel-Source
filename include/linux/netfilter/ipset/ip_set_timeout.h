@@ -40,7 +40,7 @@ ip_set_timeout_uget(struct nlattr *tb)
 }
 
 static inline bool
-ip_set_timeout_expired(unsigned long *t)
+ip_set_timeout_expired(const unsigned long *t)
 {
 	return *t != IPSET_ELEM_PERMANENT && time_is_before_jiffies(*t);
 }
@@ -63,7 +63,7 @@ ip_set_timeout_set(unsigned long *timeout, u32 value)
 }
 
 static inline u32
-ip_set_timeout_get(unsigned long *timeout)
+ip_set_timeout_get(const unsigned long *timeout)
 {
 	u32 t;
 

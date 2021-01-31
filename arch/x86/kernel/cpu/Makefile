@@ -25,12 +25,18 @@ obj-y			+= bugs.o
 obj-$(CONFIG_PROC_FS)	+= proc.o
 obj-$(CONFIG_X86_FEATURE_NAMES) += capflags.o powerflags.o
 
+<<<<<<< HEAD
 obj-$(CONFIG_CPU_SUP_INTEL)		+= intel.o tsx.o
+=======
+obj-$(CONFIG_CPU_SUP_INTEL)		+= intel.o
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 obj-$(CONFIG_CPU_SUP_AMD)		+= amd.o
 obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
 obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
 obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
 obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
+
+obj-$(CONFIG_INTEL_RDT_A)	+= intel_rdt.o intel_rdt_rdtgroup.o intel_rdt_schemata.o
 
 obj-$(CONFIG_X86_MCE)			+= mcheck/
 obj-$(CONFIG_MTRR)			+= mtrr/

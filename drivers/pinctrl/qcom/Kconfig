@@ -99,12 +99,18 @@ config PINCTRL_MSM8916
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
 	  Qualcomm TLMM block found on the Qualcomm 8916 platform.
 
+<<<<<<< HEAD
 config PINCTRL_MSM8953
 	tristate "Qualcomm Technologies Inc MSM8953 pin controller driver"
+=======
+config PINCTRL_MSM8994
+	tristate "Qualcomm 8994 pin controller driver"
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	depends on GPIOLIB && OF
 	select PINCTRL_MSM
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+<<<<<<< HEAD
 	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
 	  Technologies Inc MSM8953 platform.
 	  If unsure say N.
@@ -176,6 +182,10 @@ config PINCTRL_SDXPOORWILLS
 	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
 	  Technologies Inc SDXPOORWILLS platform.
 
+=======
+	  Qualcomm TLMM block found in the Qualcomm 8994 platform. The
+	  Qualcomm 8992 platform is also supported by this driver.
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 config PINCTRL_MSM8996
 	tristate "Qualcomm MSM8996 pin controller driver"

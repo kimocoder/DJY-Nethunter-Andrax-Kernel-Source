@@ -69,8 +69,6 @@ xfs_inode_alloc(
 	ASSERT(!xfs_isiflocked(ip));
 	ASSERT(ip->i_ino == 0);
 
-	mrlock_init(&ip->i_iolock, MRLOCK_BARRIER, "xfsio", ip->i_ino);
-
 	/* initialise the xfs inode */
 	ip->i_ino = ino;
 	ip->i_mount = mp;
@@ -452,8 +450,8 @@ xfs_iget_cache_hit(
 		xfs_inode_clear_reclaim_tag(pag, ip->i_ino);
 		inode->i_state = I_NEW;
 
-		ASSERT(!rwsem_is_locked(&ip->i_iolock.mr_lock));
-		mrlock_init(&ip->i_iolock, MRLOCK_BARRIER, "xfsio", ip->i_ino);
+		ASSERT(!rwsem_is_locked(&inode->i_rwsem));
+		init_rwsem(&inode->i_rwsem);
 
 		spin_unlock(&ip->i_flags_lock);
 		spin_unlock(&pag->pag_ici_lock);
@@ -1122,11 +1120,19 @@ reclaim:
 	 * Because we use RCU freeing we need to ensure the inode always appears
 	 * to be reclaimed with an invalid inode number when in the free state.
 	 * We do this as early as possible under the ILOCK so that
+<<<<<<< HEAD
 	 * xfs_iflush_cluster() and xfs_ifree_cluster() can be guaranteed to
 	 * detect races with us here. By doing this, we guarantee that once
 	 * xfs_iflush_cluster() or xfs_ifree_cluster() has locked XFS_ILOCK that
 	 * it will see either a valid inode that will serialise correctly, or it
 	 * will see an invalid inode that it can skip.
+=======
+	 * xfs_iflush_cluster() can be guaranteed to detect races with us here.
+	 * By doing this, we guarantee that once xfs_iflush_cluster has locked
+	 * XFS_ILOCK that it will see either a valid, flushable inode that will
+	 * serialise correctly, or it will see a clean (and invalid) inode that
+	 * it can skip.
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	 */
 	spin_lock(&ip->i_flags_lock);
 	ip->i_flags = XFS_IRECLAIM;
@@ -1655,6 +1661,11 @@ xfs_inode_free_cowblocks(
 	int match;
 	struct xfs_ifork	*ifp = XFS_IFORK_PTR(ip, XFS_COW_FORK);
 
+<<<<<<< HEAD
+=======
+	ASSERT(!eofb || (eofb && eofb->eof_scan_owner != 0));
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/*
 	 * Just clear the tag if we have an empty cow fork or none at all. It's
 	 * possible the inode was fully unshared since it was originally tagged.

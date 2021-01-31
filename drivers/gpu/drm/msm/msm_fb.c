@@ -194,9 +194,15 @@ static void msm_framebuffer_kunmap(struct drm_framebuffer *fb)
 int msm_framebuffer_prepare(struct drm_framebuffer *fb,
 		struct msm_gem_address_space *aspace)
 {
+<<<<<<< HEAD
 	struct msm_framebuffer *msm_fb;
 	int ret, i, n;
 	uint32_t iova;
+=======
+	struct msm_framebuffer *msm_fb = to_msm_framebuffer(fb);
+	int ret, i, n = drm_format_num_planes(fb->pixel_format);
+	uint64_t iova;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (!fb) {
 		DRM_ERROR("from:%pS null fb\n", __builtin_return_address(0));
@@ -206,8 +212,13 @@ int msm_framebuffer_prepare(struct drm_framebuffer *fb,
 	msm_fb = to_msm_framebuffer(fb);
 	n = drm_format_num_planes(fb->pixel_format);
 	for (i = 0; i < n; i++) {
+<<<<<<< HEAD
 		ret = msm_gem_get_iova(msm_fb->planes[i], aspace, &iova);
 		DBG("FB[%u]: iova[%d]: %08x (%d)", fb->base.id, i, iova, ret);
+=======
+		ret = msm_gem_get_iova(msm_fb->planes[i], id, &iova);
+		DBG("FB[%u]: iova[%d]: %08llx (%d)", fb->base.id, i, iova, ret);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		if (ret)
 			return ret;
 	}

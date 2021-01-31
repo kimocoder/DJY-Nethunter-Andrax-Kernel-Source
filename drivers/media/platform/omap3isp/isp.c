@@ -480,8 +480,8 @@ void omap3isp_hist_dma_done(struct isp_device *isp)
 	    omap3isp_stat_pcr_busy(&isp->isp_hist)) {
 		/* Histogram cannot be enabled in this frame anymore */
 		atomic_set(&isp->isp_hist.buf_err, 1);
-		dev_dbg(isp->dev, "hist: Out of synchronization with "
-				  "CCDC. Ignoring next buffer.\n");
+		dev_dbg(isp->dev,
+			"hist: Out of synchronization with CCDC. Ignoring next buffer.\n");
 	}
 }
 
@@ -2127,23 +2127,18 @@ static int isp_of_parse_nodes(struct device *dev,
 		struct isp_async_subdev *isd;
 
 		isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
-		if (!isd) {
-			of_node_put(node);
-			return -ENOMEM;
-		}
+		if (!isd)
+			goto error;
 
 		notifier->subdevs[notifier->num_subdevs] = &isd->asd;
 
-		if (isp_of_parse_node(dev, node, isd)) {
-			of_node_put(node);
-			return -EINVAL;
-		}
+		if (isp_of_parse_node(dev, node, isd))
+			goto error;
 
 		isd->asd.match.of.node = of_graph_get_remote_port_parent(node);
-		of_node_put(node);
 		if (!isd->asd.match.of.node) {
 			dev_warn(dev, "bad remote port parent\n");
-			return -EINVAL;
+			goto error;
 		}
 
 		isd->asd.match_type = V4L2_ASYNC_MATCH_OF;
@@ -2151,6 +2146,10 @@ static int isp_of_parse_nodes(struct device *dev,
 	}
 
 	return notifier->num_subdevs;
+
+error:
+	of_node_put(node);
+	return -EINVAL;
 }
 
 static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,

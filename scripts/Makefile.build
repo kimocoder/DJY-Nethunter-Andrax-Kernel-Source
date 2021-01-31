@@ -557,8 +557,15 @@ else
 ref_prefix = EXTERN(
 endif
 
+<<<<<<< HEAD
 filter_export_list = sed -ne '/___ksymtab/s/.*+\([^ "]*\).*/$(ref_prefix)\1)/p'
 link_export_list = rm -f $(dummy-object);\
+=======
+quiet_cmd_export_list = EXPORTS $@
+cmd_export_list = $(OBJDUMP) -h $< | \
+	sed -ne '/___ksymtab/s/.*+\([^ ]*\).*/$(ref_prefix)\1)/p' >$(ksyms-lds);\
+	rm -f $(dummy-object);\
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	echo | $(CC) $(a_flags) -c -o $(dummy-object) -x assembler -;\
 	$(LD) $(ld_flags) -r -o $@ -T $(ksyms-lds) $(dummy-object);\
 	rm $(dummy-object) $(ksyms-lds)
@@ -614,15 +621,20 @@ cmd_link_multi-link = $(LD) $(ld_flags) -r -o $@ $(link_multi_deps) $(cmd_secana
 
 ifdef CONFIG_THIN_ARCHIVES
   quiet_cmd_link_multi-y = AR      $@
+<<<<<<< HEAD
   cmd_link_multi-y = $(update_lto_symversions) \
 	rm -f $@; $(AR) rcSTP$(KBUILD_ARFLAGS) $@ $(link_multi_deps) \
 	$(update_lto_symtable)
+=======
+  cmd_link_multi-y = rm -f $@; $(AR) rcST$(KBUILD_ARFLAGS) $@ $(link_multi_deps)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 else
   quiet_cmd_link_multi-y = LD      $@
   cmd_link_multi-y = $(cmd_link_multi-link)
 endif
 
 quiet_cmd_link_multi-m = LD [M]  $@
+<<<<<<< HEAD
 
 ifdef CONFIG_LTO_CLANG
   # don't compile IR until needed
@@ -630,6 +642,9 @@ ifdef CONFIG_LTO_CLANG
 else
   cmd_link_multi-m = $(cmd_link_multi-link)
 endif
+=======
+cmd_link_multi-m = $(cmd_link_multi-link)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 $(multi-used-y): FORCE
 	$(call if_changed,link_multi-y)

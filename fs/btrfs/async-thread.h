@@ -85,6 +85,9 @@ void btrfs_set_work_high_priority(struct btrfs_work *work);
 struct btrfs_fs_info *btrfs_work_owner(struct btrfs_work *work);
 struct btrfs_fs_info *btrfs_workqueue_owner(struct __btrfs_workqueue *wq);
 bool btrfs_workqueue_normal_congested(struct btrfs_workqueue *wq);
+<<<<<<< HEAD
 void btrfs_flush_workqueue(struct btrfs_workqueue *wq);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif

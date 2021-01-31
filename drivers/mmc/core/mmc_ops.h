@@ -27,6 +27,7 @@ int mmc_spi_set_crc(struct mmc_host *host, int use_crc);
 int mmc_bus_test(struct mmc_card *card, u8 bus_width);
 int mmc_send_hpi_cmd(struct mmc_card *card, u32 *status);
 int mmc_can_ext_csd(struct mmc_card *card);
+<<<<<<< HEAD
 int mmc_discard_queue(struct mmc_host *host, u32 tasks);
 int mmc_switch_status_error(struct mmc_host *host, u32 status);
 int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
@@ -34,5 +35,13 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
 		bool ignore_crc);
 int __mmc_send_status(struct mmc_card *card, u32 *status,
 				    bool ignore_crc);
+=======
+int mmc_switch_status(struct mmc_card *card);
+int __mmc_switch_status(struct mmc_card *card, bool crc_err_fatal);
+int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+		unsigned int timeout_ms, unsigned char timing,
+		bool use_busy_signal, bool send_status,	bool retry_crc_err);
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif
 

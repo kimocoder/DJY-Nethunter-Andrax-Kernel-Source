@@ -792,8 +792,16 @@ static int __init rapl_pmu_init(void)
 	 * Install callbacks. Core will call them for each online cpu.
 	 */
 
+<<<<<<< HEAD
+=======
+	ret = cpuhp_setup_state(CPUHP_PERF_X86_RAPL_PREP, "perf/x86/rapl:prepare",
+				rapl_cpu_prepare, NULL);
+	if (ret)
+		goto out;
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	ret = cpuhp_setup_state(CPUHP_AP_PERF_X86_RAPL_ONLINE,
-				"AP_PERF_X86_RAPL_ONLINE",
+				"perf/x86/rapl:online",
 				rapl_cpu_online, rapl_cpu_offline);
 	if (ret)
 		goto out;

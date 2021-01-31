@@ -654,7 +654,7 @@ config LEDS_VERSATILE
 
 config LEDS_PM8058
 	tristate "LED Support for the Qualcomm PM8058 PMIC"
-	depends on MFD_PM8921_CORE
+	depends on MFD_PM8XXX
 	depends on LEDS_CLASS
 	help
 	  Choose this option if you want to use the LED drivers in
@@ -668,6 +668,7 @@ config LEDS_MLXCPLD
 	  This option enabled support for the LEDs on the Mellanox
 	  boards. Say Y to enabled these.
 
+<<<<<<< HEAD
 config LEDS_QPNP
 	tristate "Support for QPNP LEDs"
 	depends on LEDS_CLASS && SPMI
@@ -732,6 +733,26 @@ config LEDS_QPNP_VIBRATOR
 	  is connected on the VIB_DRV_N line and can be controlled
 	  manually or by the DTEST lines.It uses the android timed-output
 	  framework.
+=======
+config LEDS_USER
+	tristate "Userspace LED support"
+	depends on LEDS_CLASS
+	help
+	  This option enables support for userspace LEDs. Say 'y' to enable this
+	  support in kernel. To compile this driver as a module, choose 'm' here:
+	  the module will be called uleds.
+
+config LEDS_NIC78BX
+	tristate "LED support for NI PXI NIC78bx devices"
+	depends on LEDS_CLASS
+	depends on X86 && ACPI
+	help
+	  This option enables support for the User1 and User2 LEDs on NI
+	  PXI NIC78bx devices.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called leds-nic78bx.
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"

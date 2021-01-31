@@ -127,6 +127,7 @@ static inline enum bug_trap_type report_bug(unsigned long bug_addr,
 
 #endif	/* CONFIG_GENERIC_BUG */
 
+<<<<<<< HEAD
 #ifdef CONFIG_PANIC_ON_DATA_CORRUPTION
 #define PANIC_CORRUPTION 1
 #else
@@ -141,13 +142,28 @@ static inline __must_check bool check_data_corruption(bool v) { return v; }
 	check_data_corruption(({					 \
 		bool corruption = unlikely(condition);			 \
 		if (corruption) {					 \
+=======
+/*
+ * Since detected data corruption should stop operation on the affected
+ * structures, this returns false if the corruption condition is found.
+ */
+#define CHECK_DATA_CORRUPTION(condition, fmt, ...)			 \
+	do {								 \
+		if (unlikely(condition)) {				 \
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			if (IS_ENABLED(CONFIG_BUG_ON_DATA_CORRUPTION)) { \
 				pr_err(fmt, ##__VA_ARGS__);		 \
 				BUG();					 \
 			} else						 \
 				WARN(1, fmt, ##__VA_ARGS__);		 \
+<<<<<<< HEAD
 		}							 \
 		corruption;						 \
 	}))
+=======
+			return false;					 \
+		}							 \
+	} while (0)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #endif	/* _LINUX_BUG_H */

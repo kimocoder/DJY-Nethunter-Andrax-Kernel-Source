@@ -1315,7 +1315,11 @@ svc_process_common(struct svc_rqst *rqstp, struct kvec *argv, struct kvec *resv)
 	return 0;
 
  close:
+<<<<<<< HEAD
 	if (rqstp->rq_xprt && test_bit(XPT_TEMP, &rqstp->rq_xprt->xpt_flags))
+=======
+	if (test_bit(XPT_TEMP, &rqstp->rq_xprt->xpt_flags))
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		svc_close_xprt(rqstp->rq_xprt);
 	dprintk("svc: svc_process close\n");
 	return 0;

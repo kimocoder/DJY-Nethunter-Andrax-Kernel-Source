@@ -1,5 +1,9 @@
 #include <asm/ftrace.h>
+<<<<<<< HEAD
 #include <asm/uaccess.h>
+=======
+#include <linux/uaccess.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #include <asm/string.h>
 #include <asm/page.h>
 #include <asm/checksum.h>
@@ -10,11 +14,15 @@
 #include <asm/pgtable.h>
 #include <asm/special_insns.h>
 #include <asm/preempt.h>
+<<<<<<< HEAD
 #include <asm/asm.h>
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #ifndef CONFIG_X86_CMPXCHG64
 extern void cmpxchg8b_emu(void);
 #endif
+<<<<<<< HEAD
 
 #ifdef CONFIG_RETPOLINE
 #ifdef CONFIG_X86_32
@@ -38,3 +46,5 @@ INDIRECT_THUNK(si)
 INDIRECT_THUNK(di)
 INDIRECT_THUNK(bp)
 #endif /* CONFIG_RETPOLINE */
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

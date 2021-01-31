@@ -297,7 +297,11 @@ static int cpuacct_stats_show(struct seq_file *sf, void *v)
 	for (stat = 0; stat < CPUACCT_STAT_NSTATS; stat++) {
 		seq_printf(sf, "%s %lld\n",
 			   cpuacct_stat_desc[stat],
+<<<<<<< HEAD
 			   nsec_to_clock_t(val[stat]));
+=======
+			   (long long)cputime64_to_clock_t(val[stat]));
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	return 0;

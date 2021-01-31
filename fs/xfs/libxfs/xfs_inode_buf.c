@@ -384,7 +384,7 @@ xfs_log_dinode_to_disk(
 static bool
 xfs_dinode_verify(
 	struct xfs_mount	*mp,
-	struct xfs_inode	*ip,
+	xfs_ino_t		ino,
 	struct xfs_dinode	*dip)
 {
 	uint16_t		mode;
@@ -398,12 +398,17 @@ xfs_dinode_verify(
 	if (be64_to_cpu(dip->di_size) & (1ULL << 63))
 		return false;
 
+<<<<<<< HEAD
 	mode = be16_to_cpu(dip->di_mode);
 	if (mode && xfs_mode_to_ftype(mode) == XFS_DIR3_FT_UNKNOWN)
 		return false;
 
 	/* No zero-length symlinks/dirs. */
 	if ((S_ISLNK(mode) || S_ISDIR(mode)) && dip->di_size == 0)
+=======
+	/* No zero-length symlinks. */
+	if (S_ISLNK(be16_to_cpu(dip->di_mode)) && dip->di_size == 0)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		return false;
 
 	/* only version 3 or greater inodes are extensively verified here */
@@ -415,7 +420,7 @@ xfs_dinode_verify(
 	if (!xfs_verify_cksum((char *)dip, mp->m_sb.sb_inodesize,
 			      XFS_DINODE_CRC_OFF))
 		return false;
-	if (be64_to_cpu(dip->di_ino) != ip->i_ino)
+	if (be64_to_cpu(dip->di_ino) != ino)
 		return false;
 	if (!uuid_equal(&dip->di_uuid, &mp->m_sb.sb_meta_uuid))
 		return false;
@@ -450,7 +455,7 @@ xfs_dinode_calc_crc(
 		return;
 
 	ASSERT(xfs_sb_version_hascrc(&mp->m_sb));
-	crc = xfs_start_cksum((char *)dip, mp->m_sb.sb_inodesize,
+	crc = xfs_start_cksum_update((char *)dip, mp->m_sb.sb_inodesize,
 			      XFS_DINODE_CRC_OFF);
 	dip->di_crc = xfs_end_cksum(crc);
 }
@@ -507,7 +512,7 @@ xfs_iread(
 		return error;
 
 	/* even unallocated inodes are verified */
-	if (!xfs_dinode_verify(mp, ip, dip)) {
+	if (!xfs_dinode_verify(mp, ip->i_ino, dip)) {
 		xfs_alert(mp, "%s: validation failed for inode %lld failed",
 				__func__, ip->i_ino);
 

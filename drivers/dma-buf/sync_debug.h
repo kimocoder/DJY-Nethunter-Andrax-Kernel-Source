@@ -16,7 +16,7 @@
 #include <linux/list.h>
 #include <linux/rbtree.h>
 #include <linux/spinlock.h>
-#include <linux/fence.h>
+#include <linux/dma-fence.h>
 
 #include <linux/sync_file.h>
 #include <uapi/linux/sync_file.h>
@@ -45,9 +45,13 @@ struct sync_timeline {
 	struct list_head	sync_timeline_list;
 };
 
-static inline struct sync_timeline *fence_parent(struct fence *fence)
+static inline struct sync_timeline *dma_fence_parent(struct dma_fence *fence)
 {
+<<<<<<< HEAD
 	return container_of(fence->lock, struct sync_timeline, lock);
+=======
+	return container_of(fence->lock, struct sync_timeline, child_list_lock);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 /**
@@ -57,9 +61,15 @@ static inline struct sync_timeline *fence_parent(struct fence *fence)
  * @node: node in the sync timeline's tree
  */
 struct sync_pt {
+<<<<<<< HEAD
 	struct fence base;
 	struct list_head link;
 	struct rb_node node;
+=======
+	struct dma_fence base;
+	struct list_head child_list;
+	struct list_head active_list;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 };
 
 #ifdef CONFIG_SW_SYNC

@@ -37,7 +37,10 @@ struct usb_extcon_info {
 
 	struct gpio_desc *id_gpiod;
 	struct gpio_desc *vbus_gpiod;
+<<<<<<< HEAD
 	struct gpio_desc *trig_gpiod;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	int id_irq;
 	int vbus_irq;
 
@@ -67,7 +70,11 @@ static const unsigned int usb_extcon_cable[] = {
  * In case we have only one of these signals:
  * - VBUS only - we want to distinguish between [1] and [2], so ID is always 1.
  * - ID only - we want to distinguish between [1] and [4], so VBUS = ID.
+<<<<<<< HEAD
  */
+=======
+*/
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static void usb_extcon_detect_cable(struct work_struct *work)
 {
 	int id, vbus;
@@ -89,12 +96,15 @@ static void usb_extcon_detect_cable(struct work_struct *work)
 
 	if (!id) {
 		extcon_set_state_sync(info->edev, EXTCON_USB_HOST, true);
+<<<<<<< HEAD
 		if (info->trig_gpiod) {
 			gpiod_set_value(info->trig_gpiod, 1);
 			msleep(20);
 			gpiod_set_value(info->trig_gpiod, 0);
 			msleep(20);
 		}
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	} else {
 		if (vbus)
 			extcon_set_state_sync(info->edev, EXTCON_USB, true);
@@ -129,8 +139,11 @@ static int usb_extcon_probe(struct platform_device *pdev)
 	info->id_gpiod = devm_gpiod_get_optional(&pdev->dev, "id", GPIOD_IN);
 	info->vbus_gpiod = devm_gpiod_get_optional(&pdev->dev, "vbus",
 						   GPIOD_IN);
+<<<<<<< HEAD
 	info->trig_gpiod = devm_gpiod_get_optional(&pdev->dev, "trig",
 						   GPIOD_OUT_LOW);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (!info->id_gpiod && !info->vbus_gpiod) {
 		dev_err(dev, "failed to get gpios\n");
@@ -143,9 +156,12 @@ static int usb_extcon_probe(struct platform_device *pdev)
 	if (IS_ERR(info->vbus_gpiod))
 		return PTR_ERR(info->vbus_gpiod);
 
+<<<<<<< HEAD
 	if (IS_ERR(info->trig_gpiod))
 		return PTR_ERR(info->trig_gpiod);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	info->edev = devm_extcon_dev_allocate(dev, usb_extcon_cable);
 	if (IS_ERR(info->edev)) {
 		dev_err(dev, "failed to allocate extcon device\n");
@@ -180,8 +196,12 @@ static int usb_extcon_probe(struct platform_device *pdev)
 		ret = devm_request_threaded_irq(dev, info->id_irq, NULL,
 						usb_irq_handler,
 						IRQF_TRIGGER_RISING |
+<<<<<<< HEAD
 						IRQF_TRIGGER_FALLING |
 						IRQF_ONESHOT,
+=======
+						IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 						pdev->name, info);
 		if (ret < 0) {
 			dev_err(dev, "failed to request handler for ID IRQ\n");
@@ -199,8 +219,12 @@ static int usb_extcon_probe(struct platform_device *pdev)
 		ret = devm_request_threaded_irq(dev, info->vbus_irq, NULL,
 						usb_irq_handler,
 						IRQF_TRIGGER_RISING |
+<<<<<<< HEAD
 						IRQF_TRIGGER_FALLING |
 						IRQF_ONESHOT,
+=======
+						IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 						pdev->name, info);
 		if (ret < 0) {
 			dev_err(dev, "failed to request handler for VBUS IRQ\n");
@@ -295,8 +319,14 @@ static int usb_extcon_resume(struct device *dev)
 	if (info->vbus_gpiod)
 		enable_irq(info->vbus_irq);
 
+<<<<<<< HEAD
 	queue_delayed_work(system_power_efficient_wq,
 			   &info->wq_detcable, 0);
+=======
+	if (!device_may_wakeup(dev))
+		queue_delayed_work(system_power_efficient_wq,
+				   &info->wq_detcable, 0);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	return ret;
 }

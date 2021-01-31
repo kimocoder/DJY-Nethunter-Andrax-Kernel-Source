@@ -307,8 +307,12 @@
 			regulator-max-microvolt = <1320000>;
 			enable-gpios = <&pmic 6 GPIO_ACTIVE_HIGH>;
 			regulator-ramp-delay = <80>;
+<<<<<<< HEAD
 			regulator-enable-ramp-delay = <2000>;
 			regulator-settling-time-us = <160>;
+=======
+			regulator-enable-ramp-delay = <1000>;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		};
 	};
 };

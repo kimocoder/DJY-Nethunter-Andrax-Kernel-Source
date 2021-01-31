@@ -1,7 +1,7 @@
 #ifndef __FS_CEPH_MESSENGER_H
 #define __FS_CEPH_MESSENGER_H
 
-#include <linux/blk_types.h>
+#include <linux/bvec.h>
 #include <linux/kref.h>
 #include <linux/mutex.h>
 #include <linux/net.h>
@@ -30,9 +30,12 @@ struct ceph_connection_operations {
 	struct ceph_auth_handshake *(*get_authorizer) (
 				struct ceph_connection *con,
 			       int *proto, int force_new);
+<<<<<<< HEAD
 	int (*add_authorizer_challenge)(struct ceph_connection *con,
 					void *challenge_buf,
 					int challenge_buf_len);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	int (*verify_authorizer_reply) (struct ceph_connection *con);
 	int (*invalidate_authorizer)(struct ceph_connection *con);
 

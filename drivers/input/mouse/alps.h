@@ -54,6 +54,7 @@ enum SS4_PACKET_ID {
 
 #define SS4_MASK_NORMAL_BUTTONS		0x07
 
+<<<<<<< HEAD
 #define SS4PLUS_COUNT_PER_ELECTRODE	128
 #define SS4PLUS_NUMSENSOR_XOFFSET	16
 #define SS4PLUS_NUMSENSOR_YOFFSET	5
@@ -65,6 +66,17 @@ enum SS4_PACKET_ID {
 				)
 
 #define SS4_1F_X_V2(_b)		((_b[0] & 0x0007) |		\
+=======
+#define SS4_IS_IDLE_V2(_b)	(((_b[0]) == 0x18) &&		\
+				 ((_b[1]) == 0x10) &&		\
+				 ((_b[2]) == 0x00) &&		\
+				 ((_b[3] & 0x88) == 0x08) &&	\
+				 ((_b[4]) == 0x10) &&		\
+				 ((_b[5]) == 0x00)		\
+				)
+
+#define SS4_1F_X_V2(_b)		(((_b[0]) & 0x0007) |		\
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 				 ((_b[1] << 3) & 0x0078) |	\
 				 ((_b[1] << 2) & 0x0380) |	\
 				 ((_b[2] << 5) & 0x1C00)	\
@@ -119,6 +131,18 @@ enum SS4_PACKET_ID {
 #define SS4_IS_MF_CONTINUE(_b)	((_b[2] & 0x10) == 0x10)
 #define SS4_IS_5F_DETECTED(_b)	((_b[2] & 0x10) == 0x10)
 
+#define SS4_TS_X_V2(_b)		(s8)(				\
+				 ((_b[0] & 0x01) << 7) |	\
+				 (_b[1] & 0x7F)		\
+				)
+
+#define SS4_TS_Y_V2(_b)		(s8)(				\
+				 ((_b[3] & 0x01) << 7) |	\
+				 (_b[2] & 0x7F)		\
+				)
+
+#define SS4_TS_Z_V2(_b)		(s8)(_b[4] & 0x7F)
+
 
 #define SS4_MFPACKET_NO_AX		8160	/* X-Coordinate value */
 #define SS4_MFPACKET_NO_AY		4080	/* Y-Coordinate value */
@@ -166,7 +190,7 @@ struct alps_protocol_info {
  *   (aka command mode response) identifies the firmware minor version.  This
  *   can be used to distinguish different hardware models which are not
  *   uniquely identifiable through their E7 responses.
- * @protocol_info: information about protcol used by the device.
+ * @protocol_info: information about protocol used by the device.
  *
  * Many (but not all) ALPS touchpads can be identified by looking at the
  * values returned in the "E7 report" and/or the "EC report."  This table

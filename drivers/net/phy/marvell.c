@@ -240,7 +240,39 @@ static int marvell_config_aneg(struct phy_device *phydev)
 {
 	int err;
 
+<<<<<<< HEAD
 	err = marvell_set_polarity(phydev, phydev->mdix);
+=======
+	/* The Marvell PHY has an errata which requires
+	 * that certain registers get written in order
+	 * to restart autonegotiation */
+	err = phy_write(phydev, MII_BMCR, BMCR_RESET);
+
+	if (err < 0)
+		return err;
+
+	err = phy_write(phydev, 0x1d, 0x1f);
+	if (err < 0)
+		return err;
+
+	err = phy_write(phydev, 0x1e, 0x200c);
+	if (err < 0)
+		return err;
+
+	err = phy_write(phydev, 0x1d, 0x5);
+	if (err < 0)
+		return err;
+
+	err = phy_write(phydev, 0x1e, 0);
+	if (err < 0)
+		return err;
+
+	err = phy_write(phydev, 0x1e, 0x100);
+	if (err < 0)
+		return err;
+
+	err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (err < 0)
 		return err;
 
@@ -319,7 +351,7 @@ static int m88e1111_config_aneg(struct phy_device *phydev)
 	 */
 	err = phy_write(phydev, MII_BMCR, BMCR_RESET);
 
-	err = marvell_set_polarity(phydev, phydev->mdix);
+	err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
 	if (err < 0)
 		return err;
 
@@ -369,7 +401,7 @@ static int m88e1111_config_aneg(struct phy_device *phydev)
 static int marvell_of_reg_init(struct phy_device *phydev)
 {
 	const __be32 *paddr;
-	int len, i, saved_page, current_page, page_changed, ret;
+	int len, i, saved_page, current_page, ret;
 
 	if (!phydev->mdio.dev.of_node)
 		return 0;
@@ -382,7 +414,6 @@ static int marvell_of_reg_init(struct phy_device *phydev)
 	saved_page = phy_read(phydev, MII_MARVELL_PHY_PAGE);
 	if (saved_page < 0)
 		return saved_page;
-	page_changed = 0;
 	current_page = saved_page;
 
 	ret = 0;
@@ -396,7 +427,6 @@ static int marvell_of_reg_init(struct phy_device *phydev)
 
 		if (reg_page != current_page) {
 			current_page = reg_page;
-			page_changed = 1;
 			ret = phy_write(phydev, MII_MARVELL_PHY_PAGE, reg_page);
 			if (ret < 0)
 				goto err;
@@ -419,7 +449,7 @@ static int marvell_of_reg_init(struct phy_device *phydev)
 
 	}
 err:
-	if (page_changed) {
+	if (current_page != saved_page) {
 		i = phy_write(phydev, MII_MARVELL_PHY_PAGE, saved_page);
 		if (ret == 0)
 			ret = i;

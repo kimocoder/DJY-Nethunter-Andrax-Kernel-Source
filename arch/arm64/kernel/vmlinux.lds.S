@@ -241,11 +241,14 @@ SECTIONS
 	. += RESERVED_TTBR0_SIZE;
 #endif
 
+<<<<<<< HEAD
 #ifdef CONFIG_UNMAP_KERNEL_AT_EL0
 	tramp_pg_dir = .;
 	. += PAGE_SIZE;
 #endif
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	_end = .;
 
 	STABS_DEBUG

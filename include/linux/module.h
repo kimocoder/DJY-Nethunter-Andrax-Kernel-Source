@@ -404,7 +404,7 @@ struct module {
 	/* Arch-specific module values */
 	struct mod_arch_specific arch;
 
-	unsigned int taints;	/* same bits as kernel:tainted */
+	unsigned long taints;	/* same bits as kernel:taint_flags */
 
 #ifdef CONFIG_GENERIC_BUG
 	/* Support for BUG */
@@ -417,7 +417,7 @@ struct module {
 	/* Protected by RCU and/or module_mutex: use rcu_dereference() */
 	struct mod_kallsyms *kallsyms;
 	struct mod_kallsyms core_kallsyms;
-	
+
 	/* Section attributes */
 	struct module_sect_attrs *sect_attrs;
 

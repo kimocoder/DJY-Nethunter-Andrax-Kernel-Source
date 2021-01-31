@@ -65,6 +65,7 @@ void fpu__xstate_clear_all_cpu_caps(void)
 	setup_clear_cpu_cap(X86_FEATURE_AVX);
 	setup_clear_cpu_cap(X86_FEATURE_AVX2);
 	setup_clear_cpu_cap(X86_FEATURE_AVX512F);
+	setup_clear_cpu_cap(X86_FEATURE_AVX512IFMA);
 	setup_clear_cpu_cap(X86_FEATURE_AVX512PF);
 	setup_clear_cpu_cap(X86_FEATURE_AVX512ER);
 	setup_clear_cpu_cap(X86_FEATURE_AVX512CD);
@@ -73,6 +74,7 @@ void fpu__xstate_clear_all_cpu_caps(void)
 	setup_clear_cpu_cap(X86_FEATURE_AVX512VL);
 	setup_clear_cpu_cap(X86_FEATURE_MPX);
 	setup_clear_cpu_cap(X86_FEATURE_XGETBV1);
+	setup_clear_cpu_cap(X86_FEATURE_AVX512VBMI);
 	setup_clear_cpu_cap(X86_FEATURE_PKU);
 	setup_clear_cpu_cap(X86_FEATURE_AVX512_4VNNIW);
 	setup_clear_cpu_cap(X86_FEATURE_AVX512_4FMAPS);
@@ -888,6 +890,7 @@ int arch_set_user_pkey_access(struct task_struct *tsk, int pkey,
 	 */
 	if (!boot_cpu_has(X86_FEATURE_OSPKE))
 		return -EINVAL;
+<<<<<<< HEAD
 
 	/*
 	 * This code should only be called with valid 'pkey'
@@ -895,6 +898,8 @@ int arch_set_user_pkey_access(struct task_struct *tsk, int pkey,
 	 * if a bad value is observed.
 	 */
 	WARN_ON_ONCE(pkey >= arch_max_pkey());
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* Set the bits we need in PKRU:  */
 	if (init_val & PKEY_DISABLE_ACCESS)

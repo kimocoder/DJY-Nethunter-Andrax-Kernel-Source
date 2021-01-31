@@ -125,9 +125,23 @@ struct f2fs_dir_entry *f2fs_find_target_dentry(struct fscrypt_name *fname,
 			continue;
 		}
 
+<<<<<<< HEAD
 		if (de->hash_code == namehash &&
 		    fscrypt_match_name(fname, d->filename[bit_pos],
 				       le16_to_cpu(de->name_len)))
+=======
+		/* encrypted case */
+		de_name.name = d->filename[bit_pos];
+		de_name.len = le16_to_cpu(de->name_len);
+
+		/* show encrypted name */
+		if (fname->hash) {
+			if (de->hash_code == cpu_to_le32(fname->hash))
+				goto found;
+		} else if (de_name.len == name->len &&
+			de->hash_code == namehash &&
+			!memcmp(de_name.name, name->name, name->len))
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			goto found;
 
 		if (max_slots && max_len > *max_slots)
@@ -732,7 +746,11 @@ void f2fs_delete_entry(struct f2fs_dir_entry *dentry, struct page *page,
 		ClearPageUptodate(page);
 		clear_cold_data(page);
 		inode_dec_dirty_pages(dir);
+<<<<<<< HEAD
 		f2fs_remove_dirty_inode(dir);
+=======
+		remove_dirty_inode(dir);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 	f2fs_put_page(page, 1);
 }
@@ -831,13 +849,18 @@ int f2fs_fill_dentries(struct dir_context *ctx, struct f2fs_dentry_ptr *d,
 						(u32)de->hash_code, 0,
 						&de_name, fstr);
 			if (err)
+<<<<<<< HEAD
 				goto out;
+=======
+				return err;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 			de_name = *fstr;
 			fstr->len = save_len;
 		}
 
 		if (!dir_emit(ctx, de_name.name, de_name.len,
+<<<<<<< HEAD
 					le32_to_cpu(de->ino), d_type)) {
 			err = 1;
 			goto out;
@@ -845,13 +868,21 @@ int f2fs_fill_dentries(struct dir_context *ctx, struct f2fs_dentry_ptr *d,
 
 		if (readdir_ra)
 			f2fs_ra_node_page(sbi, le32_to_cpu(de->ino));
+=======
+					le32_to_cpu(de->ino), d_type))
+			return 1;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 		ctx->pos = start_pos + bit_pos;
 	}
+<<<<<<< HEAD
 out:
 	if (readdir_ra)
 		blk_finish_plug(&plug);
 	return err;
+=======
+	return 0;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static int f2fs_readdir(struct file *file, struct dir_context *ctx)
@@ -903,7 +934,11 @@ static int f2fs_readdir(struct file *file, struct dir_context *ctx)
 				err = 0;
 				continue;
 			} else {
+<<<<<<< HEAD
 				goto out_free;
+=======
+				goto out;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			}
 		}
 
@@ -914,16 +949,26 @@ static int f2fs_readdir(struct file *file, struct dir_context *ctx)
 		err = f2fs_fill_dentries(ctx, &d,
 				n * NR_DENTRY_IN_BLOCK, &fstr);
 		if (err) {
+<<<<<<< HEAD
 			f2fs_put_page(dentry_page, 0);
+=======
+			kunmap(dentry_page);
+			f2fs_put_page(dentry_page, 1);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			break;
 		}
 
 		f2fs_put_page(dentry_page, 0);
 	}
+<<<<<<< HEAD
 out_free:
 	fscrypt_fname_free_buffer(&fstr);
 out:
 	trace_f2fs_readdir(inode, start_pos, ctx->pos, err);
+=======
+out:
+	fscrypt_fname_free_buffer(&fstr);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	return err < 0 ? err : 0;
 }
 

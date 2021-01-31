@@ -297,9 +297,12 @@ int hv_ringbuffer_write(struct vmbus_channel *channel,
 	u64 prev_indices = 0;
 	unsigned long flags = 0;
 	struct hv_ring_buffer_info *outring_info = &channel->outbound;
+<<<<<<< HEAD
 
 	if (channel->rescind)
 		return -ENODEV;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	for (i = 0; i < kv_count; i++)
 		totalbytes_towrite += kv_list[i].iov_len;
@@ -353,10 +356,13 @@ int hv_ringbuffer_write(struct vmbus_channel *channel,
 		spin_unlock_irqrestore(&outring_info->ring_lock, flags);
 
 	hv_signal_on_write(old_write, channel, kick_q);
+<<<<<<< HEAD
 
 	if (channel->rescind)
 		return -ENODEV;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	return 0;
 }
 

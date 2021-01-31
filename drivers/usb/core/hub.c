@@ -6,6 +6,8 @@
  * (C) Copyright 1999 Gregory P. Smith
  * (C) Copyright 2001 Brad Hards (bhards@bigpond.net.au)
  *
+ * Released under the GPLv2 only.
+ * SPDX-License-Identifier: GPL-2.0
  */
 
 #include <linux/kernel.h>
@@ -27,7 +29,7 @@
 #include <linux/random.h>
 #include <linux/pm_qos.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/byteorder.h>
 
 #include "hub.h"
@@ -106,6 +108,7 @@ EXPORT_SYMBOL_GPL(ehci_cf_port_reset_rwsem);
 
 static void hub_release(struct kref *kref);
 static int usb_reset_and_verify_device(struct usb_device *udev);
+<<<<<<< HEAD
 static int hub_port_disable(struct usb_hub *hub, int port1, int set_state);
 static bool hub_port_warm_reset_required(struct usb_hub *hub, int port1,
 		u16 portstatus);
@@ -114,6 +117,10 @@ static bool hub_port_warm_reset_required(struct usb_hub *hub, int port1,
 unsigned int connected_usb_idVendor;
 unsigned int connected_usb_idProduct;
 unsigned int connected_usb_devnum = 0xff;
+=======
+static void hub_usb3_port_prepare_disable(struct usb_hub *hub,
+					  struct usb_port *port_dev);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 static inline char *portspeed(struct usb_hub *hub, int portstatus)
 {
@@ -932,6 +939,37 @@ static int hub_set_port_link_state(struct usb_hub *hub, int port1,
 }
 
 /*
+<<<<<<< HEAD
+=======
+ * USB-3 does not have a similar link state as USB-2 that will avoid negotiating
+ * a connection with a plugged-in cable but will signal the host when the cable
+ * is unplugged. Disable remote wake and set link state to U3 for USB-3 devices
+ */
+static int hub_port_disable(struct usb_hub *hub, int port1, int set_state)
+{
+	struct usb_port *port_dev = hub->ports[port1 - 1];
+	struct usb_device *hdev = hub->hdev;
+	int ret = 0;
+
+	if (!hub->error) {
+		if (hub_is_superspeed(hub->hdev)) {
+			hub_usb3_port_prepare_disable(hub, port_dev);
+			ret = hub_set_port_link_state(hub, port_dev->portnum,
+						      USB_SS_PORT_LS_U3);
+		} else {
+			ret = usb_clear_port_feature(hdev, port1,
+					USB_PORT_FEAT_ENABLE);
+		}
+	}
+	if (port_dev->child && set_state)
+		usb_set_device_state(port_dev->child, USB_STATE_NOTATTACHED);
+	if (ret && ret != -ENODEV)
+		dev_err(&port_dev->dev, "cannot disable (err = %d)\n", ret);
+	return ret;
+}
+
+/*
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  * Disable a port and mark a logical connect-change event, so that some
  * time later hub_wq will disconnect() any existing usb_device on the port
  * and will re-enumerate if there actually is a device attached.

@@ -944,6 +944,7 @@
  *	does not result in a change for the current association. Currently,
  *	only the %NL80211_ATTR_IE data is used and updated with this command.
  *
+<<<<<<< HEAD
  * @NL80211_CMD_SET_PMK: For offloaded 4-Way handshake, set the PMK or PMK-R0
  *	for the given authenticator address (specified with &NL80211_ATTR_MAC).
  *	When &NL80211_ATTR_PMKR0_NAME is set, &NL80211_ATTR_PMK specifies the
@@ -1023,6 +1024,8 @@
  *	OWE AKM by the host drivers that implement SME but rely
  *	on the user space for the cryptographic/DH IE processing in AP mode.
  *
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  * @NL80211_CMD_MAX: highest used command number
  * @__NL80211_CMD_AFTER_LAST: internal use
  */
@@ -1222,6 +1225,7 @@ enum nl80211_commands {
 
 	NL80211_CMD_UPDATE_CONNECT_PARAMS,
 
+<<<<<<< HEAD
 	NL80211_CMD_SET_PMK,
 	NL80211_CMD_DEL_PMK,
 
@@ -1245,6 +1249,8 @@ enum nl80211_commands {
 
 	NL80211_CMD_UPDATE_OWE_INFO,
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* add new commands above here */
 
 	/* used to define NL80211_CMD_MAX below */
@@ -2133,6 +2139,7 @@ enum nl80211_commands {
  *
  * @NL80211_ATTR_BSSID: The BSSID of the AP. Note that %NL80211_ATTR_MAC is also
  *	used in various commands/events for specifying the BSSID.
+<<<<<<< HEAD
  *
  * @NL80211_ATTR_SCHED_SCAN_RELATIVE_RSSI: Relative RSSI threshold by which
  *	other BSSs has to be better or slightly worse than the current
@@ -2190,6 +2197,8 @@ enum nl80211_commands {
  *	with %NL80211_CMD_CONNECT and %NL80211_CMD_START_AP request. The driver
  *	may offload authentication processing to user space if this capability
  *	is indicated in the respective requests from the user space.
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  *
  * @NUM_NL80211_ATTR: total number of nl80211_attrs available
  * @NL80211_ATTR_MAX: highest attribute number currently defined
@@ -2597,6 +2606,7 @@ enum nl80211_attrs {
 
 	NL80211_ATTR_BSSID,
 
+<<<<<<< HEAD
 	NL80211_ATTR_SCHED_SCAN_RELATIVE_RSSI,
 	NL80211_ATTR_SCHED_SCAN_RSSI_ADJUST,
 
@@ -2620,6 +2630,8 @@ enum nl80211_attrs {
 	NL80211_ATTR_EXTERNAL_AUTH_ACTION,
 	NL80211_ATTR_EXTERNAL_AUTH_SUPPORT,
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* add attributes here, update the policy in nl80211.c */
 
 	__NL80211_ATTR_AFTER_LAST,
@@ -4946,6 +4958,7 @@ enum nl80211_feature_flags {
  *	configuration (AP/mesh) with VHT rates.
  * @NL80211_EXT_FEATURE_FILS_STA: This driver supports Fast Initial Link Setup
  *	with user space SME (NL80211_CMD_AUTHENTICATE) in station mode.
+<<<<<<< HEAD
  * @NL80211_EXT_FEATURE_MGMT_TX_RANDOM_TA: This driver supports randomized TA
  *	in @NL80211_CMD_FRAME while not associated.
  * @NL80211_EXT_FEATURE_MGMT_TX_RANDOM_TA_CONNECTED: This driver supports
@@ -5011,6 +5024,8 @@ enum nl80211_feature_flags {
  *
  * @NL80211_EXT_FEATURE_AP_PMKSA_CACHING: Driver/device supports PMKSA caching
  *	(set/del PMKSA operations) in AP mode.
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  *
  * @NUM_NL80211_EXT_FEATURES: number of extended features.
  * @MAX_NL80211_EXT_FEATURES: highest extended feature index.
@@ -5026,6 +5041,7 @@ enum nl80211_ext_feature_index {
 	NL80211_EXT_FEATURE_BEACON_RATE_HT,
 	NL80211_EXT_FEATURE_BEACON_RATE_VHT,
 	NL80211_EXT_FEATURE_FILS_STA,
+<<<<<<< HEAD
 	NL80211_EXT_FEATURE_MGMT_TX_RANDOM_TA,
 	NL80211_EXT_FEATURE_MGMT_TX_RANDOM_TA_CONNECTED,
 	NL80211_EXT_FEATURE_SCHED_SCAN_RELATIVE_RSSI,
@@ -5051,6 +5067,8 @@ enum nl80211_ext_feature_index {
 	NL80211_EXT_FEATURE_ENABLE_FTM_RESPONDER,
 	NL80211_EXT_FEATURE_AIRTIME_FAIRNESS,
 	NL80211_EXT_FEATURE_AP_PMKSA_CACHING,
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* add new features before the definition below */
 	NUM_NL80211_EXT_FEATURES,

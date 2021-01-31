@@ -287,7 +287,11 @@ void f2fs_ra_meta_pages_cond(struct f2fs_sb_info *sbi, pgoff_t index)
 	f2fs_put_page(page, 0);
 
 	if (readahead)
+<<<<<<< HEAD
 		f2fs_ra_meta_pages(sbi, index, BIO_MAX_PAGES, META_POR, true);
+=======
+		ra_meta_pages(sbi, index, BIO_MAX_PAGES, META_POR, true);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static int __f2fs_write_meta_page(struct page *page,
@@ -946,8 +950,18 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 		sbi->cur_cp_pack = 2;
 
 	/* Sanity checking of checkpoint */
+<<<<<<< HEAD
 	if (f2fs_sanity_check_ckpt(sbi))
 		goto free_fail_no_cp;
+=======
+	if (sanity_check_ckpt(sbi))
+		goto free_fail_no_cp;
+
+	if (cur_page == cp1)
+		sbi->cur_cp_pack = 1;
+	else
+		sbi->cur_cp_pack = 2;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (cp_blks <= 1)
 		goto done;
@@ -1126,7 +1140,11 @@ int f2fs_sync_inode_meta(struct f2fs_sb_info *sbi)
 
 			/* it's on eviction */
 			if (is_inode_flag_set(inode, FI_DIRTY_INODE))
+<<<<<<< HEAD
 				f2fs_update_inode_page(inode);
+=======
+				update_inode_page(inode);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			iput(inode);
 		}
 	}
@@ -1265,6 +1283,11 @@ out:
 static void unblock_operations(struct f2fs_sb_info *sbi)
 {
 	up_write(&sbi->node_write);
+<<<<<<< HEAD
+=======
+
+	build_free_nids(sbi, false);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	f2fs_unlock_all(sbi);
 }
 
@@ -1276,9 +1299,12 @@ void f2fs_wait_on_all_pages_writeback(struct f2fs_sb_info *sbi)
 		prepare_to_wait(&sbi->cp_wait, &wait, TASK_UNINTERRUPTIBLE);
 
 		if (!get_pages(sbi, F2FS_WB_CP_DATA))
+<<<<<<< HEAD
 			break;
 
 		if (unlikely(f2fs_cp_error(sbi)))
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			break;
 
 		io_schedule_timeout(5*HZ);
@@ -1541,12 +1567,15 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 
 	clear_sbi_flag(sbi, SBI_IS_DIRTY);
 	clear_sbi_flag(sbi, SBI_NEED_CP);
+<<<<<<< HEAD
 	clear_sbi_flag(sbi, SBI_QUOTA_SKIP_FLUSH);
 
 	spin_lock(&sbi->stat_lock);
 	sbi->unusable_block_count = 0;
 	spin_unlock(&sbi->stat_lock);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	__set_cp_next_pack(sbi);
 
 	/*
@@ -1635,11 +1664,21 @@ int f2fs_write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 
 	/* unlock all the fs_lock[] in do_checkpoint() */
 	err = do_checkpoint(sbi, cpc);
+<<<<<<< HEAD
 	if (err)
 		f2fs_release_discard_addrs(sbi);
 	else
 		f2fs_clear_prefree_segments(sbi, cpc);
 stop:
+=======
+	if (err) {
+		release_discard_addrs(sbi);
+	} else {
+		clear_prefree_segments(sbi, cpc);
+		f2fs_wait_all_discard_bio(sbi);
+	}
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	unblock_operations(sbi);
 	stat_inc_cp_count(sbi->stat_info);
 

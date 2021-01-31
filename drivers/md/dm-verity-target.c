@@ -986,11 +986,15 @@ retry_dev1:
 retry_dev2:
 	r = dm_get_device(ti, argv[2], FMODE_READ, &v->hash_dev);
 	if (r) {
+<<<<<<< HEAD
 		if (r == -ENODEV && dm_device_wait) {
 			msleep(100);
 			goto retry_dev2;
 		}
 		ti->error = "Data device lookup failed";
+=======
+		ti->error = "Hash device lookup failed";
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		goto bad;
 	}
 

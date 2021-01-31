@@ -58,7 +58,7 @@
 #include <linux/compat.h>
 #include <linux/vmalloc.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/mmu_context.h>
 #include <asm/tlb.h>
 
@@ -211,7 +211,7 @@ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
 	 * doing the exec and bprm->mm is the new process's mm.
 	 */
 	ret = get_user_pages_remote(current, bprm->mm, pos, 1, gup_flags,
-			&page, NULL);
+			&page, NULL, NULL);
 	if (ret <= 0)
 		return NULL;
 
@@ -1199,8 +1199,10 @@ no_thread_group:
 	/* we have changed execution domain */
 	tsk->exit_signal = SIGCHLD;
 
+#ifdef CONFIG_POSIX_TIMERS
 	exit_itimers(sig);
 	flush_itimer_signals();
+#endif
 
 	if (atomic_read(&oldsighand->count) != 1) {
 		struct sighand_struct *newsighand;
@@ -1314,7 +1316,11 @@ EXPORT_SYMBOL(flush_old_exec);
 void would_dump(struct linux_binprm *bprm, struct file *file)
 {
 	struct inode *inode = file_inode(file);
+<<<<<<< HEAD
 	if (inode_permission2(file->f_path.mnt, inode, MAY_READ) < 0) {
+=======
+	if (inode_permission(inode, MAY_READ) < 0) {
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		struct user_namespace *old, *user_ns;
 		bprm->interp_flags |= BINPRM_FLAGS_ENFORCE_NONDUMP;
 
@@ -1790,6 +1796,8 @@ static int do_execveat_common(int fd, struct filename *filename,
 	retval = copy_strings(bprm->argc, argv, bprm);
 	if (retval < 0)
 		goto out;
+
+	would_dump(bprm, bprm->file);
 
 	retval = exec_binprm(bprm);
 	if (retval < 0)

@@ -17,7 +17,11 @@
  */
 #include <linux/linkage.h>
 
+<<<<<<< HEAD
 #include <asm/uaccess.h>
+=======
+#include <linux/uaccess.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	.text
 
@@ -29,8 +33,13 @@
  *
  * Alignment fixed up by hardware.
  */
+<<<<<<< HEAD
 ENTRY(__arch_clear_user)
 	uaccess_enable_not_uao x2, x3, x4
+=======
+ENTRY(__clear_user)
+	uaccess_enable_not_uao x2, x3
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	mov	x2, x1			// save the size for fixup return
 	subs	x1, x1, #8
 	b.mi	2f
@@ -50,7 +59,11 @@ uao_user_alternative 9f, strh, sttrh, wzr, x0, 2
 	b.mi	5f
 uao_user_alternative 9f, strb, sttrb, wzr, x0, 0
 5:	mov	x0, #0
+<<<<<<< HEAD
 	uaccess_disable_not_uao x2, x3
+=======
+	uaccess_disable_not_uao x2
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	ret
 ENDPROC(__arch_clear_user)
 

@@ -23,7 +23,10 @@ enum xt_bpf_modes {
 	XT_BPF_MODE_FD_PINNED,
 	XT_BPF_MODE_FD_ELF,
 };
+<<<<<<< HEAD
 #define XT_BPF_MODE_PATH_PINNED XT_BPF_MODE_FD_PINNED
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 struct xt_bpf_info_v1 {
 	__u16 mode;

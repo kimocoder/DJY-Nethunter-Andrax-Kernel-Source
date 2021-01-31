@@ -72,6 +72,7 @@ obj-$(CONFIG_LEDS_IS31FL319X)		+= leds-is31fl319x.o
 obj-$(CONFIG_LEDS_IS31FL32XX)		+= leds-is31fl32xx.o
 obj-$(CONFIG_LEDS_PM8058)		+= leds-pm8058.o
 obj-$(CONFIG_LEDS_MLXCPLD)		+= leds-mlxcpld.o
+<<<<<<< HEAD
 obj-$(CONFIG_LEDS_QPNP)			+= leds-qpnp.o
 obj-$(CONFIG_LEDS_QPNP_FLASH)		+= leds-qpnp-flash.o leds-qpnp-flash-common.o
 obj-$(CONFIG_LEDS_QPNP_FLASH_V2)	+= leds-qpnp-flash-v2.o leds-qpnp-flash-common.o
@@ -79,9 +80,15 @@ obj-$(CONFIG_LEDS_QPNP_WLED)		+= leds-qpnp-wled.o
 obj-$(CONFIG_LEDS_QPNP_HAPTICS)	+= leds-qpnp-haptics.o
 obj-$(CONFIG_LEDS_QPNP_VIBRATOR_LDO)	+= leds-qpnp-vibrator-ldo.o
 obj-$(CONFIG_LEDS_QPNP_VIBRATOR) 	+= leds-qpnp-vibrator.o
+=======
+obj-$(CONFIG_LEDS_NIC78BX)		+= leds-nic78bx.o
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 # LED SPI Drivers
 obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
+
+# LED Userspace Drivers
+obj-$(CONFIG_LEDS_USER)			+= uleds.o
 
 # LED Triggers
 obj-$(CONFIG_LEDS_TRIGGERS)		+= trigger/

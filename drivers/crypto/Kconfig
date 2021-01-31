@@ -597,8 +597,12 @@ config CRYPTO_DEV_ROCKCHIP
 
 source "drivers/crypto/chelsio/Kconfig"
 
+<<<<<<< HEAD
 if ARCH_QCOM
 source drivers/crypto/msm/Kconfig
 endif # ARCH_QCOM
+=======
+source "drivers/crypto/virtio/Kconfig"
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 endif # CRYPTO_HW

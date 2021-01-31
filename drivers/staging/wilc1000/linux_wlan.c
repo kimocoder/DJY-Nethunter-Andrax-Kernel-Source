@@ -37,6 +37,8 @@ static void linux_wlan_tx_complete(void *priv, int status);
 static int  mac_init_fn(struct net_device *ndev);
 static struct net_device_stats *mac_stats(struct net_device *dev);
 static int  mac_ioctl(struct net_device *ndev, struct ifreq *req, int cmd);
+static int wilc_mac_open(struct net_device *ndev);
+static int wilc_mac_close(struct net_device *ndev);
 static void wilc_set_multicast_list(struct net_device *dev);
 
 bool wilc_enable_ps = true;
@@ -216,17 +218,6 @@ static void deinit_irq(struct net_device *dev)
 		free_irq(wilc->dev_irq_num, wilc);
 		gpio_free(wilc->gpio);
 	}
-}
-
-int wilc_lock_timeout(struct wilc *nic, void *vp, u32 timeout)
-{
-	/* FIXME: replace with mutex_lock or wait_for_completion */
-	int error = -1;
-
-	if (vp)
-		error = down_timeout(vp,
-				     msecs_to_jiffies(timeout));
-	return error;
 }
 
 void wilc_mac_indicate(struct wilc *wilc, int flag)
@@ -836,7 +827,7 @@ static int mac_init_fn(struct net_device *ndev)
 	return 0;
 }
 
-int wilc_mac_open(struct net_device *ndev)
+static int wilc_mac_open(struct net_device *ndev)
 {
 	struct wilc_vif *vif;
 
@@ -1027,7 +1018,7 @@ int wilc_mac_xmit(struct sk_buff *skb, struct net_device *ndev)
 	return 0;
 }
 
-int wilc_mac_close(struct net_device *ndev)
+static int wilc_mac_close(struct net_device *ndev)
 {
 	struct wilc_priv *priv;
 	struct wilc_vif *vif;
@@ -1263,9 +1254,13 @@ int wilc_netdev_init(struct wilc **wilc, struct device *dev, int io_type,
 		vif->wilc = *wilc;
 		vif->ndev = ndev;
 		wl->vif[i] = vif;
+<<<<<<< HEAD
 		wl->vif_num = i + 1;
 		vif->idx = i;
 
+=======
+		wl->vif_num = i;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		ndev->netdev_ops = &wilc_netdev_ops;
 
 		{

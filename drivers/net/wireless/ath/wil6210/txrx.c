@@ -110,6 +110,7 @@ static inline int wil_vring_avail_high(struct vring *vring)
 	return wil_vring_avail_tx(vring) > wil_vring_wmark_high(vring);
 }
 
+<<<<<<< HEAD
 /* returns true when all tx vrings are empty */
 bool wil_is_tx_idle(struct wil6210_priv *wil)
 {
@@ -155,6 +156,8 @@ bool wil_is_tx_idle(struct wil6210_priv *wil)
 	return true;
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /* wil_val_in_range - check if value in [min,max) */
 static inline bool wil_val_in_range(int val, int min, int max)
 {
@@ -411,7 +414,7 @@ static void wil_rx_add_radiotap_header(struct wil6210_priv *wil,
 
 	if (skb_headroom(skb) < rtap_len &&
 	    pskb_expand_head(skb, rtap_len, 0, GFP_ATOMIC)) {
-		wil_err(wil, "Unable to expand headrom to %d\n", rtap_len);
+		wil_err(wil, "Unable to expand headroom to %d\n", rtap_len);
 		return;
 	}
 
@@ -1932,10 +1935,13 @@ static inline void __wil_update_net_queues(struct wil6210_priv *wil,
 		wil_dbg_txrx(wil, "check_stop=%d, stopped=%d",
 			     check_stop, wil->net_queue_stopped);
 
+<<<<<<< HEAD
 	if (vring && drop_if_ring_full)
 		/* no need to stop/wake net queues */
 		return;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (check_stop == wil->net_queue_stopped)
 		/* net queues already in desired state */
 		return;
@@ -1950,11 +1956,14 @@ static inline void __wil_update_net_queues(struct wil6210_priv *wil,
 		return;
 	}
 
+<<<<<<< HEAD
 	/* Do not wake the queues in suspend flow */
 	if (test_bit(wil_status_suspending, wil->status) ||
 	    test_bit(wil_status_suspended, wil->status))
 		return;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* check wake */
 	for (i = 0; i < WIL6210_MAX_TX_RINGS; i++) {
 		struct vring *cur_vring = &wil->vring_tx[i];

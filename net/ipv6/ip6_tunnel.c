@@ -42,7 +42,7 @@
 #include <linux/hash.h>
 #include <linux/etherdevice.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/atomic.h>
 
 #include <net/icmp.h>
@@ -83,7 +83,7 @@ static int ip6_tnl_dev_init(struct net_device *dev);
 static void ip6_tnl_dev_setup(struct net_device *dev);
 static struct rtnl_link_ops ip6_link_ops __read_mostly;
 
-static int ip6_tnl_net_id __read_mostly;
+static unsigned int ip6_tnl_net_id __read_mostly;
 struct ip6_tnl_net {
 	/* the IPv6 tunnel fallback device */
 	struct net_device *fb_tnl_dev;
@@ -1194,6 +1194,14 @@ route_lookup:
 	}
 	skb_dst_set(skb, dst);
 
+<<<<<<< HEAD
+=======
+	if (encap_limit >= 0) {
+		init_tel_txopt(&opt, encap_limit);
+		ipv6_push_nfrag_opts(skb, &opt.ops, &proto, NULL, NULL);
+	}
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* Calculate max headroom for all the headers and adjust
 	 * needed_headroom if necessary.
 	 */
@@ -1284,7 +1292,10 @@ ip4ip6_tnl_xmit(struct sk_buff *skb, struct net_device *dev)
 	}
 
 	fl6.flowi6_uid = sock_net_uid(dev_net(dev), NULL);
+<<<<<<< HEAD
 	dsfield = INET_ECN_encapsulate(dsfield, ipv4_get_dsfield(iph));
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (iptunnel_handle_offloads(skb, SKB_GSO_IPXIP6))
 		return -1;
@@ -1372,7 +1383,10 @@ ip6ip6_tnl_xmit(struct sk_buff *skb, struct net_device *dev)
 	}
 
 	fl6.flowi6_uid = sock_net_uid(dev_net(dev), NULL);
+<<<<<<< HEAD
 	dsfield = INET_ECN_encapsulate(dsfield, ipv6_get_dsfield(ipv6h));
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (iptunnel_handle_offloads(skb, SKB_GSO_IPXIP6))
 		return -1;
@@ -1693,7 +1707,7 @@ int ip6_tnl_change_mtu(struct net_device *dev, int new_mtu)
 	struct ip6_tnl *tnl = netdev_priv(dev);
 
 	if (tnl->parms.proto == IPPROTO_IPIP) {
-		if (new_mtu < 68)
+		if (new_mtu < ETH_MIN_MTU)
 			return -EINVAL;
 	} else {
 		if (new_mtu < IPV6_MIN_MTU)
@@ -1846,6 +1860,8 @@ ip6_tnl_dev_init_gen(struct net_device *dev)
 	dev->mtu = ETH_DATA_LEN - t_hlen;
 	if (!(t->parms.flags & IP6_TNL_F_IGN_ENCAP_LIMIT))
 		dev->mtu -= 8;
+	dev->min_mtu = ETH_MIN_MTU;
+	dev->max_mtu = 0xFFF8 - dev->hard_header_len;
 
 	return 0;
 

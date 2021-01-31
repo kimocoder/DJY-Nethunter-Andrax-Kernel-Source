@@ -339,7 +339,11 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb)
 	treq = tcp_rsk(req);
 	treq->rcv_isn		= ntohl(th->seq) - 1;
 	treq->snt_isn		= cookie;
+<<<<<<< HEAD
 	treq->txhash		= net_tx_rndhash();
+=======
+	treq->ts_off		= 0;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	req->mss		= mss;
 	ireq->ir_num		= ntohs(th->dest);
 	ireq->ir_rmt_port	= th->source;

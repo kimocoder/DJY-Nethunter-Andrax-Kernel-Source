@@ -120,6 +120,8 @@ struct bdi_writeback {
 	struct list_head work_list;
 	struct delayed_work dwork;	/* work item used for writeback */
 
+	unsigned long dirty_sleep;	/* last wait */
+
 	struct list_head bdi_node;	/* anchored at bdi->wb_list */
 
 #ifdef CONFIG_CGROUP_WRITEBACK
@@ -141,13 +143,20 @@ struct backing_dev_info {
 	struct list_head bdi_list;
 	unsigned long ra_pages;	/* max readahead in PAGE_SIZE units */
 	unsigned long io_pages;	/* max allowed IO size */
+<<<<<<< HEAD
 	unsigned int capabilities; /* Device capabilities */
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	congested_fn *congested_fn; /* Function pointer if device is md/dm */
 	void *congested_data;	/* Pointer to aux data for congested func */
 
 	char *name;
 
+<<<<<<< HEAD
 	struct kref refcnt;	/* Reference counter for the structure */
+=======
+	unsigned int capabilities; /* Device capabilities */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	unsigned int min_ratio;
 	unsigned int max_ratio, max_prop_frac;
 

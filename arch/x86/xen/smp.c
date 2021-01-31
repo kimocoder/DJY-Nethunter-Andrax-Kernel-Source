@@ -88,8 +88,11 @@ static void cpu_bringup(void)
 	cpu_data(cpu).x86_max_cores = 1;
 	set_cpu_sibling_map(cpu);
 
+<<<<<<< HEAD
 	speculative_store_bypass_ht_init();
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	xen_setup_cpu_clockevents();
 
 	notify_cpu_starting(cpu);

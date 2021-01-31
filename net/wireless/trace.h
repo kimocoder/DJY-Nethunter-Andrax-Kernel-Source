@@ -3090,6 +3090,7 @@ TRACE_EVENT(rdev_set_multicast_to_unicast,
 		  WIPHY_PR_ARG, NETDEV_PR_ARG,
 		  BOOL_TO_STR(__entry->enabled))
 );
+<<<<<<< HEAD
 
 TRACE_EVENT(rdev_update_owe_info,
 	    TP_PROTO(struct wiphy *wiphy, struct net_device *netdev,
@@ -3128,6 +3129,8 @@ TRACE_EVENT(cfg80211_update_owe_info_event,
 		      WIPHY_PR_ARG, NETDEV_PR_ARG, MAC_PR_ARG(peer))
 );
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif /* !__RDEV_OPS_TRACE || TRACE_HEADER_MULTI_READ */
 
 #undef TRACE_INCLUDE_PATH

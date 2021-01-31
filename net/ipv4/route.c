@@ -65,7 +65,7 @@
 #define pr_fmt(fmt) "IPv4: " fmt
 
 #include <linux/module.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/bitops.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
@@ -1662,6 +1662,19 @@ static void ip_del_fnhe(struct fib_nh *nh, __be32 daddr)
 	spin_unlock_bh(&fnhe_lock);
 }
 
+static void set_lwt_redirect(struct rtable *rth)
+{
+	if (lwtunnel_output_redirect(rth->dst.lwtstate)) {
+		rth->dst.lwtstate->orig_output = rth->dst.output;
+		rth->dst.output = lwtunnel_output;
+	}
+
+	if (lwtunnel_input_redirect(rth->dst.lwtstate)) {
+		rth->dst.lwtstate->orig_input = rth->dst.input;
+		rth->dst.input = lwtunnel_input;
+	}
+}
+
 /* called in rcu_read_lock() section */
 static int __mkroute_input(struct sk_buff *skb,
 			   const struct fib_result *res,
@@ -1751,14 +1764,7 @@ rt_cache:
 	rth->dst.input = ip_forward;
 
 	rt_set_nexthop(rth, daddr, res, fnhe, res->fi, res->type, itag);
-	if (lwtunnel_output_redirect(rth->dst.lwtstate)) {
-		rth->dst.lwtstate->orig_output = rth->dst.output;
-		rth->dst.output = lwtunnel_output;
-	}
-	if (lwtunnel_input_redirect(rth->dst.lwtstate)) {
-		rth->dst.lwtstate->orig_input = rth->dst.input;
-		rth->dst.input = lwtunnel_input;
-	}
+	set_lwt_redirect(rth);
 	skb_dst_set(skb, &rth->dst);
 out:
 	err = 0;
@@ -1987,8 +1993,18 @@ local_input:
 		rth->dst.error= -err;
 		rth->rt_flags 	&= ~RTCF_LOCAL;
 	}
+
 	if (do_cache) {
-		if (unlikely(!rt_cache_route(&FIB_RES_NH(res), rth))) {
+		struct fib_nh *nh = &FIB_RES_NH(res);
+
+		rth->dst.lwtstate = lwtstate_get(nh->nh_lwtstate);
+		if (lwtunnel_input_redirect(rth->dst.lwtstate)) {
+			WARN_ON(rth->dst.input == lwtunnel_input);
+			rth->dst.lwtstate->orig_input = rth->dst.input;
+			rth->dst.input = lwtunnel_input;
+		}
+
+		if (unlikely(!rt_cache_route(nh, rth))) {
 			rth->dst.flags |= DST_NOCACHE;
 			rt_add_uncached_list(rth);
 		}
@@ -2049,25 +2065,35 @@ int ip_route_input_noref(struct sk_buff *skb, __be32 daddr, __be32 saddr,
 	 */
 	if (ipv4_is_multicast(daddr)) {
 		struct in_device *in_dev = __in_dev_get_rcu(dev);
+		int our = 0;
 
-		if (in_dev) {
-			int our = ip_check_mc_rcu(in_dev, daddr, saddr,
-						  ip_hdr(skb)->protocol);
-			if (our
+		if (in_dev)
+			our = ip_check_mc_rcu(in_dev, daddr, saddr,
+					      ip_hdr(skb)->protocol);
+
+		/* check l3 master if no match yet */
+		if ((!in_dev || !our) && netif_is_l3_slave(dev)) {
+			struct in_device *l3_in_dev;
+
+			l3_in_dev = __in_dev_get_rcu(skb->dev);
+			if (l3_in_dev)
+				our = ip_check_mc_rcu(l3_in_dev, daddr, saddr,
+						      ip_hdr(skb)->protocol);
+		}
+
+		res = -EINVAL;
+		if (our
 #ifdef CONFIG_IP_MROUTE
-				||
-			    (!ipv4_is_local_multicast(daddr) &&
-			     IN_DEV_MFORWARD(in_dev))
+			||
+		    (!ipv4_is_local_multicast(daddr) &&
+		     IN_DEV_MFORWARD(in_dev))
 #endif
-			   ) {
-				int res = ip_route_input_mc(skb, daddr, saddr,
-							    tos, dev, our);
-				rcu_read_unlock();
-				return res;
-			}
+		   ) {
+			res = ip_route_input_mc(skb, daddr, saddr,
+						tos, dev, our);
 		}
 		rcu_read_unlock();
-		return -EINVAL;
+		return res;
 	}
 	res = ip_route_input_slow(skb, daddr, saddr, tos, dev);
 	rcu_read_unlock();
@@ -2207,8 +2233,7 @@ add:
 	}
 
 	rt_set_nexthop(rth, fl4->daddr, res, fnhe, fi, type, 0);
-	if (lwtunnel_output_redirect(rth->dst.lwtstate))
-		rth->dst.output = lwtunnel_output;
+	set_lwt_redirect(rth);
 
 	return rth;
 }
@@ -2338,7 +2363,8 @@ struct rtable *__ip_route_output_key_hash(struct net *net, struct flowi4 *fl4,
 		res.fi = NULL;
 		res.table = NULL;
 		if (fl4->flowi4_oif &&
-		    !netif_index_is_l3_master(net, fl4->flowi4_oif)) {
+		    (ipv4_is_multicast(fl4->daddr) ||
+		    !netif_index_is_l3_master(net, fl4->flowi4_oif))) {
 			/* Apparently, routing tables are wrong. Assume,
 			   that the destination is on link.
 

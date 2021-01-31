@@ -194,7 +194,7 @@ static ssize_t caps_show(struct device *dev, struct device_attribute *attr,
 		       be32_to_cpu(cap.manufacturer_id));
 
 	/* Try to get a TPM version 1.2 TPM_CAP_VERSION_INFO */
-	rc = tpm_getcap(chip, CAP_VERSION_1_2, &cap,
+	rc = tpm_getcap(chip, TPM_CAP_VERSION_1_2, &cap,
 			"attempting to determine the 1.2 version");
 	if (!rc) {
 		str += sprintf(str,
@@ -205,7 +205,7 @@ static ssize_t caps_show(struct device *dev, struct device_attribute *attr,
 			       cap.tpm_version_1_2.revMinor);
 	} else {
 		/* Otherwise just use TPM_STRUCT_VER */
-		rc = tpm_getcap(chip, CAP_VERSION_1_1, &cap,
+		rc = tpm_getcap(chip, TPM_CAP_VERSION_1_1, &cap,
 				"attempting to determine the 1.1 version");
 		if (rc)
 			return 0;
@@ -285,11 +285,17 @@ static const struct attribute_group tpm_dev_group = {
 
 void tpm_sysfs_add_device(struct tpm_chip *chip)
 {
+<<<<<<< HEAD
 	/* XXX: If you wish to remove this restriction, you must first update
 	 * tpm_sysfs to explicitly lock chip->ops.
 	 */
 	if (chip->flags & TPM_CHIP_FLAG_TPM2)
 		return;
+=======
+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+		return;
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* The sysfs routines rely on an implicit tpm_try_get_ops, device_del
 	 * is called before ops is null'd and the sysfs core synchronizes this
 	 * removal so that no callbacks are running or can run again

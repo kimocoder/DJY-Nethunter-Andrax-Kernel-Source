@@ -1122,6 +1122,8 @@ static int qeth_l2_setup_netdev(struct qeth_card *card)
 	card->dev->ml_priv = card;
 	card->dev->watchdog_timeo = QETH_TX_TIMEOUT;
 	card->dev->mtu = card->info.initial_mtu;
+	card->dev->min_mtu = 64;
+	card->dev->max_mtu = ETH_MAX_MTU;
 	card->dev->netdev_ops = &qeth_l2_netdev_ops;
 	if (card->info.type == QETH_CARD_TYPE_OSN) {
 		card->dev->ethtool_ops = &qeth_l2_osn_ops;

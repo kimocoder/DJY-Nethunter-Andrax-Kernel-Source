@@ -526,8 +526,12 @@ static dma_addr_t __iommu_dma_map(struct device *dev, phys_addr_t phys,
 		size_t size, int prot)
 {
 	struct iommu_domain *domain = iommu_get_domain_for_dev(dev);
+<<<<<<< HEAD
 	struct iommu_dma_cookie *cookie = domain->iova_cookie;
 	struct iova_domain *iovad = &cookie->iovad;
+=======
+	struct iova_domain *iovad = cookie_iovad(domain);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	size_t iova_off = iova_offset(iovad, phys);
 	dma_addr_t iova;
 
@@ -541,6 +545,12 @@ static dma_addr_t __iommu_dma_map(struct device *dev, phys_addr_t phys,
 		return DMA_ERROR_CODE;
 	}
 	return iova + iova_off;
+}
+
+dma_addr_t iommu_dma_map_page(struct device *dev, struct page *page,
+		unsigned long offset, size_t size, int prot)
+{
+	return __iommu_dma_map(dev, page_to_phys(page) + offset, size, prot);
 }
 
 dma_addr_t iommu_dma_map_page(struct device *dev, struct page *page,
@@ -739,6 +749,19 @@ void iommu_dma_unmap_resource(struct device *dev, dma_addr_t handle,
 		size_t size, enum dma_data_direction dir, unsigned long attrs)
 {
 	__iommu_dma_unmap(iommu_get_domain_for_dev(dev), handle, size);
+}
+
+dma_addr_t iommu_dma_map_resource(struct device *dev, phys_addr_t phys,
+		size_t size, enum dma_data_direction dir, unsigned long attrs)
+{
+	return __iommu_dma_map(dev, phys, size,
+			dma_direction_to_prot(dir, false) | IOMMU_MMIO);
+}
+
+void iommu_dma_unmap_resource(struct device *dev, dma_addr_t handle,
+		size_t size, enum dma_data_direction dir, unsigned long attrs)
+{
+	__iommu_dma_unmap(iommu_get_domain_for_dev(dev), handle);
 }
 
 int iommu_dma_supported(struct device *dev, u64 mask)

@@ -22,75 +22,13 @@
 #include <net/netfilter/ipv4/nf_defrag_ipv4.h>
 
 #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
-#define XT_SOCKET_HAVE_IPV6 1
 #include <linux/netfilter_ipv6/ip6_tables.h>
 #include <net/inet6_hashtables.h>
 #include <net/netfilter/ipv6/nf_defrag_ipv6.h>
 #endif
 
+#include <net/netfilter/nf_socket.h>
 #include <linux/netfilter/xt_socket.h>
-
-#if IS_ENABLED(CONFIG_NF_CONNTRACK)
-#define XT_SOCKET_HAVE_CONNTRACK 1
-#include <net/netfilter/nf_conntrack.h>
-#endif
-
-static int
-extract_icmp4_fields(const struct sk_buff *skb,
-		    u8 *protocol,
-		    __be32 *raddr,
-		    __be32 *laddr,
-		    __be16 *rport,
-		    __be16 *lport)
-{
-	unsigned int outside_hdrlen = ip_hdrlen(skb);
-	struct iphdr *inside_iph, _inside_iph;
-	struct icmphdr *icmph, _icmph;
-	__be16 *ports, _ports[2];
-
-	icmph = skb_header_pointer(skb, outside_hdrlen,
-				   sizeof(_icmph), &_icmph);
-	if (icmph == NULL)
-		return 1;
-
-	switch (icmph->type) {
-	case ICMP_DEST_UNREACH:
-	case ICMP_SOURCE_QUENCH:
-	case ICMP_REDIRECT:
-	case ICMP_TIME_EXCEEDED:
-	case ICMP_PARAMETERPROB:
-		break;
-	default:
-		return 1;
-	}
-
-	inside_iph = skb_header_pointer(skb, outside_hdrlen +
-					sizeof(struct icmphdr),
-					sizeof(_inside_iph), &_inside_iph);
-	if (inside_iph == NULL)
-		return 1;
-
-	if (inside_iph->protocol != IPPROTO_TCP &&
-	    inside_iph->protocol != IPPROTO_UDP)
-		return 1;
-
-	ports = skb_header_pointer(skb, outside_hdrlen +
-				   sizeof(struct icmphdr) +
-				   (inside_iph->ihl << 2),
-				   sizeof(_ports), &_ports);
-	if (ports == NULL)
-		return 1;
-
-	/* the inside IP packet is the one quoted from our side, thus
-	 * its saddr is the local address */
-	*protocol = inside_iph->protocol;
-	*laddr = inside_iph->saddr;
-	*lport = ports[0];
-	*raddr = inside_iph->daddr;
-	*rport = ports[1];
-
-	return 0;
-}
 
 /* "socket" match based redirection (no specific rule)
  * ===================================================
@@ -111,6 +49,7 @@ extract_icmp4_fields(const struct sk_buff *skb,
  *     then local services could intercept traffic going through the
  *     box.
  */
+<<<<<<< HEAD
 static struct sock *
 xt_socket_get_sock_v4(struct net *net, struct sk_buff *skb, const int doff,
 		      const u8 protocol,
@@ -220,6 +159,8 @@ struct sock *xt_socket_lookup_slow_v4(struct net *net,
 }
 EXPORT_SYMBOL(xt_socket_lookup_slow_v4);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static bool
 socket_match(const struct sk_buff *skb, struct xt_action_param *par,
 	     const struct xt_socket_mtinfo1 *info)
@@ -228,7 +169,7 @@ socket_match(const struct sk_buff *skb, struct xt_action_param *par,
 	struct sock *sk = skb->sk;
 
 	if (!sk)
-		sk = xt_socket_lookup_slow_v4(par->net, skb, par->in);
+		sk = nf_sk_lookup_slow_v4(xt_net(par), skb, xt_in(par));
 	if (sk) {
 		bool wildcard;
 		bool transparent = true;
@@ -244,7 +185,7 @@ socket_match(const struct sk_buff *skb, struct xt_action_param *par,
 		 * if XT_SOCKET_TRANSPARENT is used
 		 */
 		if (info->flags & XT_SOCKET_TRANSPARENT)
-			transparent = xt_socket_sk_is_transparent(sk);
+			transparent = nf_sk_is_transparent(sk);
 
 		if (info->flags & XT_SOCKET_RESTORESKMARK && !wildcard &&
 		    transparent && sk_fullsock(sk))
@@ -275,6 +216,7 @@ socket_mt4_v1_v2_v3(const struct sk_buff *skb, struct xt_action_param *par)
 	return socket_match(skb, par, par->matchinfo);
 }
 
+<<<<<<< HEAD
 #ifdef XT_SOCKET_HAVE_IPV6
 
 static int
@@ -411,6 +353,9 @@ struct sock *xt_socket_lookup_slow_v6(struct net *net,
 }
 EXPORT_SYMBOL(xt_socket_lookup_slow_v6);
 
+=======
+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static bool
 socket_mt6_v1_v2_v3(const struct sk_buff *skb, struct xt_action_param *par)
 {
@@ -419,7 +364,7 @@ socket_mt6_v1_v2_v3(const struct sk_buff *skb, struct xt_action_param *par)
 	struct sock *sk = skb->sk;
 
 	if (!sk)
-		sk = xt_socket_lookup_slow_v6(par->net, skb, par->in);
+		sk = nf_sk_lookup_slow_v6(xt_net(par), skb, xt_in(par));
 	if (sk) {
 		bool wildcard;
 		bool transparent = true;
@@ -435,7 +380,7 @@ socket_mt6_v1_v2_v3(const struct sk_buff *skb, struct xt_action_param *par)
 		 * if XT_SOCKET_TRANSPARENT is used
 		 */
 		if (info->flags & XT_SOCKET_TRANSPARENT)
-			transparent = xt_socket_sk_is_transparent(sk);
+			transparent = nf_sk_is_transparent(sk);
 
 		if (info->flags & XT_SOCKET_RESTORESKMARK && !wildcard &&
 		    transparent && sk_fullsock(sk))
@@ -452,9 +397,28 @@ socket_mt6_v1_v2_v3(const struct sk_buff *skb, struct xt_action_param *par)
 }
 #endif
 
+static int socket_mt_enable_defrag(struct net *net, int family)
+{
+	switch (family) {
+	case NFPROTO_IPV4:
+		return nf_defrag_ipv4_enable(net);
+#ifdef XT_SOCKET_HAVE_IPV6
+	case NFPROTO_IPV6:
+		return nf_defrag_ipv6_enable(net);
+#endif
+	}
+	WARN_ONCE(1, "Unknown family %d\n", family);
+	return 0;
+}
+
 static int socket_mt_v1_check(const struct xt_mtchk_param *par)
 {
 	const struct xt_socket_mtinfo1 *info = (struct xt_socket_mtinfo1 *) par->matchinfo;
+	int err;
+
+	err = socket_mt_enable_defrag(par->net, par->family);
+	if (err)
+		return err;
 
 	if (info->flags & ~XT_SOCKET_FLAGS_V1) {
 		pr_info("unknown flags 0x%x\n", info->flags & ~XT_SOCKET_FLAGS_V1);
@@ -466,6 +430,11 @@ static int socket_mt_v1_check(const struct xt_mtchk_param *par)
 static int socket_mt_v2_check(const struct xt_mtchk_param *par)
 {
 	const struct xt_socket_mtinfo2 *info = (struct xt_socket_mtinfo2 *) par->matchinfo;
+	int err;
+
+	err = socket_mt_enable_defrag(par->net, par->family);
+	if (err)
+		return err;
 
 	if (info->flags & ~XT_SOCKET_FLAGS_V2) {
 		pr_info("unknown flags 0x%x\n", info->flags & ~XT_SOCKET_FLAGS_V2);
@@ -478,7 +447,11 @@ static int socket_mt_v3_check(const struct xt_mtchk_param *par)
 {
 	const struct xt_socket_mtinfo3 *info =
 				    (struct xt_socket_mtinfo3 *)par->matchinfo;
+	int err;
 
+	err = socket_mt_enable_defrag(par->net, par->family);
+	if (err)
+		return err;
 	if (info->flags & ~XT_SOCKET_FLAGS_V3) {
 		pr_info("unknown flags 0x%x\n",
 			info->flags & ~XT_SOCKET_FLAGS_V3);
@@ -508,7 +481,7 @@ static struct xt_match socket_mt_reg[] __read_mostly = {
 				  (1 << NF_INET_LOCAL_IN),
 		.me		= THIS_MODULE,
 	},
-#ifdef XT_SOCKET_HAVE_IPV6
+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
 	{
 		.name		= "socket",
 		.revision	= 1,
@@ -532,7 +505,7 @@ static struct xt_match socket_mt_reg[] __read_mostly = {
 				  (1 << NF_INET_LOCAL_IN),
 		.me		= THIS_MODULE,
 	},
-#ifdef XT_SOCKET_HAVE_IPV6
+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
 	{
 		.name		= "socket",
 		.revision	= 2,
@@ -556,7 +529,7 @@ static struct xt_match socket_mt_reg[] __read_mostly = {
 				  (1 << NF_INET_LOCAL_IN),
 		.me		= THIS_MODULE,
 	},
-#ifdef XT_SOCKET_HAVE_IPV6
+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
 	{
 		.name		= "socket",
 		.revision	= 3,
@@ -573,11 +546,6 @@ static struct xt_match socket_mt_reg[] __read_mostly = {
 
 static int __init socket_mt_init(void)
 {
-	nf_defrag_ipv4_enable();
-#ifdef XT_SOCKET_HAVE_IPV6
-	nf_defrag_ipv6_enable();
-#endif
-
 	return xt_register_matches(socket_mt_reg, ARRAY_SIZE(socket_mt_reg));
 }
 

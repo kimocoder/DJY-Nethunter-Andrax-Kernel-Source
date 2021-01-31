@@ -239,7 +239,11 @@ int huge_ptep_set_access_flags(struct vm_area_struct *vma,
 		ncontig = find_num_contig(vma->vm_mm, addr, cpte,
 					  *cpte, &pgsize);
 		for (i = 0; i < ncontig; ++i, ++cpte, addr += pgsize) {
+<<<<<<< HEAD
 			changed |= ptep_set_access_flags(vma, addr, cpte,
+=======
+			changed = ptep_set_access_flags(vma, addr, cpte,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 							pfn_pte(pfn,
 								hugeprot),
 							dirty);
@@ -311,7 +315,7 @@ __setup("hugepagesz=", setup_hugepagesz);
 static __init int add_default_hugepagesz(void)
 {
 	if (size_to_hstate(CONT_PTES * PAGE_SIZE) == NULL)
-		hugetlb_add_hstate(CONT_PMD_SHIFT);
+		hugetlb_add_hstate(CONT_PTE_SHIFT);
 	return 0;
 }
 arch_initcall(add_default_hugepagesz);

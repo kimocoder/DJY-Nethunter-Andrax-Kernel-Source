@@ -116,6 +116,7 @@ config ARCH_MVEBU
 
 config ARCH_QCOM
 	bool "Qualcomm Platforms"
+	select GPIOLIB
 	select PINCTRL
 	select CLKDEV_LOOKUP
 	select HAVE_CLK
@@ -269,6 +270,7 @@ config ARCH_RENESAS
 	select PM
 	select PM_GENERIC_DOMAINS
 	select RENESAS_IRQC
+	select SOC_BUS
 	help
 	  This enables support for the ARMv8 based Renesas SoCs.
 

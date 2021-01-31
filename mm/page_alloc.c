@@ -2318,6 +2318,7 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
 	spin_unlock(&zone->lock);
 	return alloced;
+<<<<<<< HEAD
 }
 
 /*
@@ -2340,6 +2341,8 @@ static struct list_head *get_populated_pcp_list(struct zone *zone,
 			list = NULL;
 	}
 	return list;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 #ifdef CONFIG_NUMA
@@ -4113,6 +4116,20 @@ static struct page *__page_frag_refill(struct page_frag_cache *nc,
 
 	return page;
 }
+
+void __page_frag_drain(struct page *page, unsigned int order,
+		       unsigned int count)
+{
+	VM_BUG_ON_PAGE(page_ref_count(page) == 0, page);
+
+	if (page_ref_sub_and_test(page, count)) {
+		if (order == 0)
+			free_hot_cold_page(page, false);
+		else
+			__free_pages_ok(page, order);
+	}
+}
+EXPORT_SYMBOL(__page_frag_drain);
 
 void *__alloc_page_frag(struct page_frag_cache *nc,
 			unsigned int fragsz, gfp_t gfp_mask)
@@ -6734,38 +6751,39 @@ void __init free_area_init(unsigned long *zones_size)
 			__pa(PAGE_OFFSET) >> PAGE_SHIFT, NULL);
 }
 
-static int page_alloc_cpu_notify(struct notifier_block *self,
-				 unsigned long action, void *hcpu)
+static int page_alloc_cpu_dead(unsigned int cpu)
 {
-	int cpu = (unsigned long)hcpu;
 
-	if (action == CPU_DEAD || action == CPU_DEAD_FROZEN) {
-		lru_add_drain_cpu(cpu);
-		drain_pages(cpu);
+	lru_add_drain_cpu(cpu);
+	drain_pages(cpu);
 
-		/*
-		 * Spill the event counters of the dead processor
-		 * into the current processors event counters.
-		 * This artificially elevates the count of the current
-		 * processor.
-		 */
-		vm_events_fold_cpu(cpu);
+	/*
+	 * Spill the event counters of the dead processor
+	 * into the current processors event counters.
+	 * This artificially elevates the count of the current
+	 * processor.
+	 */
+	vm_events_fold_cpu(cpu);
 
-		/*
-		 * Zero the differential counters of the dead processor
-		 * so that the vm statistics are consistent.
-		 *
-		 * This is only okay since the processor is dead and cannot
-		 * race with what we are doing.
-		 */
-		cpu_vm_stats_fold(cpu);
-	}
-	return NOTIFY_OK;
+	/*
+	 * Zero the differential counters of the dead processor
+	 * so that the vm statistics are consistent.
+	 *
+	 * This is only okay since the processor is dead and cannot
+	 * race with what we are doing.
+	 */
+	cpu_vm_stats_fold(cpu);
+	return 0;
 }
 
 void __init page_alloc_init(void)
 {
-	hotcpu_notifier(page_alloc_cpu_notify, 0);
+	int ret;
+
+	ret = cpuhp_setup_state_nocalls(CPUHP_PAGE_ALLOC_DEAD,
+					"mm/page_alloc:dead", NULL,
+					page_alloc_cpu_dead);
+	WARN_ON(ret < 0);
 }
 
 /*

@@ -17,7 +17,10 @@
 #include <linux/percpu-rwsem.h>
 #include <linux/workqueue.h>
 #include <linux/bpf-cgroup.h>
+<<<<<<< HEAD
 #include <linux/psi_types.h>
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #ifdef CONFIG_CGROUPS
 
@@ -304,9 +307,12 @@ struct cgroup {
 	/* used to schedule release agent */
 	struct work_struct release_agent_work;
 
+<<<<<<< HEAD
 	/* used to track pressure stalls */
 	struct psi_group psi;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* used to store eBPF programs */
 	struct cgroup_bpf bpf;
 

@@ -1192,8 +1192,6 @@ static int get_config(struct r_port *info, struct rocket_config __user *retinfo)
 {
 	struct rocket_config tmp;
 
-	if (!retinfo)
-		return -EFAULT;
 	memset(&tmp, 0, sizeof (tmp));
 	mutex_lock(&info->port.mutex);
 	tmp.line = info->line;
@@ -1258,8 +1256,6 @@ static int get_ports(struct r_port *info, struct rocket_ports __user *retports)
 	struct rocket_ports tmp;
 	int board;
 
-	if (!retports)
-		return -EFAULT;
 	memset(&tmp, 0, sizeof (tmp));
 	tmp.tty_major = rocket_driver->major;
 

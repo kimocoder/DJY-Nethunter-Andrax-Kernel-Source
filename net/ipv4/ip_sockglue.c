@@ -44,7 +44,7 @@
 #include <net/ip_fib.h>
 
 #include <linux/errqueue.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 
 /*
  *	SOL_IP control messages.
@@ -97,6 +97,17 @@ static void ip_cmsg_recv_retopts(struct msghdr *msg, struct sk_buff *skb)
 	put_cmsg(msg, SOL_IP, IP_RETOPTS, opt->optlen, opt->__data);
 }
 
+static void ip_cmsg_recv_fragsize(struct msghdr *msg, struct sk_buff *skb)
+{
+	int val;
+
+	if (IPCB(skb)->frag_max_size == 0)
+		return;
+
+	val = IPCB(skb)->frag_max_size;
+	put_cmsg(msg, SOL_IP, IP_RECVFRAGSIZE, sizeof(val), &val);
+}
+
 static void ip_cmsg_recv_checksum(struct msghdr *msg, struct sk_buff *skb,
 				  int tlen, int offset)
 {
@@ -135,6 +146,14 @@ static void ip_cmsg_recv_dstaddr(struct msghdr *msg, struct sk_buff *skb)
 {
 	__be16 _ports[2], *ports;
 	struct sockaddr_in sin;
+<<<<<<< HEAD
+=======
+	const struct iphdr *iph = ip_hdr(skb);
+	__be16 *ports = (__be16 *)skb_transport_header(skb);
+
+	if (skb_transport_offset(skb) + 4 > (int)skb->len)
+		return;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* All current transport protocols have the port numbers in the
 	 * first four bytes of the transport header and this function is
@@ -153,10 +172,10 @@ static void ip_cmsg_recv_dstaddr(struct msghdr *msg, struct sk_buff *skb)
 	put_cmsg(msg, SOL_IP, IP_ORIGDSTADDR, sizeof(sin), &sin);
 }
 
-void ip_cmsg_recv_offset(struct msghdr *msg, struct sk_buff *skb,
-			 int tlen, int offset)
+void ip_cmsg_recv_offset(struct msghdr *msg, struct sock *sk,
+			 struct sk_buff *skb, int tlen, int offset)
 {
-	struct inet_sock *inet = inet_sk(skb->sk);
+	struct inet_sock *inet = inet_sk(sk);
 	unsigned int flags = inet->cmsg_flags;
 
 	/* Ordered by supposed usage frequency */
@@ -218,6 +237,9 @@ void ip_cmsg_recv_offset(struct msghdr *msg, struct sk_buff *skb,
 
 	if (flags & IP_CMSG_CHECKSUM)
 		ip_cmsg_recv_checksum(msg, skb, tlen, offset);
+
+	if (flags & IP_CMSG_RECVFRAGSIZE)
+		ip_cmsg_recv_fragsize(msg, skb);
 }
 EXPORT_SYMBOL(ip_cmsg_recv_offset);
 
@@ -613,6 +635,7 @@ static int do_ip_setsockopt(struct sock *sk, int level,
 	case IP_MULTICAST_LOOP:
 	case IP_RECVORIGDSTADDR:
 	case IP_CHECKSUM:
+	case IP_RECVFRAGSIZE:
 		if (optlen >= sizeof(int)) {
 			if (get_user(val, (int __user *) optval))
 				return -EFAULT;
@@ -724,6 +747,14 @@ static int do_ip_setsockopt(struct sock *sk, int level,
 				inet->cmsg_flags &= ~IP_CMSG_CHECKSUM;
 			}
 		}
+		break;
+	case IP_RECVFRAGSIZE:
+		if (sk->sk_type != SOCK_RAW && sk->sk_type != SOCK_DGRAM)
+			goto e_inval;
+		if (val)
+			inet->cmsg_flags |= IP_CMSG_RECVFRAGSIZE;
+		else
+			inet->cmsg_flags &= ~IP_CMSG_RECVFRAGSIZE;
 		break;
 	case IP_TOS:	/* This sets both TOS and Precedence */
 		if (sk->sk_type == SOCK_STREAM) {
@@ -1367,6 +1398,9 @@ static int do_ip_getsockopt(struct sock *sk, int level, int optname,
 		break;
 	case IP_CHECKSUM:
 		val = (inet->cmsg_flags & IP_CMSG_CHECKSUM) != 0;
+		break;
+	case IP_RECVFRAGSIZE:
+		val = (inet->cmsg_flags & IP_CMSG_RECVFRAGSIZE) != 0;
 		break;
 	case IP_TOS:
 		val = inet->tos;

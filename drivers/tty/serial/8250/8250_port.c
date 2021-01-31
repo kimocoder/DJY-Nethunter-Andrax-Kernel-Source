@@ -635,7 +635,7 @@ EXPORT_SYMBOL_GPL(serial8250_em485_destroy);
  * once and disable_runtime_pm_tx() will still disable RPM because the fifo is
  * empty and the HW can idle again.
  */
-static void serial8250_rpm_get_tx(struct uart_8250_port *p)
+void serial8250_rpm_get_tx(struct uart_8250_port *p)
 {
 	unsigned char rpm_active;
 
@@ -647,8 +647,9 @@ static void serial8250_rpm_get_tx(struct uart_8250_port *p)
 		return;
 	pm_runtime_get_sync(p->port.dev);
 }
+EXPORT_SYMBOL_GPL(serial8250_rpm_get_tx);
 
-static void serial8250_rpm_put_tx(struct uart_8250_port *p)
+void serial8250_rpm_put_tx(struct uart_8250_port *p)
 {
 	unsigned char rpm_active;
 
@@ -661,6 +662,7 @@ static void serial8250_rpm_put_tx(struct uart_8250_port *p)
 	pm_runtime_mark_last_busy(p->port.dev);
 	pm_runtime_put_autosuspend(p->port.dev);
 }
+EXPORT_SYMBOL_GPL(serial8250_rpm_put_tx);
 
 /*
  * IER sleep support.  UARTs which have EFRs need the "extended
@@ -2711,8 +2713,7 @@ serial8250_set_termios(struct uart_port *port, struct ktermios *termios,
 		serial8250_do_set_termios(port, termios, old);
 }
 
-static void
-serial8250_set_ldisc(struct uart_port *port, struct ktermios *termios)
+void serial8250_do_set_ldisc(struct uart_port *port, struct ktermios *termios)
 {
 	if (termios->c_line == N_PPS) {
 		port->flags |= UPF_HARDPPS_CD;
@@ -2728,7 +2729,16 @@ serial8250_set_ldisc(struct uart_port *port, struct ktermios *termios)
 		}
 	}
 }
+EXPORT_SYMBOL_GPL(serial8250_do_set_ldisc);
 
+static void
+serial8250_set_ldisc(struct uart_port *port, struct ktermios *termios)
+{
+	if (port->set_ldisc)
+		port->set_ldisc(port, termios);
+	else
+		serial8250_do_set_ldisc(port, termios);
+}
 
 void serial8250_do_pm(struct uart_port *port, unsigned int state,
 		      unsigned int oldstate)

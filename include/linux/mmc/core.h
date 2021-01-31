@@ -16,6 +16,18 @@ struct request;
 struct mmc_data;
 struct mmc_request;
 
+enum mmc_blk_status {
+	MMC_BLK_SUCCESS = 0,
+	MMC_BLK_PARTIAL,
+	MMC_BLK_CMD_ERR,
+	MMC_BLK_RETRY,
+	MMC_BLK_ABORT,
+	MMC_BLK_DATA_ERR,
+	MMC_BLK_ECC_ERR,
+	MMC_BLK_NOMEDIUM,
+	MMC_BLK_NEW_REQUEST,
+};
+
 struct mmc_command {
 	u32			opcode;
 	u32			arg;
@@ -163,7 +175,8 @@ extern int mmc_cmdq_erase(struct mmc_cmdq_req *cmdq_req,
 extern int mmc_stop_bkops(struct mmc_card *);
 extern int mmc_read_bkops_status(struct mmc_card *);
 extern struct mmc_async_req *mmc_start_req(struct mmc_host *,
-					   struct mmc_async_req *, int *);
+					   struct mmc_async_req *,
+					   enum mmc_blk_status *);
 extern int mmc_interrupt_hpi(struct mmc_card *);
 extern void mmc_wait_for_req(struct mmc_host *, struct mmc_request *);
 extern void mmc_wait_for_req_done(struct mmc_host *host,
@@ -180,6 +193,7 @@ extern int __mmc_switch_cmdq_mode(struct mmc_command *cmd, u8 set, u8 index,
 				  u8 value, unsigned int timeout_ms,
 				  bool use_busy_signal, bool ignore_timeout);
 extern int mmc_send_tuning(struct mmc_host *host, u32 opcode, int *cmd_error);
+extern int mmc_abort_tuning(struct mmc_host *host, u32 opcode);
 extern int mmc_get_ext_csd(struct mmc_card *card, u8 **new_ext_csd);
 extern int mmc_set_auto_bkops(struct mmc_card *card, bool enable);
 extern int mmc_suspend_clk_scaling(struct mmc_host *host);

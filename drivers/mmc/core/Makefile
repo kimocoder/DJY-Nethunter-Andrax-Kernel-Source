@@ -12,4 +12,11 @@ mmc_core-$(CONFIG_OF)		+= pwrseq.o
 obj-$(CONFIG_PWRSEQ_SIMPLE)	+= pwrseq_simple.o
 obj-$(CONFIG_PWRSEQ_EMMC)	+= pwrseq_emmc.o
 mmc_core-$(CONFIG_DEBUG_FS)	+= debugfs.o
+<<<<<<< HEAD
 obj-$(CONFIG_MMC_RING_BUFFER)	+= ring_buffer.o
+=======
+obj-$(CONFIG_MMC_BLOCK)		+= mmc_block.o
+mmc_block-objs			:= block.o queue.o
+obj-$(CONFIG_MMC_TEST)		+= mmc_test.o
+obj-$(CONFIG_SDIO_UART)		+= sdio_uart.o
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

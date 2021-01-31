@@ -219,7 +219,7 @@ static int xt_ct_tg_check(const struct xt_tgchk_param *par,
 		goto err1;
 #endif
 
-	ret = nf_ct_l3proto_try_module_get(par->family);
+	ret = nf_ct_netns_get(par->net, par->family);
 	if (ret < 0)
 		goto err1;
 
@@ -267,7 +267,7 @@ err4:
 err3:
 	nf_ct_tmpl_free(ct);
 err2:
-	nf_ct_l3proto_module_put(par->family);
+	nf_ct_netns_put(par->net, par->family);
 err1:
 	return ret;
 }
@@ -348,7 +348,7 @@ static void xt_ct_tg_destroy(const struct xt_tgdtor_param *par,
 		if (help)
 			module_put(help->helper->me);
 
-		nf_ct_l3proto_module_put(par->family);
+		nf_ct_netns_put(par->net, par->family);
 
 		xt_ct_destroy_timeout(ct);
 		nf_ct_put(info->ct);

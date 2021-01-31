@@ -13,8 +13,6 @@
 #include <asm/ppc_asm.h>
 #include <asm/export.h>
 
-	.section __ex_table,"a"
-	PPC_LONG_ALIGN
 	.text
 	
 /* This clears out any unused part of the destination buffer,
@@ -125,10 +123,18 @@ _GLOBAL(__arch_clear_user)
 92:	mfctr	r3
 	blr
 
+<<<<<<< HEAD
 	.section __ex_table,"a"
 	PPC_LONG	11b,90b
 	PPC_LONG	1b,91b
 	PPC_LONG	8b,92b
 	.text
 EXPORT_SYMBOL(__arch_clear_user)
+=======
+	EX_TABLE(11b, 90b)
+	EX_TABLE(1b, 91b)
+	EX_TABLE(8b, 92b)
+
+EXPORT_SYMBOL(__clear_user)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif

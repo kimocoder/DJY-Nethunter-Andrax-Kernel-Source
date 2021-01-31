@@ -28,7 +28,6 @@
 #include <linux/i2c.h>
 #include <linux/spinlock.h>
 #include <linux/types.h>
-#include <linux/idr.h>
 #include <linux/fb.h>
 #include <linux/hdmi.h>
 #include <linux/media-bus-format.h>
@@ -47,13 +46,16 @@
 #include <drm/drm_plane.h>
 #include <drm/drm_blend.h>
 #include <drm/drm_color_mgmt.h>
+#include <drm/drm_debugfs_crc.h>
+#include <drm/drm_mode_config.h>
 
 struct drm_device;
 struct drm_mode_set;
 struct drm_file;
 struct drm_clip_rect;
+struct drm_printer;
 struct device_node;
-struct fence;
+struct dma_fence;
 struct edid;
 
 static inline int64_t U642I64(uint64_t val)
@@ -64,14 +66,6 @@ static inline uint64_t I642U64(int64_t val)
 {
 	return (uint64_t)*((uint64_t *)&val);
 }
-
-/* data corresponds to displayid vend/prod/serial */
-struct drm_tile_group {
-	struct kref refcount;
-	struct drm_device *dev;
-	int id;
-	u8 group_data[8];
-};
 
 struct drm_crtc;
 struct drm_encoder;
@@ -116,6 +110,11 @@ struct drm_plane_helper_funcs;
  * never return in a failure from the ->atomic_check callback. Userspace assumes
  * that a DPMS On will always succeed. In other words: @enable controls resource
  * assignment, @active controls the actual hardware state.
+ *
+ * The three booleans active_changed, connectors_changed and mode_changed are
+ * intended to indicate whether a full modeset is needed, rather than strictly
+ * describing what has changed in a commit.
+ * See also: drm_atomic_crtc_needs_modeset()
  */
 struct drm_crtc_state {
 	struct drm_crtc *crtc;
@@ -564,6 +563,42 @@ struct drm_crtc_funcs {
 	 * before data structures are torndown.
 	 */
 	void (*early_unregister)(struct drm_crtc *crtc);
+
+	/**
+	 * @set_crc_source:
+	 *
+	 * Changes the source of CRC checksums of frames at the request of
+	 * userspace, typically for testing purposes. The sources available are
+	 * specific of each driver and a %NULL value indicates that CRC
+	 * generation is to be switched off.
+	 *
+	 * When CRC generation is enabled, the driver should call
+	 * drm_crtc_add_crc_entry() at each frame, providing any information
+	 * that characterizes the frame contents in the crcN arguments, as
+	 * provided from the configured source. Drivers must accept a "auto"
+	 * source name that will select a default source for this CRTC.
+	 *
+	 * This callback is optional if the driver does not support any CRC
+	 * generation functionality.
+	 *
+	 * RETURNS:
+	 *
+	 * 0 on success or a negative error code on failure.
+	 */
+	int (*set_crc_source)(struct drm_crtc *crtc, const char *source,
+			      size_t *values_cnt);
+
+	/**
+	 * @atomic_print_state:
+	 *
+	 * If driver subclasses struct &drm_crtc_state, it should implement
+	 * this optional hook for printing additional driver specific state.
+	 *
+	 * Do not call this directly, use drm_atomic_crtc_print_state()
+	 * instead.
+	 */
+	void (*atomic_print_state)(struct drm_printer *p,
+				   const struct drm_crtc_state *state);
 };
 
 /**
@@ -680,6 +715,55 @@ struct drm_crtc {
 	 * context.
 	 */
 	struct drm_modeset_acquire_ctx *acquire_ctx;
+<<<<<<< HEAD
+
+	/**
+	 * @fence_context:
+	 *
+	 * timeline context used for fence operations.
+	 */
+	unsigned int fence_context;
+
+	/**
+	 * @fence_lock:
+	 *
+	 * spinlock to protect the fences in the fence_context.
+	 */
+
+	spinlock_t fence_lock;
+	/**
+	 * @fence_seqno:
+	 *
+	 * Seqno variable used as monotonic counter for the fences
+	 * created on the CRTC's timeline.
+	 */
+	unsigned long fence_seqno;
+
+	/**
+	 * @timeline_name:
+	 *
+	 * The name of the CRTC's fence timeline.
+	 */
+	char timeline_name[32];
+};
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
+
+#ifdef CONFIG_DEBUG_FS
+	/**
+	 * @debugfs_entry:
+	 *
+	 * Debugfs directory for this CRTC.
+	 */
+	struct dentry *debugfs_entry;
+
+	/**
+	 * @crc:
+	 *
+	 * Configuration settings of CRC capture.
+	 */
+	struct drm_crtc_crc crc;
+#endif
 
 	/**
 	 * @fence_context:
@@ -726,314 +810,7 @@ struct drm_crtc {
  *
  * This is used to set modes.
  */
-struct drm_mode_set {
-	struct drm_framebuffer *fb;
-	struct drm_crtc *crtc;
-	struct drm_display_mode *mode;
-
-	uint32_t x;
-	uint32_t y;
-
-	struct drm_connector **connectors;
-	size_t num_connectors;
-};
-
-/**
- * struct drm_mode_config_funcs - basic driver provided mode setting functions
- *
- * Some global (i.e. not per-CRTC, connector, etc) mode setting functions that
- * involve drivers.
- */
-struct drm_mode_config_funcs {
-	/**
-	 * @fb_create:
-	 *
-	 * Create a new framebuffer object. The core does basic checks on the
-	 * requested metadata, but most of that is left to the driver. See
-	 * struct &drm_mode_fb_cmd2 for details.
-	 *
-	 * If the parameters are deemed valid and the backing storage objects in
-	 * the underlying memory manager all exist, then the driver allocates
-	 * a new &drm_framebuffer structure, subclassed to contain
-	 * driver-specific information (like the internal native buffer object
-	 * references). It also needs to fill out all relevant metadata, which
-	 * should be done by calling drm_helper_mode_fill_fb_struct().
-	 *
-	 * The initialization is finalized by calling drm_framebuffer_init(),
-	 * which registers the framebuffer and makes it accessible to other
-	 * threads.
-	 *
-	 * RETURNS:
-	 *
-	 * A new framebuffer with an initial reference count of 1 or a negative
-	 * error code encoded with ERR_PTR().
-	 */
-	struct drm_framebuffer *(*fb_create)(struct drm_device *dev,
-					     struct drm_file *file_priv,
-					     const struct drm_mode_fb_cmd2 *mode_cmd);
-
-	/**
-	 * @output_poll_changed:
-	 *
-	 * Callback used by helpers to inform the driver of output configuration
-	 * changes.
-	 *
-	 * Drivers implementing fbdev emulation with the helpers can call
-	 * drm_fb_helper_hotplug_changed from this hook to inform the fbdev
-	 * helper of output changes.
-	 *
-	 * FIXME:
-	 *
-	 * Except that there's no vtable for device-level helper callbacks
-	 * there's no reason this is a core function.
-	 */
-	void (*output_poll_changed)(struct drm_device *dev);
-
-	/**
-	 * @atomic_check:
-	 *
-	 * This is the only hook to validate an atomic modeset update. This
-	 * function must reject any modeset and state changes which the hardware
-	 * or driver doesn't support. This includes but is of course not limited
-	 * to:
-	 *
-	 *  - Checking that the modes, framebuffers, scaling and placement
-	 *    requirements and so on are within the limits of the hardware.
-	 *
-	 *  - Checking that any hidden shared resources are not oversubscribed.
-	 *    This can be shared PLLs, shared lanes, overall memory bandwidth,
-	 *    display fifo space (where shared between planes or maybe even
-	 *    CRTCs).
-	 *
-	 *  - Checking that virtualized resources exported to userspace are not
-	 *    oversubscribed. For various reasons it can make sense to expose
-	 *    more planes, crtcs or encoders than which are physically there. One
-	 *    example is dual-pipe operations (which generally should be hidden
-	 *    from userspace if when lockstepped in hardware, exposed otherwise),
-	 *    where a plane might need 1 hardware plane (if it's just on one
-	 *    pipe), 2 hardware planes (when it spans both pipes) or maybe even
-	 *    shared a hardware plane with a 2nd plane (if there's a compatible
-	 *    plane requested on the area handled by the other pipe).
-	 *
-	 *  - Check that any transitional state is possible and that if
-	 *    requested, the update can indeed be done in the vblank period
-	 *    without temporarily disabling some functions.
-	 *
-	 *  - Check any other constraints the driver or hardware might have.
-	 *
-	 *  - This callback also needs to correctly fill out the &drm_crtc_state
-	 *    in this update to make sure that drm_atomic_crtc_needs_modeset()
-	 *    reflects the nature of the possible update and returns true if and
-	 *    only if the update cannot be applied without tearing within one
-	 *    vblank on that CRTC. The core uses that information to reject
-	 *    updates which require a full modeset (i.e. blanking the screen, or
-	 *    at least pausing updates for a substantial amount of time) if
-	 *    userspace has disallowed that in its request.
-	 *
-	 *  - The driver also does not need to repeat basic input validation
-	 *    like done for the corresponding legacy entry points. The core does
-	 *    that before calling this hook.
-	 *
-	 * See the documentation of @atomic_commit for an exhaustive list of
-	 * error conditions which don't have to be checked at the
-	 * ->atomic_check() stage?
-	 *
-	 * See the documentation for struct &drm_atomic_state for how exactly
-	 * an atomic modeset update is described.
-	 *
-	 * Drivers using the atomic helpers can implement this hook using
-	 * drm_atomic_helper_check(), or one of the exported sub-functions of
-	 * it.
-	 *
-	 * RETURNS:
-	 *
-	 * 0 on success or one of the below negative error codes:
-	 *
-	 *  - -EINVAL, if any of the above constraints are violated.
-	 *
-	 *  - -EDEADLK, when returned from an attempt to acquire an additional
-	 *    &drm_modeset_lock through drm_modeset_lock().
-	 *
-	 *  - -ENOMEM, if allocating additional state sub-structures failed due
-	 *    to lack of memory.
-	 *
-	 *  - -EINTR, -EAGAIN or -ERESTARTSYS, if the IOCTL should be restarted.
-	 *    This can either be due to a pending signal, or because the driver
-	 *    needs to completely bail out to recover from an exceptional
-	 *    situation like a GPU hang. From a userspace point all errors are
-	 *    treated equally.
-	 */
-	int (*atomic_check)(struct drm_device *dev,
-			    struct drm_atomic_state *state);
-
-	/**
-	 * @atomic_commit:
-	 *
-	 * This is the only hook to commit an atomic modeset update. The core
-	 * guarantees that @atomic_check has been called successfully before
-	 * calling this function, and that nothing has been changed in the
-	 * interim.
-	 *
-	 * See the documentation for struct &drm_atomic_state for how exactly
-	 * an atomic modeset update is described.
-	 *
-	 * Drivers using the atomic helpers can implement this hook using
-	 * drm_atomic_helper_commit(), or one of the exported sub-functions of
-	 * it.
-	 *
-	 * Nonblocking commits (as indicated with the nonblock parameter) must
-	 * do any preparatory work which might result in an unsuccessful commit
-	 * in the context of this callback. The only exceptions are hardware
-	 * errors resulting in -EIO. But even in that case the driver must
-	 * ensure that the display pipe is at least running, to avoid
-	 * compositors crashing when pageflips don't work. Anything else,
-	 * specifically committing the update to the hardware, should be done
-	 * without blocking the caller. For updates which do not require a
-	 * modeset this must be guaranteed.
-	 *
-	 * The driver must wait for any pending rendering to the new
-	 * framebuffers to complete before executing the flip. It should also
-	 * wait for any pending rendering from other drivers if the underlying
-	 * buffer is a shared dma-buf. Nonblocking commits must not wait for
-	 * rendering in the context of this callback.
-	 *
-	 * An application can request to be notified when the atomic commit has
-	 * completed. These events are per-CRTC and can be distinguished by the
-	 * CRTC index supplied in &drm_event to userspace.
-	 *
-	 * The drm core will supply a struct &drm_event in the event
-	 * member of each CRTC's &drm_crtc_state structure. See the
-	 * documentation for &drm_crtc_state for more details about the precise
-	 * semantics of this event.
-	 *
-	 * NOTE:
-	 *
-	 * Drivers are not allowed to shut down any display pipe successfully
-	 * enabled through an atomic commit on their own. Doing so can result in
-	 * compositors crashing if a page flip is suddenly rejected because the
-	 * pipe is off.
-	 *
-	 * RETURNS:
-	 *
-	 * 0 on success or one of the below negative error codes:
-	 *
-	 *  - -EBUSY, if a nonblocking updated is requested and there is
-	 *    an earlier updated pending. Drivers are allowed to support a queue
-	 *    of outstanding updates, but currently no driver supports that.
-	 *    Note that drivers must wait for preceding updates to complete if a
-	 *    synchronous update is requested, they are not allowed to fail the
-	 *    commit in that case.
-	 *
-	 *  - -ENOMEM, if the driver failed to allocate memory. Specifically
-	 *    this can happen when trying to pin framebuffers, which must only
-	 *    be done when committing the state.
-	 *
-	 *  - -ENOSPC, as a refinement of the more generic -ENOMEM to indicate
-	 *    that the driver has run out of vram, iommu space or similar GPU
-	 *    address space needed for framebuffer.
-	 *
-	 *  - -EIO, if the hardware completely died.
-	 *
-	 *  - -EINTR, -EAGAIN or -ERESTARTSYS, if the IOCTL should be restarted.
-	 *    This can either be due to a pending signal, or because the driver
-	 *    needs to completely bail out to recover from an exceptional
-	 *    situation like a GPU hang. From a userspace point of view all errors are
-	 *    treated equally.
-	 *
-	 * This list is exhaustive. Specifically this hook is not allowed to
-	 * return -EINVAL (any invalid requests should be caught in
-	 * @atomic_check) or -EDEADLK (this function must not acquire
-	 * additional modeset locks).
-	 */
-	int (*atomic_commit)(struct drm_device *dev,
-			     struct drm_atomic_state *state,
-			     bool nonblock);
-
-	/**
-	 * @atomic_state_alloc:
-	 *
-	 * This optional hook can be used by drivers that want to subclass struct
-	 * &drm_atomic_state to be able to track their own driver-private global
-	 * state easily. If this hook is implemented, drivers must also
-	 * implement @atomic_state_clear and @atomic_state_free.
-	 *
-	 * RETURNS:
-	 *
-	 * A new &drm_atomic_state on success or NULL on failure.
-	 */
-	struct drm_atomic_state *(*atomic_state_alloc)(struct drm_device *dev);
-
-	/**
-	 * @atomic_state_clear:
-	 *
-	 * This hook must clear any driver private state duplicated into the
-	 * passed-in &drm_atomic_state. This hook is called when the caller
-	 * encountered a &drm_modeset_lock deadlock and needs to drop all
-	 * already acquired locks as part of the deadlock avoidance dance
-	 * implemented in drm_modeset_lock_backoff().
-	 *
-	 * Any duplicated state must be invalidated since a concurrent atomic
-	 * update might change it, and the drm atomic interfaces always apply
-	 * updates as relative changes to the current state.
-	 *
-	 * Drivers that implement this must call drm_atomic_state_default_clear()
-	 * to clear common state.
-	 */
-	void (*atomic_state_clear)(struct drm_atomic_state *state);
-
-	/**
-	 * @atomic_state_free:
-	 *
-	 * This hook needs driver private resources and the &drm_atomic_state
-	 * itself. Note that the core first calls drm_atomic_state_clear() to
-	 * avoid code duplicate between the clear and free hooks.
-	 *
-	 * Drivers that implement this must call drm_atomic_state_default_free()
-	 * to release common resources.
-	 */
-	void (*atomic_state_free)(struct drm_atomic_state *state);
-};
-
-/**
- * struct drm_mode_config - Mode configuration control structure
- * @mutex: mutex protecting KMS related lists and structures
- * @connection_mutex: ww mutex protecting connector state and routing
- * @acquire_ctx: global implicit acquire context used by atomic drivers for
- * 	legacy IOCTLs
- * @fb_lock: mutex to protect fb state and lists
- * @num_fb: number of fbs available
- * @fb_list: list of framebuffers available
- * @num_encoder: number of encoders on this device
- * @encoder_list: list of encoder objects
- * @num_overlay_plane: number of overlay planes on this device
- * @num_total_plane: number of universal (i.e. with primary/curso) planes on this device
- * @plane_list: list of plane objects
- * @num_crtc: number of CRTCs on this device
- * @crtc_list: list of CRTC objects
- * @property_list: list of property objects
- * @min_width: minimum pixel width on this device
- * @min_height: minimum pixel height on this device
- * @max_width: maximum pixel width on this device
- * @max_height: maximum pixel height on this device
- * @funcs: core driver provided mode setting functions
- * @fb_base: base address of the framebuffer
- * @poll_enabled: track polling support for this device
- * @poll_running: track polling status for this device
- * @delayed_event: track delayed poll uevent deliver for this device
- * @output_poll_work: delayed work for polling in process context
- * @property_blob_list: list of all the blob property objects
- * @blob_lock: mutex for blob property allocation and management
- * @*_property: core property tracking
- * @preferred_depth: preferred RBG pixel depth, used by fb helpers
- * @prefer_shadow: hint to userspace to prefer shadow-fb rendering
- * @cursor_width: hint to userspace for max cursor width
- * @cursor_height: hint to userspace for max cursor height
- * @helper_private: mid-layer private data
- *
- * Core mode resource tracking structure.  All CRTC, encoders, and connectors
- * enumerated by the driver are added here, as are global properties.  Some
- * global restrictions are also here, e.g. dimension restrictions.
- */
+<<<<<<< HEAD
 struct drm_mode_config {
 	struct mutex mutex; /* protects configuration (mode lists etc.) */
 	struct drm_modeset_lock connection_mutex; /* protects connector->encoder and encoder->crtc links */
@@ -1357,23 +1134,30 @@ struct drm_mode_config {
 	 * Whether the driver supports fb modifiers in the ADDFB2.1 ioctl call.
 	 */
 	bool allow_fb_modifiers;
+=======
+struct drm_mode_set {
+	struct drm_framebuffer *fb;
+	struct drm_crtc *crtc;
+	struct drm_display_mode *mode;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
-	/* cursor size */
-	uint32_t cursor_width, cursor_height;
+	uint32_t x;
+	uint32_t y;
 
-	struct drm_mode_config_helper_funcs *helper_private;
+	struct drm_connector **connectors;
+	size_t num_connectors;
 };
 
 #define obj_to_crtc(x) container_of(x, struct drm_crtc, base)
 
-extern __printf(6, 7)
+__printf(6, 7)
 int drm_crtc_init_with_planes(struct drm_device *dev,
 			      struct drm_crtc *crtc,
 			      struct drm_plane *primary,
 			      struct drm_plane *cursor,
 			      const struct drm_crtc_funcs *funcs,
 			      const char *name, ...);
-extern void drm_crtc_cleanup(struct drm_crtc *crtc);
+void drm_crtc_cleanup(struct drm_crtc *crtc);
 
 /**
  * drm_crtc_index - find the index of a registered CRTC
@@ -1394,28 +1178,17 @@ static inline unsigned int drm_crtc_index(const struct drm_crtc *crtc)
  * Given a registered CRTC, return the mask bit of that CRTC for an
  * encoder's possible_crtcs field.
  */
-static inline uint32_t drm_crtc_mask(struct drm_crtc *crtc)
+static inline uint32_t drm_crtc_mask(const struct drm_crtc *crtc)
 {
 	return 1 << drm_crtc_index(crtc);
 }
 
-extern void drm_crtc_get_hv_timing(const struct drm_display_mode *mode,
-				   int *hdisplay, int *vdisplay);
-extern int drm_crtc_force_disable(struct drm_crtc *crtc);
-extern int drm_crtc_force_disable_all(struct drm_device *dev);
+void drm_crtc_get_hv_timing(const struct drm_display_mode *mode,
+			    int *hdisplay, int *vdisplay);
+int drm_crtc_force_disable(struct drm_crtc *crtc);
+int drm_crtc_force_disable_all(struct drm_device *dev);
 
-extern void drm_mode_config_init(struct drm_device *dev);
-extern void drm_mode_config_reset(struct drm_device *dev);
-extern void drm_mode_config_cleanup(struct drm_device *dev);
-
-extern int drm_mode_set_config_internal(struct drm_mode_set *set);
-
-extern struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,
-							 char topology[8]);
-extern struct drm_tile_group *drm_mode_get_tile_group(struct drm_device *dev,
-					       char topology[8]);
-extern void drm_mode_put_tile_group(struct drm_device *dev,
-				   struct drm_tile_group *tg);
+int drm_mode_set_config_internal(struct drm_mode_set *set);
 
 /* Helpers */
 static inline struct drm_crtc *drm_crtc_find(struct drm_device *dev,

@@ -89,6 +89,10 @@
 
 #define SO_CNX_ADVICE		0x402E
 
+<<<<<<< HEAD
 #define SO_COOKIE		0x4032
+=======
+#define SCM_TIMESTAMPING_OPT_STATS	0x402F
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #endif /* _UAPI_ASM_SOCKET_H */

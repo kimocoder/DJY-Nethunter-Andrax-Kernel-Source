@@ -36,11 +36,17 @@
 static inline void ehn_desc_rx_set_on_ring(struct dma_desc *p, int end,
 					   int bfsize)
 {
+<<<<<<< HEAD
 	if (bfsize == BUF_SIZE_16KiB)
 		p->des1 |= cpu_to_le32((BUF_SIZE_8KiB
 				<< ERDES1_BUFFER2_SIZE_SHIFT)
                 & ERDES1_BUFFER2_SIZE_MASK);
 
+=======
+	p->des1 |= cpu_to_le32(((BUF_SIZE_8KiB - 1)
+			<< ERDES1_BUFFER2_SIZE_SHIFT)
+		   & ERDES1_BUFFER2_SIZE_MASK);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (end)
 		p->des1 |= cpu_to_le32(ERDES1_END_RING);
@@ -68,6 +74,7 @@ static inline void enh_set_tx_desc_len_on_ring(struct dma_desc *p, int len)
 /* Normal descriptors */
 static inline void ndesc_rx_set_on_ring(struct dma_desc *p, int end, int bfsize)
 {
+<<<<<<< HEAD
 	if (bfsize >= BUF_SIZE_2KiB) {
 		int bfsize2;
 
@@ -75,6 +82,11 @@ static inline void ndesc_rx_set_on_ring(struct dma_desc *p, int end, int bfsize)
 		p->des1 |= cpu_to_le32((bfsize2 << RDES1_BUFFER2_SIZE_SHIFT)
 			    & RDES1_BUFFER2_SIZE_MASK);
 	}
+=======
+	p->des1 |= cpu_to_le32(((BUF_SIZE_2KiB - 1)
+				<< RDES1_BUFFER2_SIZE_SHIFT)
+		    & RDES1_BUFFER2_SIZE_MASK);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (end)
 		p->des1 |= cpu_to_le32(RDES1_END_RING);

@@ -146,9 +146,28 @@ struct ufs_card_fix {
  */
 #define UFS_DEVICE_QUIRK_WAIT_AFTER_REF_CLK_UNGATE	(1 << 9)
 
+/*
+ * Some UFS devices require host PA_TACTIVATE to be lower than device
+ * PA_TACTIVATE, enabling this quirk ensure this.
+ */
+#define UFS_DEVICE_QUIRK_HOST_PA_TACTIVATE	(1 << 7)
+
+/*
+ * The max. value PA_SaveConfigTime is 250 (10us) but this is not enough for
+ * some vendors.
+ * Gear switch from PWM to HS may fail even with this max. PA_SaveConfigTime.
+ * Gear switch can be issued by host controller as an error recovery and any
+ * software delay will not help on this case so we need to increase
+ * PA_SaveConfigTime to >32us as per vendor recommendation.
+ */
+#define UFS_DEVICE_QUIRK_HOST_PA_SAVECONFIGTIME	(1 << 8)
+
 struct ufs_hba;
 void ufs_advertise_fixup_device(struct ufs_hba *hba);
 
+<<<<<<< HEAD
 /* liochen@BSP, 2016/11/30, Add ufs info into *##*37847# */
 int ufs_fill_info(struct ufs_hba *hba);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif /* UFS_QUIRKS_H_ */

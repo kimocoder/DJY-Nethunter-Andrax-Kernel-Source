@@ -28,6 +28,7 @@
 #include <linux/amd-iommu.h>
 #include <linux/export.h>
 #include <linux/iommu.h>
+#include <linux/kmemleak.h>
 #include <asm/pci-direct.h>
 #include <asm/iommu.h>
 #include <asm/gart.h>
@@ -2094,6 +2095,7 @@ static struct syscore_ops amd_iommu_syscore_ops = {
 
 static void __init free_on_init_error(void)
 {
+	kmemleak_free(irq_lookup_table);
 	free_pages((unsigned long)irq_lookup_table,
 		   get_order(rlookup_table_size));
 
@@ -2211,14 +2213,13 @@ static void __init free_dma_resources(void)
 static int __init early_amd_iommu_init(void)
 {
 	struct acpi_table_header *ivrs_base;
-	acpi_size ivrs_size;
 	acpi_status status;
 	int i, remap_cache_sz, ret = 0;
 
 	if (!amd_iommu_detected)
 		return -ENODEV;
 
-	status = acpi_get_table_with_size("IVRS", 0, &ivrs_base, &ivrs_size);
+	status = acpi_get_table("IVRS", 0, &ivrs_base);
 	if (status == AE_NOT_FOUND)
 		return -ENODEV;
 	else if (ACPI_FAILURE(status)) {
@@ -2325,6 +2326,8 @@ static int __init early_amd_iommu_init(void)
 		irq_lookup_table = (void *)__get_free_pages(
 				GFP_KERNEL | __GFP_ZERO,
 				get_order(rlookup_table_size));
+		kmemleak_alloc(irq_lookup_table, rlookup_table_size,
+			       1, GFP_KERNEL);
 		if (!irq_lookup_table)
 			goto out;
 	}
@@ -2338,7 +2341,7 @@ static int __init early_amd_iommu_init(void)
 
 out:
 	/* Don't leak any ACPI memory */
-	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
+	acpi_put_table(ivrs_base);
 	ivrs_base = NULL;
 
 	return ret;
@@ -2362,10 +2365,9 @@ out:
 static bool detect_ivrs(void)
 {
 	struct acpi_table_header *ivrs_base;
-	acpi_size ivrs_size;
 	acpi_status status;
 
-	status = acpi_get_table_with_size("IVRS", 0, &ivrs_base, &ivrs_size);
+	status = acpi_get_table("IVRS", 0, &ivrs_base);
 	if (status == AE_NOT_FOUND)
 		return false;
 	else if (ACPI_FAILURE(status)) {
@@ -2374,7 +2376,7 @@ static bool detect_ivrs(void)
 		return false;
 	}
 
-	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
+	acpi_put_table(ivrs_base);
 
 	/* Make sure ACS will be enabled during PCI probe */
 	pci_request_acs();

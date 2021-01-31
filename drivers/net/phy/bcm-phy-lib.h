@@ -20,11 +20,16 @@
 int bcm_phy_write_exp(struct phy_device *phydev, u16 reg, u16 val);
 int bcm_phy_read_exp(struct phy_device *phydev, u16 reg);
 
+<<<<<<< HEAD
 static inline int bcm_phy_write_exp_sel(struct phy_device *phydev,
 					u16 reg, u16 val)
 {
 	return bcm_phy_write_exp(phydev, reg | MII_BCM54XX_EXP_SEL_ER, val);
 }
+=======
+int bcm54xx_auxctl_write(struct phy_device *phydev, u16 regnum, u16 val);
+int bcm54xx_auxctl_read(struct phy_device *phydev, u16 regnum);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 int bcm_phy_write_misc(struct phy_device *phydev,
 		       u16 reg, u16 chl, u16 value);
@@ -40,5 +45,15 @@ int bcm_phy_config_intr(struct phy_device *phydev);
 
 int bcm_phy_enable_apd(struct phy_device *phydev, bool dll_pwr_down);
 
-int bcm_phy_enable_eee(struct phy_device *phydev);
+int bcm_phy_set_eee(struct phy_device *phydev, bool enable);
+
+int bcm_phy_downshift_get(struct phy_device *phydev, u8 *count);
+
+int bcm_phy_downshift_set(struct phy_device *phydev, u8 count);
+
+int bcm_phy_get_sset_count(struct phy_device *phydev);
+void bcm_phy_get_strings(struct phy_device *phydev, u8 *data);
+void bcm_phy_get_stats(struct phy_device *phydev, u64 *shadow,
+		       struct ethtool_stats *stats, u64 *data);
+
 #endif /* _LINUX_BCM_PHY_LIB_H */

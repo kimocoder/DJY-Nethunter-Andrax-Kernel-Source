@@ -1148,11 +1148,14 @@ static int f2fs_cross_rename(struct inode *old_dir, struct dentry *old_dentry,
 		up_write(&F2FS_I(new_dir)->i_sem);
 	}
 	f2fs_mark_inode_dirty_sync(new_dir, false);
+<<<<<<< HEAD
 
 	if (F2FS_OPTION(sbi).fsync_mode == FSYNC_MODE_STRICT) {
 		f2fs_add_ino_entry(sbi, old_dir->i_ino, TRANS_DIR_INO);
 		f2fs_add_ino_entry(sbi, new_dir->i_ino, TRANS_DIR_INO);
 	}
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	f2fs_unlock_op(sbi);
 
@@ -1223,7 +1226,6 @@ static const char *f2fs_encrypted_get_link(struct dentry *dentry,
 }
 
 const struct inode_operations f2fs_encrypted_symlink_inode_operations = {
-	.readlink       = generic_readlink,
 	.get_link       = f2fs_encrypted_get_link,
 	.getattr	= f2fs_getattr,
 	.setattr	= f2fs_setattr,
@@ -1253,7 +1255,6 @@ const struct inode_operations f2fs_dir_inode_operations = {
 };
 
 const struct inode_operations f2fs_symlink_inode_operations = {
-	.readlink       = generic_readlink,
 	.get_link       = f2fs_get_link,
 	.getattr	= f2fs_getattr,
 	.setattr	= f2fs_setattr,

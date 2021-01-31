@@ -45,7 +45,11 @@
 #include <asm/asm.h>
 #include <asm/smap.h>
 #include <asm/export.h>
+<<<<<<< HEAD
 #include <asm/nospec-branch.h>
+=======
+#include <asm/frame.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	.section .entry.text, "ax"
 
@@ -176,6 +180,22 @@
 	SET_KERNEL_GS %edx
 .endm
 
+/*
+ * This is a sneaky trick to help the unwinder find pt_regs on the stack.  The
+ * frame pointer is replaced with an encoded pointer to pt_regs.  The encoding
+ * is just setting the LSB, which makes it an invalid stack address and is also
+ * a signal to the unwinder that it's a pt_regs pointer in disguise.
+ *
+ * NOTE: This macro must be used *after* SAVE_ALL because it corrupts the
+ * original rbp.
+ */
+.macro ENCODE_FRAME_POINTER
+#ifdef CONFIG_FRAME_POINTER
+	mov %esp, %ebp
+	orl $0x1, %ebp
+#endif
+.endm
+
 .macro RESTORE_INT_REGS
 	popl	%ebx
 	popl	%ecx
@@ -252,6 +272,23 @@ ENTRY(__switch_to_asm)
 END(__switch_to_asm)
 
 /*
+ * The unwinder expects the last frame on the stack to always be at the same
+ * offset from the end of the page, which allows it to validate the stack.
+ * Calling schedule_tail() directly would break that convention because its an
+ * asmlinkage function so its argument has to be pushed on the stack.  This
+ * wrapper creates a proper "end of stack" frame header before the call.
+ */
+ENTRY(schedule_tail_wrapper)
+	FRAME_BEGIN
+
+	pushl	%eax
+	call	schedule_tail
+	popl	%eax
+
+	FRAME_END
+	ret
+ENDPROC(schedule_tail_wrapper)
+/*
  * A newly forked process directly context switches into this address.
  *
  * eax: prev task we switched from
@@ -259,9 +296,7 @@ END(__switch_to_asm)
  * edi: kernel thread arg
  */
 ENTRY(ret_from_fork)
-	pushl	%eax
-	call	schedule_tail
-	popl	%eax
+	call	schedule_tail_wrapper
 
 	testl	%ebx, %ebx
 	jnz	1f		/* kernel threads are uncommon */
@@ -321,13 +356,13 @@ END(ret_from_exception)
 #ifdef CONFIG_PREEMPT
 ENTRY(resume_kernel)
 	DISABLE_INTERRUPTS(CLBR_ANY)
-need_resched:
+.Lneed_resched:
 	cmpl	$0, PER_CPU_VAR(__preempt_count)
 	jnz	restore_all
 	testl	$X86_EFLAGS_IF, PT_EFLAGS(%esp)	# interrupts off (exception path) ?
 	jz	restore_all
 	call	preempt_schedule_irq
-	jmp	need_resched
+	jmp	.Lneed_resched
 END(resume_kernel)
 #endif
 
@@ -348,7 +383,7 @@ GLOBAL(__begin_SYSENTER_singlestep_region)
  */
 ENTRY(xen_sysenter_target)
 	addl	$5*4, %esp			/* remove xen-provided frame */
-	jmp	sysenter_past_esp
+	jmp	.Lsysenter_past_esp
 #endif
 
 /*
@@ -385,7 +420,7 @@ ENTRY(xen_sysenter_target)
  */
 ENTRY(entry_SYSENTER_32)
 	movl	TSS_sysenter_sp0(%esp), %esp
-sysenter_past_esp:
+.Lsysenter_past_esp:
 	pushl	$__USER_DS		/* pt_regs->ss */
 	pushl	%ebp			/* pt_regs->sp (stashed in bp) */
 	pushfl				/* pt_regs->flags (except IF = 0) */
@@ -518,9 +553,9 @@ ENTRY(entry_INT80_32)
 
 restore_all:
 	TRACE_IRQS_IRET
-restore_all_notrace:
+.Lrestore_all_notrace:
 #ifdef CONFIG_X86_ESPFIX32
-	ALTERNATIVE	"jmp restore_nocheck", "", X86_BUG_ESPFIX
+	ALTERNATIVE	"jmp .Lrestore_nocheck", "", X86_BUG_ESPFIX
 
 	movl	PT_EFLAGS(%esp), %eax		# mix EFLAGS, SS and CS
 	/*
@@ -532,22 +567,23 @@ restore_all_notrace:
 	movb	PT_CS(%esp), %al
 	andl	$(X86_EFLAGS_VM | (SEGMENT_TI_MASK << 8) | SEGMENT_RPL_MASK), %eax
 	cmpl	$((SEGMENT_LDT << 8) | USER_RPL), %eax
-	je ldt_ss				# returning to user-space with LDT SS
+	je .Lldt_ss				# returning to user-space with LDT SS
 #endif
-restore_nocheck:
+.Lrestore_nocheck:
 	RESTORE_REGS 4				# skip orig_eax/error_code
-irq_return:
+.Lirq_return:
 	INTERRUPT_RETURN
+
 .section .fixup, "ax"
 ENTRY(iret_exc	)
 	pushl	$0				# no error code
 	pushl	$do_iret_error
-	jmp	error_code
+	jmp	common_exception
 .previous
-	_ASM_EXTABLE(irq_return, iret_exc)
+	_ASM_EXTABLE(.Lirq_return, iret_exc)
 
 #ifdef CONFIG_X86_ESPFIX32
-ldt_ss:
+.Lldt_ss:
 /*
  * Setup and switch to ESPFIX stack
  *
@@ -576,7 +612,7 @@ ldt_ss:
 	 */
 	DISABLE_INTERRUPTS(CLBR_EAX)
 	lss	(%esp), %esp			/* switch to espfix segment */
-	jmp	restore_nocheck
+	jmp	.Lrestore_nocheck
 #endif
 ENDPROC(entry_INT80_32)
 
@@ -638,6 +674,7 @@ common_interrupt:
 	ASM_CLAC
 	addl	$-0x80, (%esp)			/* Adjust vector into the [-256, -1] range */
 	SAVE_ALL
+	ENCODE_FRAME_POINTER
 	TRACE_IRQS_OFF
 	movl	%esp, %eax
 	call	do_IRQ
@@ -649,6 +686,7 @@ ENTRY(name)				\
 	ASM_CLAC;			\
 	pushl	$~(nr);			\
 	SAVE_ALL;			\
+	ENCODE_FRAME_POINTER;		\
 	TRACE_IRQS_OFF			\
 	movl	%esp, %eax;		\
 	call	fn;			\
@@ -673,7 +711,7 @@ ENTRY(coprocessor_error)
 	ASM_CLAC
 	pushl	$0
 	pushl	$do_coprocessor_error
-	jmp	error_code
+	jmp	common_exception
 END(coprocessor_error)
 
 ENTRY(simd_coprocessor_error)
@@ -687,14 +725,14 @@ ENTRY(simd_coprocessor_error)
 #else
 	pushl	$do_simd_coprocessor_error
 #endif
-	jmp	error_code
+	jmp	common_exception
 END(simd_coprocessor_error)
 
 ENTRY(device_not_available)
 	ASM_CLAC
 	pushl	$-1				# mark this as an int
 	pushl	$do_device_not_available
-	jmp	error_code
+	jmp	common_exception
 END(device_not_available)
 
 #ifdef CONFIG_PARAVIRT
@@ -708,59 +746,59 @@ ENTRY(overflow)
 	ASM_CLAC
 	pushl	$0
 	pushl	$do_overflow
-	jmp	error_code
+	jmp	common_exception
 END(overflow)
 
 ENTRY(bounds)
 	ASM_CLAC
 	pushl	$0
 	pushl	$do_bounds
-	jmp	error_code
+	jmp	common_exception
 END(bounds)
 
 ENTRY(invalid_op)
 	ASM_CLAC
 	pushl	$0
 	pushl	$do_invalid_op
-	jmp	error_code
+	jmp	common_exception
 END(invalid_op)
 
 ENTRY(coprocessor_segment_overrun)
 	ASM_CLAC
 	pushl	$0
 	pushl	$do_coprocessor_segment_overrun
-	jmp	error_code
+	jmp	common_exception
 END(coprocessor_segment_overrun)
 
 ENTRY(invalid_TSS)
 	ASM_CLAC
 	pushl	$do_invalid_TSS
-	jmp	error_code
+	jmp	common_exception
 END(invalid_TSS)
 
 ENTRY(segment_not_present)
 	ASM_CLAC
 	pushl	$do_segment_not_present
-	jmp	error_code
+	jmp	common_exception
 END(segment_not_present)
 
 ENTRY(stack_segment)
 	ASM_CLAC
 	pushl	$do_stack_segment
-	jmp	error_code
+	jmp	common_exception
 END(stack_segment)
 
 ENTRY(alignment_check)
 	ASM_CLAC
 	pushl	$do_alignment_check
-	jmp	error_code
+	jmp	common_exception
 END(alignment_check)
 
 ENTRY(divide_error)
 	ASM_CLAC
 	pushl	$0				# no error code
 	pushl	$do_divide_error
-	jmp	error_code
+	jmp	common_exception
 END(divide_error)
 
 #ifdef CONFIG_X86_MCE
@@ -768,7 +806,7 @@ ENTRY(machine_check)
 	ASM_CLAC
 	pushl	$0
 	pushl	machine_check_vector
-	jmp	error_code
+	jmp	common_exception
 END(machine_check)
 #endif
 
@@ -776,13 +814,14 @@ ENTRY(spurious_interrupt_bug)
 	ASM_CLAC
 	pushl	$0
 	pushl	$do_spurious_interrupt_bug
-	jmp	error_code
+	jmp	common_exception
 END(spurious_interrupt_bug)
 
 #ifdef CONFIG_XEN
 ENTRY(xen_hypervisor_callback)
 	pushl	$-1				/* orig_ax = -1 => not a system call */
 	SAVE_ALL
+	ENCODE_FRAME_POINTER
 	TRACE_IRQS_OFF
 
 	/*
@@ -837,6 +876,7 @@ ENTRY(xen_failsafe_callback)
 	jmp	iret_exc
 5:	pushl	$-1				/* orig_ax = -1 => not a system call */
 	SAVE_ALL
+	ENCODE_FRAME_POINTER
 	jmp	ret_from_exception
 
 .section .fixup, "ax"
@@ -896,7 +936,7 @@ ftrace_call:
 	popl	%edx
 	popl	%ecx
 	popl	%eax
-ftrace_ret:
+.Lftrace_ret:
 #ifdef CONFIG_FUNCTION_GRAPH_TRACER
 .globl ftrace_graph_call
 ftrace_graph_call:
@@ -966,7 +1006,7 @@ GLOBAL(ftrace_regs_call)
 	popl	%gs
 	addl	$8, %esp			/* Skip orig_ax and ip */
 	popf					/* Pop flags at end (no addl to corrupt flags) */
-	jmp	ftrace_ret
+	jmp	.Lftrace_ret
 
 	popf
 	jmp	ftrace_stub
@@ -977,7 +1017,7 @@ ENTRY(mcount)
 	jb	ftrace_stub			/* Paging not enabled yet? */
 
 	cmpl	$ftrace_stub, ftrace_trace_function
-	jnz	trace
+	jnz	.Ltrace
 #ifdef CONFIG_FUNCTION_GRAPH_TRACER
 	cmpl	$ftrace_stub, ftrace_graph_return
 	jnz	ftrace_graph_caller
@@ -990,7 +1030,7 @@ ftrace_stub:
 	ret
 
 	/* taken from glibc */
-trace:
+.Ltrace:
 	pushl	%eax
 	pushl	%ecx
 	pushl	%edx
@@ -1042,7 +1082,7 @@ return_to_handler:
 ENTRY(trace_page_fault)
 	ASM_CLAC
 	pushl	$trace_do_page_fault
-	jmp	error_code
+	jmp	common_exception
 END(trace_page_fault)
 #endif
 
@@ -1050,7 +1090,10 @@ ENTRY(page_fault)
 	ASM_CLAC
 	pushl	$do_page_fault
 	ALIGN
-error_code:
+	jmp common_exception
+END(page_fault)
+
+common_exception:
 	/* the function address is in %gs's slot on the stack */
 	pushl	%fs
 	pushl	%es
@@ -1062,6 +1105,7 @@ error_code:
 	pushl	%edx
 	pushl	%ecx
 	pushl	%ebx
+	ENCODE_FRAME_POINTER
 	cld
 	movl	$(__KERNEL_PERCPU), %ecx
 	movl	%ecx, %fs
@@ -1079,7 +1123,7 @@ error_code:
 	movl	%esp, %eax			# pt_regs pointer
 	CALL_NOSPEC %edi
 	jmp	ret_from_exception
-END(page_fault)
+END(common_exception)
 
 ENTRY(debug)
 	/*
@@ -1094,6 +1138,7 @@ ENTRY(debug)
 	ASM_CLAC
 	pushl	$-1				# mark this as an int
 	SAVE_ALL
+	ENCODE_FRAME_POINTER
 	xorl	%edx, %edx			# error code 0
 	movl	%esp, %eax			# pt_regs pointer
 
@@ -1109,11 +1154,11 @@ ENTRY(debug)
 
 .Ldebug_from_sysenter_stack:
 	/* We're on the SYSENTER stack.  Switch off. */
-	movl	%esp, %ebp
+	movl	%esp, %ebx
 	movl	PER_CPU_VAR(cpu_current_top_of_stack), %esp
 	TRACE_IRQS_OFF
 	call	do_debug
-	movl	%ebp, %esp
+	movl	%ebx, %esp
 	jmp	ret_from_exception
 END(debug)
 
@@ -1131,11 +1176,12 @@ ENTRY(nmi)
 	movl	%ss, %eax
 	cmpw	$__ESPFIX_SS, %ax
 	popl	%eax
-	je	nmi_espfix_stack
+	je	.Lnmi_espfix_stack
 #endif
 
 	pushl	%eax				# pt_regs->orig_ax
 	SAVE_ALL
+	ENCODE_FRAME_POINTER
 	xorl	%edx, %edx			# zero error code
 	movl	%esp, %eax			# pt_regs pointer
 
@@ -1147,21 +1193,21 @@ ENTRY(nmi)
 
 	/* Not on SYSENTER stack. */
 	call	do_nmi
-	jmp	restore_all_notrace
+	jmp	.Lrestore_all_notrace
 
 .Lnmi_from_sysenter_stack:
 	/*
 	 * We're on the SYSENTER stack.  Switch off.  No one (not even debug)
 	 * is using the thread stack right now, so it's safe for us to use it.
 	 */
-	movl	%esp, %ebp
+	movl	%esp, %ebx
 	movl	PER_CPU_VAR(cpu_current_top_of_stack), %esp
 	call	do_nmi
-	movl	%ebp, %esp
-	jmp	restore_all_notrace
+	movl	%ebx, %esp
+	jmp	.Lrestore_all_notrace
 
 #ifdef CONFIG_X86_ESPFIX32
-nmi_espfix_stack:
+.Lnmi_espfix_stack:
 	/*
 	 * create the pointer to lss back
 	 */
@@ -1174,12 +1220,13 @@ nmi_espfix_stack:
 	.endr
 	pushl	%eax
 	SAVE_ALL
+	ENCODE_FRAME_POINTER
 	FIXUP_ESPFIX_STACK			# %eax == %esp
 	xorl	%edx, %edx			# zero error code
 	call	do_nmi
 	RESTORE_REGS
 	lss	12+4(%esp), %esp		# back to espfix stack
-	jmp	irq_return
+	jmp	.Lirq_return
 #endif
 END(nmi)
 
@@ -1187,6 +1234,7 @@ ENTRY(int3)
 	ASM_CLAC
 	pushl	$-1				# mark this as an int
 	SAVE_ALL
+	ENCODE_FRAME_POINTER
 	TRACE_IRQS_OFF
 	xorl	%edx, %edx			# zero error code
 	movl	%esp, %eax			# pt_regs pointer
@@ -1197,14 +1245,14 @@ END(int3)
 ENTRY(general_protection)
 	ASM_CLAC
 	pushl	$do_general_protection
-	jmp	error_code
+	jmp	common_exception
 END(general_protection)
 
 #ifdef CONFIG_KVM_GUEST
 ENTRY(async_page_fault)
 	ASM_CLAC
 	pushl	$do_async_page_fault
-	jmp	error_code
+	jmp	common_exception
 END(async_page_fault)
 #endif
 

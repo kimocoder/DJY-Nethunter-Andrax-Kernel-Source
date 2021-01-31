@@ -25,6 +25,7 @@
 #include <asm/vmx.h>
 #include <asm/paravirt.h>
 #include <asm/alternative.h>
+<<<<<<< HEAD
 #include <asm/hypervisor.h>
 #include <asm/pgtable.h>
 #include <asm/cacheflush.h>
@@ -73,11 +74,21 @@ EXPORT_SYMBOL_GPL(mds_user_clear);
 /* Control MDS CPU buffer clear before idling (halt, mwait) */
 DEFINE_STATIC_KEY_FALSE(mds_idle_clear);
 EXPORT_SYMBOL_GPL(mds_idle_clear);
+=======
+#include <asm/pgtable.h>
+#include <asm/cacheflush.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 void __init check_bugs(void)
 {
 	identify_boot_cpu();
 
+	if (!IS_ENABLED(CONFIG_SMP)) {
+		pr_info("CPU: ");
+		print_cpu_info(&boot_cpu_data);
+	}
+
+#ifdef CONFIG_X86_32
 	/*
 	 * identify_boot_cpu() initialized SMT support information, let the
 	 * core code know.
@@ -148,6 +159,7 @@ void __init check_bugs(void)
 	if (!direct_gbpages)
 		set_memory_4k((unsigned long)__va(0), 1);
 #endif
+<<<<<<< HEAD
 }
 
 void
@@ -956,6 +968,8 @@ specv2_set_mode:
 
 	/* Set up IBPB and STIBP depending on the general spectre V2 command */
 	spectre_v2_user_select_mitigation(cmd);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static void update_stibp_msr(void * __unused)

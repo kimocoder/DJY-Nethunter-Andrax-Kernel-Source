@@ -116,11 +116,15 @@ ENTRY(cpu_do_suspend)
 	mrs	x8, mdscr_el1
 	mrs	x9, oslsr_el1
 	mrs	x10, sctlr_el1
+<<<<<<< HEAD
 alternative_if_not ARM64_HAS_VIRT_HOST_EXTN
 	mrs	x11, tpidr_el1
 alternative_else
 	mrs	x11, tpidr_el2
 alternative_endif
+=======
+	mrs	x11, tpidr_el1
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	mrs	x12, sp_el0
 	stp	x2, x3, [x0]
 	stp	x4, xzr, [x0, #16]
@@ -166,11 +170,15 @@ ENTRY(cpu_do_resume)
 	msr	mdscr_el1, x10
 
 	msr	sctlr_el1, x12
+<<<<<<< HEAD
 alternative_if_not ARM64_HAS_VIRT_HOST_EXTN
 	msr	tpidr_el1, x13
 alternative_else
 	msr	tpidr_el2, x13
 alternative_endif
+=======
+	msr	tpidr_el1, x13
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	msr	sp_el0, x14
 	/*
 	 * Restore oslsr_el1 by writing oslar_el1
@@ -200,9 +208,14 @@ ENTRY(cpu_do_switch_mm)
 	bfi	x2, x1, #48, #16		// set the ASID
 	msr	ttbr1_el1, x2			// in TTBR1 (since TCR.A1 is set)
 	isb
+<<<<<<< HEAD
 	msr	ttbr0_el1, x0			// now update TTBR0
 	isb
 	b	post_ttbr_update_workaround	// Back to C code...
+=======
+	post_ttbr0_update_workaround
+	ret
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 ENDPROC(cpu_do_switch_mm)
 
 	.pushsection ".idmap.text", "awx"

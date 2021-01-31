@@ -308,7 +308,16 @@ static int l2tp_eth_create(struct net *net, struct l2tp_tunnel *tunnel,
 	}
 
 	dev_net_set(dev, net);
+<<<<<<< HEAD
 	l2tp_eth_adjust_mtu(tunnel, session, dev);
+=======
+	if (session->mtu == 0)
+		session->mtu = dev->mtu - session->hdr_len;
+	dev->mtu = session->mtu;
+	dev->needed_headroom += session->hdr_len;
+	dev->min_mtu = 0;
+	dev->max_mtu = ETH_MAX_MTU;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	priv = netdev_priv(dev);
 	priv->dev = dev;

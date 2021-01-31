@@ -35,6 +35,7 @@ obj-$(CONFIG_MSM_GCC_8660) += gcc-msm8660.o
 obj-$(CONFIG_MSM_GCC_8916) += gcc-msm8916.o
 obj-$(CONFIG_MSM_GCC_8960) += gcc-msm8960.o
 obj-$(CONFIG_MSM_GCC_8974) += gcc-msm8974.o
+obj-$(CONFIG_MSM_GCC_8994) += gcc-msm8994.o
 obj-$(CONFIG_MSM_GCC_8996) += gcc-msm8996.o
 obj-$(CONFIG_MSM_GCC_SDM845) += gcc-sdm845.o debugcc-sdm845.o
 obj-$(CONFIG_MSM_GPUCC_SDM845) += gpucc-sdm845.o
@@ -42,6 +43,11 @@ obj-$(CONFIG_MSM_LCC_8960) += lcc-msm8960.o
 obj-$(CONFIG_MSM_MMCC_8960) += mmcc-msm8960.o
 obj-$(CONFIG_MSM_MMCC_8974) += mmcc-msm8974.o
 obj-$(CONFIG_MSM_MMCC_8996) += mmcc-msm8996.o
+<<<<<<< HEAD
 obj-$(CONFIG_MSM_VIDEOCC_SDM845) += videocc-sdm845.o
 
 obj-y += mdss/
+=======
+obj-$(CONFIG_QCOM_CLK_RPM) += clk-rpm.o
+obj-$(CONFIG_QCOM_CLK_SMD_RPM) += clk-smd-rpm.o
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

@@ -5,6 +5,7 @@ ccflags-y += -Idrivers/gpu/drm/msm/sde
 ccflags-y += -Idrivers/media/platform/msm/sde/rotator
 ccflags-y += -Idrivers/gpu/drm/msm/hdmi
 
+<<<<<<< HEAD
 msm_drm-y := \
 	dp/dp_usbpd.o \
 	dp/dp_parser.o \
@@ -41,6 +42,16 @@ msm_drm-y := \
 	sde_hdcp_1x.o
 
 msm_drm-$(CONFIG_DRM_MSM_HDMI) += hdmi/hdmi.o \
+=======
+msm-y := \
+	adreno/adreno_device.o \
+	adreno/adreno_gpu.o \
+	adreno/a3xx_gpu.o \
+	adreno/a4xx_gpu.o \
+	adreno/a5xx_gpu.o \
+	adreno/a5xx_power.o \
+	hdmi/hdmi.o \
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	hdmi/hdmi_audio.o \
 	hdmi/hdmi_bridge.o \
 	hdmi/hdmi_connector.o \
@@ -66,8 +77,27 @@ msm_drm-$(CONFIG_DRM_MSM_MDP5) += mdp/mdp_format.o \
 	mdp/mdp5/mdp5_irq.o \
 	mdp/mdp5/mdp5_mdss.o \
 	mdp/mdp5/mdp5_kms.o \
+	mdp/mdp5/mdp5_pipe.o \
 	mdp/mdp5/mdp5_plane.o \
 	mdp/mdp5/mdp5_smp.o \
+<<<<<<< HEAD
+=======
+	msm_atomic.o \
+	msm_debugfs.o \
+	msm_drv.o \
+	msm_fb.o \
+	msm_fence.o \
+	msm_gem.o \
+	msm_gem_prime.o \
+	msm_gem_shrinker.o \
+	msm_gem_submit.o \
+	msm_gem_vma.o \
+	msm_gpu.o \
+	msm_iommu.o \
+	msm_perf.o \
+	msm_rd.o \
+	msm_ringbuffer.o
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 msm_drm-$(CONFIG_DRM_SDE_RSC) += sde_rsc.o \
 	sde_rsc_hw.o \

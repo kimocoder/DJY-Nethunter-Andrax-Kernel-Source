@@ -129,6 +129,7 @@ config EFI_TEST
 	  Say Y here to enable the runtime services support via /dev/efi_test.
 	  If unsure, say N.
 
+<<<<<<< HEAD
 config EFI_CUSTOM_SSDT_OVERLAYS
 	bool "Load custom ACPI SSDT overlay from an EFI variable"
 	depends on EFI_VARS && ACPI
@@ -139,8 +140,27 @@ config EFI_CUSTOM_SSDT_OVERLAYS
 
 	  See Documentation/admin-guide/acpi/ssdt-overlays.rst for more
 	  information.
+=======
+config APPLE_PROPERTIES
+	bool "Apple Device Properties"
+	depends on EFI_STUB && X86
+	select EFI_DEV_PATH_PARSER
+	select UCS2_STRING
+	help
+	  Retrieve properties from EFI on Apple Macs and assign them to
+	  devices, allowing for improved support of Apple hardware.
+	  Properties that would otherwise be missing include the
+	  Thunderbolt Device ROM and GPU configuration data.
+
+	  If unsure, say Y if you have a Mac.  Otherwise N.
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 endmenu
 
 config UEFI_CPER
 	bool
+
+config EFI_DEV_PATH_PARSER
+	bool
+	depends on ACPI
+	default n

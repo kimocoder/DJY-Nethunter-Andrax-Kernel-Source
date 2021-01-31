@@ -8,6 +8,7 @@ config INTEL_IDLE
 	  native Intel hardware idle features.  The acpi_idle driver
 	  can be configured at the same time, in order to handle
 	  processors intel_idle does not support.
+<<<<<<< HEAD
 
 menu "Memory power savings"
 depends on X86_64
@@ -26,3 +27,5 @@ config I7300_IDLE
 	  DRAM devices.
 
 endmenu
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

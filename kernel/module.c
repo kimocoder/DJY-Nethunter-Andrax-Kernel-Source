@@ -46,7 +46,7 @@
 #include <linux/string.h>
 #include <linux/mutex.h>
 #include <linux/rculist.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/cacheflush.h>
 #include <asm/mmu_context.h>
 #include <linux/license.h>
@@ -313,8 +313,11 @@ struct load_info {
 	} index;
 };
 
-/* We require a truly strong try_module_get(): 0 means failure due to
-   ongoing or failed initialization etc. */
+/*
+ * We require a truly strong try_module_get(): 0 means success.
+ * Otherwise an error is returned due to ongoing or failed
+ * initialization etc.
+ */
 static inline int strong_try_module_get(struct module *mod)
 {
 	BUG_ON(mod && mod->state == MODULE_STATE_UNFORMED);
@@ -330,7 +333,7 @@ static inline void add_taint_module(struct module *mod, unsigned flag,
 				    enum lockdep_ok lockdep_ok)
 {
 	add_taint(flag, lockdep_ok);
-	mod->taints |= (1U << flag);
+	set_bit(flag, &mod->taints);
 }
 
 /*
@@ -1140,24 +1143,13 @@ static inline int module_unload_init(struct module *mod)
 static size_t module_flags_taint(struct module *mod, char *buf)
 {
 	size_t l = 0;
+	int i;
 
-	if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
-		buf[l++] = 'P';
-	if (mod->taints & (1 << TAINT_OOT_MODULE))
-		buf[l++] = 'O';
-	if (mod->taints & (1 << TAINT_FORCED_MODULE))
-		buf[l++] = 'F';
-	if (mod->taints & (1 << TAINT_CRAP))
-		buf[l++] = 'C';
-	if (mod->taints & (1 << TAINT_UNSIGNED_MODULE))
-		buf[l++] = 'E';
-	if (mod->taints & (1 << TAINT_LIVEPATCH))
-		buf[l++] = 'K';
-	/*
-	 * TAINT_FORCED_RMMOD: could be added.
-	 * TAINT_CPU_OUT_OF_SPEC, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
-	 * apply to modules.
-	 */
+	for (i = 0; i < TAINT_FLAGS_COUNT; i++) {
+		if (taint_flags[i].module && test_bit(i, &mod->taints))
+			buf[l++] = taint_flags[i].true;
+	}
+
 	return l;
 }
 
@@ -1986,7 +1978,13 @@ void set_all_modules_text_ro(void)
 
 	mutex_lock(&module_mutex);
 	list_for_each_entry_rcu(mod, &modules, list) {
-		if (mod->state == MODULE_STATE_UNFORMED)
+		/*
+		 * Ignore going modules since it's possible that ro
+		 * protection has already been disabled, otherwise we'll
+		 * run into protection faults at module deallocation.
+		 */
+		if (mod->state == MODULE_STATE_UNFORMED ||
+			mod->state == MODULE_STATE_GOING)
 			continue;
 
 		frob_text(&mod->core_layout, set_memory_ro);
@@ -3769,6 +3767,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
  sysfs_cleanup:
 	mod_sysfs_teardown(mod);
  coming_cleanup:
+	mod->state = MODULE_STATE_GOING;
 	blocking_notifier_call_chain(&module_notify_list,
 				     MODULE_STATE_GOING, mod);
 	klp_module_going(mod);
@@ -4107,6 +4106,7 @@ int module_kallsyms_on_each_symbol(int (*fn)(void *, const char *,
 }
 #endif /* CONFIG_KALLSYMS */
 
+<<<<<<< HEAD
 static void cfi_init(struct module *mod)
 {
 #ifdef CONFIG_CFI_CLANG
@@ -4123,6 +4123,12 @@ static void cfi_cleanup(struct module *mod)
 #endif
 }
 
+=======
+/* Maximum number of characters written by module_flags() */
+#define MODULE_FLAGS_BUF_SIZE (TAINT_FLAGS_COUNT + 4)
+
+/* Keep in sync with MODULE_FLAGS_BUF_SIZE !!! */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static char *module_flags(struct module *mod, char *buf)
 {
 	int bx = 0;
@@ -4167,7 +4173,7 @@ static void m_stop(struct seq_file *m, void *p)
 static int m_show(struct seq_file *m, void *p)
 {
 	struct module *mod = list_entry(p, struct module, list);
-	char buf[8];
+	char buf[MODULE_FLAGS_BUF_SIZE];
 
 	/* We always ignore unformed modules. */
 	if (mod->state == MODULE_STATE_UNFORMED)
@@ -4338,7 +4344,7 @@ EXPORT_SYMBOL_GPL(__module_text_address);
 void print_modules(void)
 {
 	struct module *mod;
-	char buf[8];
+	char buf[MODULE_FLAGS_BUF_SIZE];
 
 	printk(KERN_DEFAULT "Modules linked in:");
 	/* Most callers should already have preempt disabled, but make sure */

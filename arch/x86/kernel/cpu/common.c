@@ -1463,7 +1463,6 @@ void enable_sep_cpu(void)
 void __init identify_boot_cpu(void)
 {
 	identify_cpu(&boot_cpu_data);
-	init_amd_e400_c1e_mask();
 #ifdef CONFIG_X86_32
 	sysenter_setup();
 	enable_sep_cpu();
@@ -1482,54 +1481,12 @@ void identify_secondary_cpu(struct cpuinfo_x86 *c)
 #endif
 	mtrr_ap_init();
 	validate_apic_and_package_id(c);
+<<<<<<< HEAD
 	x86_spec_ctrl_setup_ap();
 	update_srbds_msr();
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
-
-struct msr_range {
-	unsigned	min;
-	unsigned	max;
-};
-
-static const struct msr_range msr_range_array[] = {
-	{ 0x00000000, 0x00000418},
-	{ 0xc0000000, 0xc000040b},
-	{ 0xc0010000, 0xc0010142},
-	{ 0xc0011000, 0xc001103b},
-};
-
-static void __print_cpu_msr(void)
-{
-	unsigned index_min, index_max;
-	unsigned index;
-	u64 val;
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(msr_range_array); i++) {
-		index_min = msr_range_array[i].min;
-		index_max = msr_range_array[i].max;
-
-		for (index = index_min; index < index_max; index++) {
-			if (rdmsrl_safe(index, &val))
-				continue;
-			pr_info(" MSR%08x: %016llx\n", index, val);
-		}
-	}
-}
-
-static int show_msr;
-
-static __init int setup_show_msr(char *arg)
-{
-	int num;
-
-	get_option(&arg, &num);
-
-	if (num > 0)
-		show_msr = num;
-	return 1;
-}
-__setup("show_msr=", setup_show_msr);
 
 static __init int setup_noclflush(char *arg)
 {
@@ -1564,14 +1521,6 @@ void print_cpu_info(struct cpuinfo_x86 *c)
 		pr_cont(", stepping: 0x%x)\n", c->x86_stepping);
 	else
 		pr_cont(")\n");
-
-	print_cpu_msr(c);
-}
-
-void print_cpu_msr(struct cpuinfo_x86 *c)
-{
-	if (c->cpu_index < show_msr)
-		__print_cpu_msr();
 }
 
 static __init int setup_disablecpuid(char *arg)
@@ -1794,11 +1743,8 @@ void cpu_init(void)
 		cr4_set_bits(X86_CR4_PGE);
 	}
 
-	/*
-	 * Load microcode on this cpu if a valid microcode is available.
-	 * This is early microcode loading procedure.
-	 */
-	load_ucode_ap();
+	if (cpu)
+		load_ucode_ap();
 
 	t = &per_cpu(cpu_tss, cpu);
 	oist = &per_cpu(orig_ist, cpu);

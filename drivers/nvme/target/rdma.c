@@ -1097,8 +1097,10 @@ nvmet_rdma_alloc_queue(struct nvmet_rdma_device *ndev,
 	}
 
 	ret = nvmet_sq_init(&queue->nvme_sq);
-	if (ret)
+	if (ret) {
+		ret = NVME_RDMA_CM_NO_RSC;
 		goto out_free_queue;
+	}
 
 	ret = nvmet_rdma_parse_cm_connect_req(&event->param.conn, queue);
 	if (ret)
@@ -1168,6 +1170,7 @@ out_destroy_sq:
 out_free_queue:
 	kfree(queue);
 out_reject:
+	pr_debug("rejecting connect request with status code %d\n", ret);
 	nvmet_rdma_cm_reject(cm_id, ret);
 	return NULL;
 }
@@ -1181,7 +1184,8 @@ static void nvmet_rdma_qp_event(struct ib_event *event, void *priv)
 		rdma_notify(queue->cm_id, event->event);
 		break;
 	default:
-		pr_err("received unrecognized IB QP event %d\n", event->event);
+		pr_err("received IB QP event: %s (%d)\n",
+		       ib_event_msg(event->event), event->event);
 		break;
 	}
 }
@@ -1422,6 +1426,9 @@ static int nvmet_rdma_cm_handler(struct rdma_cm_id *cm_id,
 		ret = nvmet_rdma_device_removal(cm_id, queue);
 		break;
 	case RDMA_CM_EVENT_REJECTED:
+		pr_debug("Connection rejected: %s\n",
+			 rdma_reject_msg(cm_id, event->status));
+		/* FALLTHROUGH */
 	case RDMA_CM_EVENT_UNREACHABLE:
 	case RDMA_CM_EVENT_CONNECT_ERROR:
 		nvmet_rdma_queue_connect_fail(cm_id, queue);

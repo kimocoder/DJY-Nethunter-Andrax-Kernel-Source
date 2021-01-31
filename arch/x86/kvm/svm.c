@@ -2147,7 +2147,7 @@ static void svm_set_dr7(struct kvm_vcpu *vcpu, unsigned long value)
 static int pf_interception(struct vcpu_svm *svm)
 {
 	u64 fault_address = svm->vmcb->control.exit_info_2;
-	u32 error_code;
+	u64 error_code;
 	int r = 1;
 
 	svm->vcpu.arch.l1tf_flush_l1d = true;
@@ -2347,7 +2347,7 @@ static int io_interception(struct vcpu_svm *svm)
 	++svm->vcpu.stat.io_exits;
 	string = (io_info & SVM_IOIO_STR_MASK) != 0;
 	in = (io_info & SVM_IOIO_TYPE_MASK) != 0;
-	if (string || in)
+	if (string)
 		return emulate_instruction(vcpu, 0) == EMULATE_DONE;
 
 	port = io_info >> 16;
@@ -2355,7 +2355,8 @@ static int io_interception(struct vcpu_svm *svm)
 	svm->next_rip = svm->vmcb->control.exit_info_2;
 	skip_emulated_instruction(&svm->vcpu);
 
-	return kvm_fast_pio_out(vcpu, size, port);
+	return in ? kvm_fast_pio_in(vcpu, size, port)
+		  : kvm_fast_pio_out(vcpu, size, port);
 }
 
 static int nmi_interception(struct vcpu_svm *svm)
@@ -3235,8 +3236,7 @@ static int skinit_interception(struct vcpu_svm *svm)
 
 static int wbinvd_interception(struct vcpu_svm *svm)
 {
-	kvm_emulate_wbinvd(&svm->vcpu);
-	return 1;
+	return kvm_emulate_wbinvd(&svm->vcpu);
 }
 
 static int xsetbv_interception(struct vcpu_svm *svm)
@@ -3323,8 +3323,7 @@ static int task_switch_interception(struct vcpu_svm *svm)
 static int cpuid_interception(struct vcpu_svm *svm)
 {
 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 2;
-	kvm_emulate_cpuid(&svm->vcpu);
-	return 1;
+	return kvm_emulate_cpuid(&svm->vcpu);
 }
 
 static int iret_interception(struct vcpu_svm *svm)
@@ -3360,9 +3359,7 @@ static int rdpmc_interception(struct vcpu_svm *svm)
 		return emulate_on_interception(svm);
 
 	err = kvm_rdpmc(&svm->vcpu);
-	kvm_complete_insn_gp(&svm->vcpu, err);
-
-	return 1;
+	return kvm_complete_insn_gp(&svm->vcpu, err);
 }
 
 static bool check_selective_cr0_intercepted(struct vcpu_svm *svm,
@@ -3459,9 +3456,7 @@ static int cr_interception(struct vcpu_svm *svm)
 		}
 		kvm_register_write(&svm->vcpu, reg, val);
 	}
-	kvm_complete_insn_gp(&svm->vcpu, err);
-
-	return 1;
+	return kvm_complete_insn_gp(&svm->vcpu, err);
 }
 
 static int dr_interception(struct vcpu_svm *svm)

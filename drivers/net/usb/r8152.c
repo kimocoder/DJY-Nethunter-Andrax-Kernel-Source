@@ -4216,13 +4216,11 @@ static int rtl8152_change_mtu(struct net_device *dev, int new_mtu)
 	switch (tp->version) {
 	case RTL_VER_01:
 	case RTL_VER_02:
-		return eth_change_mtu(dev, new_mtu);
+		dev->mtu = new_mtu;
+		return 0;
 	default:
 		break;
 	}
-
-	if (new_mtu < 68 || new_mtu > RTL8153_MAX_MTU)
-		return -EINVAL;
 
 	ret = usb_autopm_get_interface(tp->intf);
 	if (ret < 0)
@@ -4421,6 +4419,18 @@ static int rtl8152_probe(struct usb_interface *intf,
 	netdev->ethtool_ops = &ops;
 	netif_set_gso_max_size(netdev, RTL_LIMITED_TSO_SIZE);
 
+	/* MTU range: 68 - 1500 or 9194 */
+	netdev->min_mtu = ETH_MIN_MTU;
+	switch (tp->version) {
+	case RTL_VER_01:
+	case RTL_VER_02:
+		netdev->max_mtu = ETH_DATA_LEN;
+		break;
+	default:
+		netdev->max_mtu = RTL8153_MAX_MTU;
+		break;
+	}
+
 	tp->mii.dev = netdev;
 	tp->mii.mdio_read = read_mii_word;
 	tp->mii.mdio_write = write_mii_word;
@@ -4522,9 +4532,16 @@ static struct usb_device_id rtl8152_table[] = {
 	{REALTEK_USB_DEVICE(VENDOR_ID_REALTEK, 0x8152)},
 	{REALTEK_USB_DEVICE(VENDOR_ID_REALTEK, 0x8153)},
 	{REALTEK_USB_DEVICE(VENDOR_ID_SAMSUNG, 0xa101)},
-	{REALTEK_USB_DEVICE(VENDOR_ID_LENOVO,  0x7205)},
 	{REALTEK_USB_DEVICE(VENDOR_ID_LENOVO,  0x304f)},
+<<<<<<< HEAD
 	{REALTEK_USB_DEVICE(VENDOR_ID_LINKSYS, 0x0041)},
+=======
+	{REALTEK_USB_DEVICE(VENDOR_ID_LENOVO,  0x3062)},
+	{REALTEK_USB_DEVICE(VENDOR_ID_LENOVO,  0x3069)},
+	{REALTEK_USB_DEVICE(VENDOR_ID_LENOVO,  0x7205)},
+	{REALTEK_USB_DEVICE(VENDOR_ID_LENOVO,  0x720c)},
+	{REALTEK_USB_DEVICE(VENDOR_ID_LENOVO,  0x7214)},
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	{REALTEK_USB_DEVICE(VENDOR_ID_NVIDIA,  0x09ff)},
 	{}
 };

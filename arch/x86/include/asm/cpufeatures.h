@@ -105,6 +105,7 @@
 #define X86_FEATURE_AMD_DCM     ( 3*32+27) /* multi-node processor */
 #define X86_FEATURE_APERFMPERF	( 3*32+28) /* APERFMPERF */
 #define X86_FEATURE_NONSTOP_TSC_S3 ( 3*32+30) /* TSC doesn't stop in S3 state */
+#define X86_FEATURE_TSC_KNOWN_FREQ ( 3*32+31) /* TSC has known frequency */
 
 /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
 #define X86_FEATURE_XMM3	( 4*32+ 0) /* "pni" SSE-3 */
@@ -188,7 +189,13 @@
 
 #define X86_FEATURE_CPB		( 7*32+ 2) /* AMD Core Performance Boost */
 #define X86_FEATURE_EPB		( 7*32+ 3) /* IA32_ENERGY_PERF_BIAS support */
+<<<<<<< HEAD
 #define X86_FEATURE_INVPCID_SINGLE ( 7*32+ 4) /* Effectively INVPCID && CR4.PCIDE=1 */
+=======
+#define X86_FEATURE_CAT_L3	( 7*32+ 4) /* Cache Allocation Technology L3 */
+#define X86_FEATURE_CAT_L2	( 7*32+ 5) /* Cache Allocation Technology L2 */
+#define X86_FEATURE_CDP_L3	( 7*32+ 6) /* Code and Data Prioritization L3 */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #define X86_FEATURE_HW_PSTATE	( 7*32+ 8) /* AMD HW-PState */
 #define X86_FEATURE_PROC_FEEDBACK ( 7*32+ 9) /* AMD ProcFeedbackInterface */
@@ -197,6 +204,7 @@
 #define X86_FEATURE_RETPOLINE	( 7*32+12) /* "" Generic Retpoline mitigation for Spectre variant 2 */
 #define X86_FEATURE_RETPOLINE_AMD ( 7*32+13) /* "" AMD Retpoline mitigation for Spectre variant 2 */
 
+<<<<<<< HEAD
 #define X86_FEATURE_MSR_SPEC_CTRL ( 7*32+16) /* "" MSR SPEC_CTRL is implemented */
 #define X86_FEATURE_SSBD	( 7*32+17) /* Speculative Store Bypass Disable */
 
@@ -213,6 +221,12 @@
 #define X86_FEATURE_L1TF_PTEINV	( 7*32+29) /* "" L1TF workaround PTE inversion */
 #define X86_FEATURE_IBRS_ENHANCED	( 7*32+30) /* Enhanced IBRS */
 #define X86_FEATURE_KAISER	( 7*32+31) /* CONFIG_PAGE_TABLE_ISOLATION w/o nokaiser */
+=======
+#define X86_FEATURE_INTEL_PPIN	( 7*32+14) /* Intel Processor Inventory Number */
+#define X86_FEATURE_INTEL_PT	( 7*32+15) /* Intel Processor Trace */
+#define X86_FEATURE_AVX512_4VNNIW (7*32+16) /* AVX-512 Neural Network Instructions */
+#define X86_FEATURE_AVX512_4FMAPS (7*32+17) /* AVX-512 Multiply Accumulation Single precision */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* Virtualization flags: Linux defined, word 8 */
 #define X86_FEATURE_TPR_SHADOW  ( 8*32+ 0) /* Intel TPR Shadow */
@@ -238,11 +252,13 @@
 #define X86_FEATURE_RTM		( 9*32+11) /* Restricted Transactional Memory */
 #define X86_FEATURE_CQM		( 9*32+12) /* Cache QoS Monitoring */
 #define X86_FEATURE_MPX		( 9*32+14) /* Memory Protection Extension */
+#define X86_FEATURE_RDT_A	( 9*32+15) /* Resource Director Technology Allocation */
 #define X86_FEATURE_AVX512F	( 9*32+16) /* AVX-512 Foundation */
 #define X86_FEATURE_AVX512DQ	( 9*32+17) /* AVX-512 DQ (Double/Quad granular) Instructions */
 #define X86_FEATURE_RDSEED	( 9*32+18) /* The RDSEED instruction */
 #define X86_FEATURE_ADX		( 9*32+19) /* The ADCX and ADOX instructions */
 #define X86_FEATURE_SMAP	( 9*32+20) /* Supervisor Mode Access Prevention */
+#define X86_FEATURE_AVX512IFMA  ( 9*32+21) /* AVX-512 Integer Fused Multiply-Add instructions */
 #define X86_FEATURE_CLFLUSHOPT	( 9*32+23) /* CLFLUSHOPT instruction */
 #define X86_FEATURE_CLWB	( 9*32+24) /* CLWB instruction */
 #define X86_FEATURE_INTEL_PT	( 9*32+25) /* Intel Processor Trace */
@@ -304,6 +320,7 @@
 #define X86_FEATURE_AVIC	(15*32+13) /* Virtual Interrupt Controller */
 
 /* Intel-defined CPU features, CPUID level 0x00000007:0 (ecx), word 16 */
+#define X86_FEATURE_AVX512VBMI  (16*32+ 1) /* AVX512 Vector Bit Manipulation instructions*/
 #define X86_FEATURE_PKU		(16*32+ 3) /* Protection Keys for Userspace */
 #define X86_FEATURE_OSPKE	(16*32+ 4) /* OS Protection Keys Enable */
 #define X86_FEATURE_RDPID	(16*32+ 22) /* RDPID instruction */
@@ -347,6 +364,7 @@
  */
 #define X86_BUG_ESPFIX		X86_BUG(9) /* "" IRET to 16-bit SS corrupts ESP/RSP high bits */
 #endif
+<<<<<<< HEAD
 #define X86_BUG_NULL_SEG		X86_BUG(10) /* Nulling a selector preserves the base */
 #define X86_BUG_SWAPGS_FENCE		X86_BUG(11) /* SWAPGS without input dep on GS */
 #define X86_BUG_MONITOR			X86_BUG(12) /* IPI required to wake up remote CPU */
@@ -362,5 +380,11 @@
 #define X86_BUG_TAA			X86_BUG(22) /* CPU is affected by TSX Async Abort(TAA) */
 #define X86_BUG_ITLB_MULTIHIT		X86_BUG(23) /* CPU may incur MCE during certain page attribute changes */
 #define X86_BUG_SRBDS			X86_BUG(24) /* CPU may leak RNG bits if not mitigated */
+=======
+#define X86_BUG_NULL_SEG	X86_BUG(10) /* Nulling a selector preserves the base */
+#define X86_BUG_SWAPGS_FENCE	X86_BUG(11) /* SWAPGS without input dep on GS */
+#define X86_BUG_MONITOR		X86_BUG(12) /* IPI required to wake up remote CPU */
+#define X86_BUG_AMD_E400	X86_BUG(13) /* CPU is among the affected by Erratum 400 */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #endif /* _ASM_X86_CPUFEATURES_H */

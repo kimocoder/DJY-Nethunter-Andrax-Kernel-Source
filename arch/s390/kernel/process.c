@@ -102,7 +102,6 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
 int copy_thread(unsigned long clone_flags, unsigned long new_stackp,
 		unsigned long arg, struct task_struct *p)
 {
-	struct thread_info *ti;
 	struct fake_frame
 	{
 		struct stack_frame sf;
@@ -121,9 +120,8 @@ int copy_thread(unsigned long clone_flags, unsigned long new_stackp,
 	clear_tsk_thread_flag(p, TIF_SINGLE_STEP);
 	p->thread.per_flags = 0;
 	/* Initialize per thread user and system timer values */
-	ti = task_thread_info(p);
-	ti->user_timer = 0;
-	ti->system_timer = 0;
+	p->thread.user_timer = 0;
+	p->thread.system_timer = 0;
 
 	frame->sf.back_chain = 0;
 	/* new return point is ret_from_fork */

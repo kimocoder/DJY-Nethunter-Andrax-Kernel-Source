@@ -1324,9 +1324,12 @@ static void zfcp_erp_try_rport_unblock(struct zfcp_port *port)
 		struct zfcp_scsi_dev *zsdev = sdev_to_zfcp(sdev);
 		int lun_status;
 
+<<<<<<< HEAD
 		if (sdev->sdev_state == SDEV_DEL ||
 		    sdev->sdev_state == SDEV_CANCEL)
 			continue;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		if (zsdev->port != port)
 			continue;
 		/* LUN under port of interest */

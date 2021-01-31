@@ -586,6 +586,7 @@ void pci_iov_update_resource(struct pci_dev *dev, int resno)
 			 vf_bar, res);
 		return;
 	}
+<<<<<<< HEAD
 
 	/*
 	 * Ignore unimplemented BARs, unused resource slots for 64-bit
@@ -605,6 +606,27 @@ void pci_iov_update_resource(struct pci_dev *dev, int resno)
 	new = region.start;
 	new |= res->flags & ~PCI_BASE_ADDRESS_MEM_MASK;
 
+=======
+
+	/*
+	 * Ignore unimplemented BARs, unused resource slots for 64-bit
+	 * BARs, and non-movable resources, e.g., those described via
+	 * Enhanced Allocation.
+	 */
+	if (!res->flags)
+		return;
+
+	if (res->flags & IORESOURCE_UNSET)
+		return;
+
+	if (res->flags & IORESOURCE_PCI_FIXED)
+		return;
+
+	pcibios_resource_to_bus(dev->bus, &region, res);
+	new = region.start;
+	new |= res->flags & ~PCI_BASE_ADDRESS_MEM_MASK;
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	reg = iov->pos + PCI_SRIOV_BAR + 4 * vf_bar;
 	pci_write_config_dword(dev, reg, new);
 	if (res->flags & IORESOURCE_MEM_64) {

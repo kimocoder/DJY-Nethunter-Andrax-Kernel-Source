@@ -80,7 +80,11 @@ ENTRY(ce_aes_ccm_auth_data)
 9:	ext	v1.16b, v1.16b, v1.16b, #1
 	adds	w7, w7, #1
 	bne	9b
+<<<<<<< HEAD
 91:	eor	v0.16b, v0.16b, v1.16b
+=======
+	eor	v0.16b, v0.16b, v1.16b
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	st1	{v0.16b}, [x0]
 10:	str	w8, [x3]
 	ret

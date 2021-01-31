@@ -1349,7 +1349,7 @@ static void lg216x_release(struct dvb_frontend *fe)
 	kfree(state);
 }
 
-static struct dvb_frontend_ops lg2160_ops = {
+static const struct dvb_frontend_ops lg2160_ops = {
 	.delsys = { SYS_ATSCMH },
 	.info = {
 		.name = "LG Electronics LG2160 ATSC/MH Frontend",
@@ -1375,7 +1375,7 @@ static struct dvb_frontend_ops lg2160_ops = {
 	.release              = lg216x_release,
 };
 
-static struct dvb_frontend_ops lg2161_ops = {
+static const struct dvb_frontend_ops lg2161_ops = {
 	.delsys = { SYS_ATSCMH },
 	.info = {
 		.name = "LG Electronics LG2161 ATSC/MH Frontend",

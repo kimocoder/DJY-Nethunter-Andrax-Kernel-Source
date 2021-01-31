@@ -204,10 +204,17 @@ static const struct st_sensor_settings st_gyro_sensors_settings[] = {
 			.addr = 0x20,
 			.mask = 0xc0,
 			.odr_avl = {
+<<<<<<< HEAD
 				{ .hz = 100, .value = 0x00, },
 				{ .hz = 200, .value = 0x01, },
 				{ .hz = 400, .value = 0x02, },
 				{ .hz = 800, .value = 0x03, },
+=======
+				{ .hz = 95, .value = 0x00, },
+				{ .hz = 190, .value = 0x01, },
+				{ .hz = 380, .value = 0x02, },
+				{ .hz = 760, .value = 0x03, },
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			},
 		},
 		.pw = {
@@ -225,7 +232,11 @@ static const struct st_sensor_settings st_gyro_sensors_settings[] = {
 			.mask = 0x30,
 			.fs_avl = {
 				[0] = {
+<<<<<<< HEAD
 					.num = ST_GYRO_FS_AVL_245DPS,
+=======
+					.num = ST_GYRO_FS_AVL_250DPS,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 					.value = 0x00,
 					.gain = IIO_DEGREE_TO_RAD(8750),
 				},

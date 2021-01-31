@@ -15,7 +15,7 @@
 #include <linux/file.h>
 #include <linux/quotaops.h>
 #include <linux/uuid.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include "ext4_jbd2.h"
 #include "ext4.h"
 
@@ -153,7 +153,7 @@ static long swap_inode_boot_loader(struct super_block *sb,
 
 	swap_inode_data(inode, inode_bl);
 
-	inode->i_ctime = inode_bl->i_ctime = ext4_current_time(inode);
+	inode->i_ctime = inode_bl->i_ctime = current_time(inode);
 
 	spin_lock(&sbi->s_next_gen_lock);
 	inode->i_generation = sbi->s_next_generation++;
@@ -191,7 +191,11 @@ journal_err_out:
 	return err;
 }
 
+<<<<<<< HEAD
 #ifdef CONFIG_FS_ENCRYPTION
+=======
+#ifdef CONFIG_EXT4_FS_ENCRYPTION
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static int uuid_is_zero(__u8 u[16])
 {
 	int	i;
@@ -250,8 +254,11 @@ static int ext4_ioctl_setflags(struct inode *inode,
 			err = -EOPNOTSUPP;
 			goto flags_out;
 		}
-	} else if (oldflags & EXT4_EOFBLOCKS_FL)
-		ext4_truncate(inode);
+	} else if (oldflags & EXT4_EOFBLOCKS_FL) {
+		err = ext4_truncate(inode);
+		if (err)
+			goto flags_out;
+	}
 
 	handle = ext4_journal_start(inode, EXT4_HT_INODE, 1);
 	if (IS_ERR(handle)) {
@@ -267,6 +274,9 @@ static int ext4_ioctl_setflags(struct inode *inode,
 	for (i = 0, mask = 1; i < 32; i++, mask <<= 1) {
 		if (!(mask & EXT4_FL_USER_MODIFIABLE))
 			continue;
+		/* These flags get special treatment later */
+		if (mask == EXT4_JOURNAL_DATA_FL || mask == EXT4_EXTENTS_FL)
+			continue;
 		if (mask & flags)
 			ext4_set_inode_flag(inode, i);
 		else
@@ -274,7 +284,7 @@ static int ext4_ioctl_setflags(struct inode *inode,
 	}
 
 	ext4_set_inode_flags(inode);
-	inode->i_ctime = ext4_current_time(inode);
+	inode->i_ctime = current_time(inode);
 
 	err = ext4_mark_iloc_dirty(handle, inode, &iloc);
 flags_err:
@@ -372,7 +382,7 @@ static int ext4_ioctl_setproject(struct file *filp, __u32 projid)
 	}
 
 	EXT4_I(inode)->i_projid = kprojid;
-	inode->i_ctime = ext4_current_time(inode);
+	inode->i_ctime = current_time(inode);
 out_dirty:
 	rc = ext4_mark_iloc_dirty(handle, inode, &iloc);
 	if (!err)
@@ -412,6 +422,10 @@ static inline __u32 ext4_iflags_to_xflags(unsigned long iflags)
 		xflags |= FS_XFLAG_PROJINHERIT;
 	return xflags;
 }
+
+#define EXT4_SUPPORTED_FS_XFLAGS (FS_XFLAG_SYNC | FS_XFLAG_IMMUTABLE | \
+				  FS_XFLAG_APPEND | FS_XFLAG_NODUMP | \
+				  FS_XFLAG_NOATIME | FS_XFLAG_PROJINHERIT)
 
 /* Transfer xflags flags to internal */
 static inline unsigned long ext4_xflags_to_iflags(__u32 xflags)
@@ -457,11 +471,21 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (get_user(flags, (int __user *) arg))
 			return -EFAULT;
 
+		if (flags & ~EXT4_FL_USER_VISIBLE)
+			return -EOPNOTSUPP;
+		/*
+		 * chattr(1) grabs flags via GETFLAGS, modifies the result and
+		 * passes that to SETFLAGS. So we cannot easily make SETFLAGS
+		 * more restrictive than just silently masking off visible but
+		 * not settable flags as we always did.
+		 */
+		flags &= EXT4_FL_USER_MODIFIABLE;
+		if (ext4_mask_flags(inode->i_mode, flags) != flags)
+			return -EOPNOTSUPP;
+
 		err = mnt_want_write_file(filp);
 		if (err)
 			return err;
-
-		flags = ext4_mask_flags(inode->i_mode, flags);
 
 		inode_lock(inode);
 		err = ext4_ioctl_setflags(inode, flags);
@@ -504,7 +528,7 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}
 		err = ext4_reserve_inode_write(handle, inode, &iloc);
 		if (err == 0) {
-			inode->i_ctime = ext4_current_time(inode);
+			inode->i_ctime = current_time(inode);
 			inode->i_generation = generation;
 			err = ext4_mark_iloc_dirty(handle, inode, &iloc);
 		}
@@ -783,12 +807,21 @@ resizefs_out:
 		return ext4_ext_precache(inode);
 
 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
+<<<<<<< HEAD
 //		if (!ext4_has_feature_encrypt(sb))
 //			return -EOPNOTSUPP;
 		return fscrypt_ioctl_set_policy(filp, (const void __user *)arg);
 
 	case EXT4_IOC_GET_ENCRYPTION_PWSALT: {
 #ifdef CONFIG_FS_ENCRYPTION
+=======
+		if (!ext4_has_feature_encrypt(sb))
+			return -EOPNOTSUPP;
+		return fscrypt_ioctl_set_policy(filp, (const void __user *)arg);
+
+	case EXT4_IOC_GET_ENCRYPTION_PWSALT: {
+#ifdef CONFIG_EXT4_FS_ENCRYPTION
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		int err, err2;
 		struct ext4_sb_info *sbi = EXT4_SB(sb);
 		handle_t *handle;
@@ -863,12 +896,16 @@ resizefs_out:
 		if (!inode_owner_or_capable(inode))
 			return -EACCES;
 
+		if (fa.fsx_xflags & ~EXT4_SUPPORTED_FS_XFLAGS)
+			return -EOPNOTSUPP;
+
+		flags = ext4_xflags_to_iflags(fa.fsx_xflags);
+		if (ext4_mask_flags(inode->i_mode, flags) != flags)
+			return -EOPNOTSUPP;
+
 		err = mnt_want_write_file(filp);
 		if (err)
 			return err;
-
-		flags = ext4_xflags_to_iflags(fa.fsx_xflags);
-		flags = ext4_mask_flags(inode->i_mode, flags);
 
 		inode_lock(inode);
 		flags = (ei->i_flags & ~EXT4_FL_XFLAG_VISIBLE) |

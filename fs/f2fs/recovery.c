@@ -270,6 +270,7 @@ static int recover_inode(struct inode *inode, struct page *page)
 	inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
 
 	F2FS_I(inode)->i_advise = raw->i_advise;
+<<<<<<< HEAD
 	F2FS_I(inode)->i_flags = le32_to_cpu(raw->i_flags);
 	f2fs_set_inode_flags(inode);
 	F2FS_I(inode)->i_gc_failures[GC_FAILURE_PIN] =
@@ -278,12 +279,15 @@ static int recover_inode(struct inode *inode, struct page *page)
 	recover_inline_flags(inode, raw);
 
 	f2fs_mark_inode_dirty_sync(inode, true);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (file_enc_name(inode))
 		name = "<encrypted>";
 	else
 		name = F2FS_INODE(page)->i_name;
 
+<<<<<<< HEAD
 	f2fs_msg(inode->i_sb, KERN_NOTICE,
 		"recover_inode: ino = %x, name = %s, inline = %x",
 			ino_of_node(page), name, raw->i_inline);
@@ -292,6 +296,13 @@ static int recover_inode(struct inode *inode, struct page *page)
 
 static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head,
 				bool check_only)
+=======
+	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
+			ino_of_node(page), name);
+}
+
+static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	struct curseg_info *curseg;
 	struct page *page = NULL;
@@ -327,6 +338,7 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head,
 
 		entry = get_fsync_inode(head, ino_of_node(page));
 		if (!entry) {
+<<<<<<< HEAD
 			bool quota_inode = false;
 
 			if (!check_only &&
@@ -334,6 +346,11 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head,
 				err = f2fs_recover_inode_page(sbi, page);
 				if (err) {
 					f2fs_put_page(page, 1);
+=======
+			if (IS_INODE(page) && is_dent_dnode(page)) {
+				err = recover_inode_page(sbi, page);
+				if (err)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 					break;
 				}
 				quota_inode = true;
@@ -582,9 +599,14 @@ retry_dn:
 		}
 
 		if (!file_keep_isize(inode) &&
+<<<<<<< HEAD
 			(i_size_read(inode) <= ((loff_t)start << PAGE_SHIFT)))
 			f2fs_i_size_write(inode,
 				(loff_t)(start + 1) << PAGE_SHIFT);
+=======
+				(i_size_read(inode) <= (start << PAGE_SHIFT)))
+			f2fs_i_size_write(inode, (start + 1) << PAGE_SHIFT);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 		/*
 		 * dest is reserved block, invalidate src block

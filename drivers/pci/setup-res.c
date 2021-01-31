@@ -63,7 +63,11 @@ static void pci_std_update_resource(struct pci_dev *dev, int resno)
 		mask = (u32)PCI_BASE_ADDRESS_IO_MASK;
 		new |= res->flags & ~PCI_BASE_ADDRESS_IO_MASK;
 	} else if (resno == PCI_ROM_RESOURCE) {
+<<<<<<< HEAD
 		mask = PCI_ROM_ADDRESS_MASK;
+=======
+		mask = (u32)PCI_ROM_ADDRESS_MASK;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	} else {
 		mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
 		new |= res->flags & ~PCI_BASE_ADDRESS_MEM_MASK;

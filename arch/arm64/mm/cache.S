@@ -23,6 +23,7 @@
 #include <asm/assembler.h>
 #include <asm/cpufeature.h>
 #include <asm/alternative.h>
+<<<<<<< HEAD
 #include <asm/uaccess.h>
 
 /*
@@ -97,6 +98,9 @@ ENTRY(flush_cache_all)
 	ic	ialluis				// I+BTB cache invalidate
 	ret	x12
 ENDPROC(flush_cache_all)
+=======
+#include <linux/uaccess.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /*
  *	flush_icache_range(start,end)
@@ -122,7 +126,11 @@ ENTRY(flush_icache_range)
  *	- end     - virtual end address of region
  */
 ENTRY(__flush_cache_user_range)
+<<<<<<< HEAD
 	uaccess_ttbr0_enable x2, x3, x4
+=======
+	uaccess_ttbr0_enable x2, x3
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	dcache_line_size x2, x3
 	sub	x3, x2, #1
 	bic	x4, x0, x3
@@ -145,7 +153,11 @@ USER(9f, ic	ivau, x4	)		// invalidate I line PoU
 	isb
 	mov	x0, #0
 1:
+<<<<<<< HEAD
 	uaccess_ttbr0_disable x1, x2
+=======
+	uaccess_ttbr0_disable x1
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	ret
 9:
 	mov	x0, #-EFAULT

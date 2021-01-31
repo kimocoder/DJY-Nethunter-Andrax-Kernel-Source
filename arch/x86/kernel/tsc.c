@@ -722,6 +722,20 @@ unsigned long native_calibrate_tsc(void)
 		}
 	}
 
+	/*
+	 * TSC frequency determined by CPUID is a "hardware reported"
+	 * frequency and is the most accurate one so far we have. This
+	 * is considered a known frequency.
+	 */
+	setup_force_cpu_cap(X86_FEATURE_TSC_KNOWN_FREQ);
+
+	/*
+	 * For Atom SoCs TSC is the only reliable clocksource.
+	 * Mark TSC reliable so no watchdog on it.
+	 */
+	if (boot_cpu_data.x86_model == INTEL_FAM6_ATOM_GOLDMONT)
+		setup_force_cpu_cap(X86_FEATURE_TSC_RELIABLE);
+
 	return crystal_khz * ebx_numerator / eax_denominator;
 }
 
@@ -1063,17 +1077,19 @@ static void detect_art(void)
 	if (boot_cpu_data.cpuid_level < ART_CPUID_LEAF)
 		return;
 
+	/* Don't enable ART in a VM, non-stop TSC and TSC_ADJUST required */
+	if (boot_cpu_has(X86_FEATURE_HYPERVISOR) ||
+	    !boot_cpu_has(X86_FEATURE_NONSTOP_TSC) ||
+	    !boot_cpu_has(X86_FEATURE_TSC_ADJUST))
+		return;
+
 	cpuid(ART_CPUID_LEAF, &art_to_tsc_denominator,
 	      &art_to_tsc_numerator, unused, unused+1);
 
-	/* Don't enable ART in a VM, non-stop TSC required */
-	if (boot_cpu_has(X86_FEATURE_HYPERVISOR) ||
-	    !boot_cpu_has(X86_FEATURE_NONSTOP_TSC) ||
-	    art_to_tsc_denominator < ART_MIN_DENOMINATOR)
+	if (art_to_tsc_denominator < ART_MIN_DENOMINATOR)
 		return;
 
-	if (rdmsrl_safe(MSR_IA32_TSC_ADJUST, &art_to_tsc_offset))
-		return;
+	rdmsrl(MSR_IA32_TSC_ADJUST, art_to_tsc_offset);
 
 	/* Make this sticky over multiple CPU init calls */
 	setup_force_cpu_cap(X86_FEATURE_ART);
@@ -1083,6 +1099,11 @@ static void detect_art(void)
 /* clocksource code */
 
 static struct clocksource clocksource_tsc;
+
+static void tsc_resume(struct clocksource *cs)
+{
+	tsc_verify_tsc_adjust(true);
+}
 
 /*
  * We used to compare the TSC to the cycle_last value in the clocksource
@@ -1100,9 +1121,9 @@ static struct clocksource clocksource_tsc;
  * checking the result of read_tsc() - cycle_last for being negative.
  * That works because CLOCKSOURCE_MASK(64) does not mask out any bit.
  */
-static cycle_t read_tsc(struct clocksource *cs)
+static u64 read_tsc(struct clocksource *cs)
 {
-	return (cycle_t)rdtsc_ordered();
+	return (u64)rdtsc_ordered();
 }
 
 /*
@@ -1116,6 +1137,7 @@ static struct clocksource clocksource_tsc = {
 	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
 				  CLOCK_SOURCE_MUST_VERIFY,
 	.archdata               = { .vclock_mode = VCLOCK_TSC },
+	.resume			= tsc_resume,
 };
 
 void mark_tsc_unstable(char *reason)
@@ -1190,7 +1212,7 @@ int unsynchronized_tsc(void)
 /*
  * Convert ART to TSC given numerator/denominator found in detect_art()
  */
-struct system_counterval_t convert_art_to_tsc(cycle_t art)
+struct system_counterval_t convert_art_to_tsc(u64 art)
 {
 	u64 tmp, res, rem;
 
@@ -1303,12 +1325,16 @@ static int __init init_tsc_clocksource(void)
 		clocksource_tsc.flags |= CLOCK_SOURCE_SUSPEND_NONSTOP;
 
 	/*
-	 * Trust the results of the earlier calibration on systems
-	 * exporting a reliable TSC.
+	 * When TSC frequency is known (retrieved via MSR or CPUID), we skip
+	 * the refined calibration and directly register it as a clocksource.
 	 */
+<<<<<<< HEAD
 	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE)) {
 		if (boot_cpu_has(X86_FEATURE_ART))
 			art_related_clocksource = &clocksource_tsc;
+=======
+	if (boot_cpu_has(X86_FEATURE_TSC_KNOWN_FREQ)) {
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		clocksource_register_khz(&clocksource_tsc, tsc_khz);
 		return 0;
 	}
@@ -1385,6 +1411,8 @@ void __init tsc_init(void)
 
 	if (unsynchronized_tsc())
 		mark_tsc_unstable("TSCs unsynchronized");
+	else
+		tsc_store_and_check_tsc_adjust(true);
 
 	check_system_tsc_reliable();
 

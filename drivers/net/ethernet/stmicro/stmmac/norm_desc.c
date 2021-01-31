@@ -139,12 +139,17 @@ static int ndesc_get_rx_status(void *data, struct stmmac_extra_stats *x,
 static void ndesc_init_rx_desc(struct dma_desc *p, int disable_rx_ic, int mode,
 			       int end, int bfsize)
 {
+<<<<<<< HEAD
 	int bfsize1;
 
 	p->des0 |= cpu_to_le32(RDES0_OWN);
 
 	bfsize1 = min(bfsize, BUF_SIZE_2KiB - 1);
 	p->des1 |= cpu_to_le32(bfsize1 & RDES1_BUFFER1_SIZE_MASK);
+=======
+	p->des0 |= cpu_to_le32(RDES0_OWN);
+	p->des1 |= cpu_to_le32((BUF_SIZE_2KiB - 1) & RDES1_BUFFER1_SIZE_MASK);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (mode == STMMAC_CHAIN_MODE)
 		ndesc_rx_set_on_chain(p, end);

@@ -118,7 +118,6 @@
 #define SMBSLVSTS(p)	(16 + (p)->smba)	/* ICH3 and later */
 #define SMBSLVCMD(p)	(17 + (p)->smba)	/* ICH3 and later */
 #define SMBNTFDADD(p)	(20 + (p)->smba)	/* ICH3 and later */
-#define SMBNTFDDAT(p)	(22 + (p)->smba)	/* ICH3 and later */
 
 /* PCI Address Constants */
 #define SMBBAR		4
@@ -138,27 +137,27 @@
 #define SBREG_SMBCTRL_DNV	0xcf000c
 
 /* Host status bits for SMBPCISTS */
-#define SMBPCISTS_INTS		0x08
+#define SMBPCISTS_INTS		BIT(3)
 
 /* Control bits for SMBPCICTL */
-#define SMBPCICTL_INTDIS	0x0400
+#define SMBPCICTL_INTDIS	BIT(10)
 
 /* Host configuration bits for SMBHSTCFG */
-#define SMBHSTCFG_HST_EN	1
-#define SMBHSTCFG_SMB_SMI_EN	2
-#define SMBHSTCFG_I2C_EN	4
-#define SMBHSTCFG_SPD_WD	0x10
+#define SMBHSTCFG_HST_EN	BIT(0)
+#define SMBHSTCFG_SMB_SMI_EN	BIT(1)
+#define SMBHSTCFG_I2C_EN	BIT(2)
+#define SMBHSTCFG_SPD_WD	BIT(4)
 
 /* TCO configuration bits for TCOCTL */
-#define TCOCTL_EN		0x0100
+#define TCOCTL_EN		BIT(8)
 
 /* Auxiliary status register bits, ICH4+ only */
-#define SMBAUXSTS_CRCE		1
-#define SMBAUXSTS_STCO		2
+#define SMBAUXSTS_CRCE		BIT(0)
+#define SMBAUXSTS_STCO		BIT(1)
 
 /* Auxiliary control register bits, ICH4+ only */
-#define SMBAUXCTL_CRC		1
-#define SMBAUXCTL_E32B		2
+#define SMBAUXCTL_CRC		BIT(0)
+#define SMBAUXCTL_E32B		BIT(1)
 
 /* Other settings */
 #define MAX_RETRIES		400
@@ -173,27 +172,27 @@
 #define I801_I2C_BLOCK_DATA	0x18	/* ICH5 and later */
 
 /* I801 Host Control register bits */
-#define SMBHSTCNT_INTREN	0x01
-#define SMBHSTCNT_KILL		0x02
-#define SMBHSTCNT_LAST_BYTE	0x20
-#define SMBHSTCNT_START		0x40
-#define SMBHSTCNT_PEC_EN	0x80	/* ICH3 and later */
+#define SMBHSTCNT_INTREN	BIT(0)
+#define SMBHSTCNT_KILL		BIT(1)
+#define SMBHSTCNT_LAST_BYTE	BIT(5)
+#define SMBHSTCNT_START		BIT(6)
+#define SMBHSTCNT_PEC_EN	BIT(7)	/* ICH3 and later */
 
 /* I801 Hosts Status register bits */
-#define SMBHSTSTS_BYTE_DONE	0x80
-#define SMBHSTSTS_INUSE_STS	0x40
-#define SMBHSTSTS_SMBALERT_STS	0x20
-#define SMBHSTSTS_FAILED	0x10
-#define SMBHSTSTS_BUS_ERR	0x08
-#define SMBHSTSTS_DEV_ERR	0x04
-#define SMBHSTSTS_INTR		0x02
-#define SMBHSTSTS_HOST_BUSY	0x01
+#define SMBHSTSTS_BYTE_DONE	BIT(7)
+#define SMBHSTSTS_INUSE_STS	BIT(6)
+#define SMBHSTSTS_SMBALERT_STS	BIT(5)
+#define SMBHSTSTS_FAILED	BIT(4)
+#define SMBHSTSTS_BUS_ERR	BIT(3)
+#define SMBHSTSTS_DEV_ERR	BIT(2)
+#define SMBHSTSTS_INTR		BIT(1)
+#define SMBHSTSTS_HOST_BUSY	BIT(0)
 
-/* Host Notify Status registers bits */
-#define SMBSLVSTS_HST_NTFY_STS	1
+/* Host Notify Status register bits */
+#define SMBSLVSTS_HST_NTFY_STS	BIT(0)
 
-/* Host Notify Command registers bits */
-#define SMBSLVCMD_HST_NTFY_INTREN	0x01
+/* Host Notify Command register bits */
+#define SMBSLVCMD_HST_NTFY_INTREN	BIT(0)
 
 #define STATUS_ERROR_FLAGS	(SMBHSTSTS_FAILED | SMBHSTSTS_BUS_ERR | \
 				 SMBHSTSTS_DEV_ERR)
@@ -271,20 +270,17 @@ struct i801_priv {
 	 */
 	bool acpi_reserved;
 	struct mutex acpi_lock;
-	struct smbus_host_notify *host_notify;
 };
 
-#define SMBHSTNTFY_SIZE		8
-
-#define FEATURE_SMBUS_PEC	(1 << 0)
-#define FEATURE_BLOCK_BUFFER	(1 << 1)
-#define FEATURE_BLOCK_PROC	(1 << 2)
-#define FEATURE_I2C_BLOCK_READ	(1 << 3)
-#define FEATURE_IRQ		(1 << 4)
-#define FEATURE_HOST_NOTIFY	(1 << 5)
+#define FEATURE_SMBUS_PEC	BIT(0)
+#define FEATURE_BLOCK_BUFFER	BIT(1)
+#define FEATURE_BLOCK_PROC	BIT(2)
+#define FEATURE_I2C_BLOCK_READ	BIT(3)
+#define FEATURE_IRQ		BIT(4)
+#define FEATURE_HOST_NOTIFY	BIT(5)
 /* Not really a feature, but it's convenient to handle it as such */
-#define FEATURE_IDF		(1 << 15)
-#define FEATURE_TCO		(1 << 16)
+#define FEATURE_IDF		BIT(15)
+#define FEATURE_TCO		BIT(16)
 
 static const char *i801_feature_names[] = {
 	"SMBus PEC",
@@ -584,12 +580,15 @@ static void i801_isr_byte_done(struct i801_priv *priv)
 static irqreturn_t i801_host_notify_isr(struct i801_priv *priv)
 {
 	unsigned short addr;
-	unsigned int data;
 
 	addr = inb_p(SMBNTFDADD(priv)) >> 1;
-	data = inw_p(SMBNTFDDAT(priv));
 
-	i2c_handle_smbus_host_notify(priv->host_notify, addr, data);
+	/*
+	 * With the tested platforms, reading SMBNTFDDAT (22 + (p)->smba)
+	 * always returns 0. Our current implementation doesn't provide
+	 * data, so we just ignore it.
+	 */
+	i2c_handle_smbus_host_notify(&priv->adapter, addr);
 
 	/* clear Host Notify bit and return */
 	outb_p(SMBSLVSTS_HST_NTFY_STS, SMBSLVSTS(priv));
@@ -952,26 +951,36 @@ static u32 i801_func(struct i2c_adapter *adapter)
 		I2C_FUNC_SMBUS_HOST_NOTIFY : 0);
 }
 
-static int i801_enable_host_notify(struct i2c_adapter *adapter)
+static void i801_enable_host_notify(struct i2c_adapter *adapter)
 {
 	struct i801_priv *priv = i2c_get_adapdata(adapter);
 
 	if (!(priv->features & FEATURE_HOST_NOTIFY))
-		return -ENOTSUPP;
+		return;
 
-	if (!priv->host_notify)
-		priv->host_notify = i2c_setup_smbus_host_notify(adapter);
-	if (!priv->host_notify)
-		return -ENOMEM;
+	priv->original_slvcmd = inb_p(SMBSLVCMD(priv));
 
 	if (!(SMBSLVCMD_HST_NTFY_INTREN & priv->original_slvcmd))
 		outb_p(SMBSLVCMD_HST_NTFY_INTREN | priv->original_slvcmd,
 		       SMBSLVCMD(priv));
 
+<<<<<<< HEAD
+	if (!(SMBSLVCMD_HST_NTFY_INTREN & priv->original_slvcmd))
+		outb_p(SMBSLVCMD_HST_NTFY_INTREN | priv->original_slvcmd,
+		       SMBSLVCMD(priv));
+
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* clear Host Notify bit to allow a new notification */
 	outb_p(SMBSLVSTS_HST_NTFY_STS, SMBSLVSTS(priv));
+}
 
-	return 0;
+static void i801_disable_host_notify(struct i801_priv *priv)
+{
+	if (!(priv->features & FEATURE_HOST_NOTIFY))
+		return;
+
+	outb_p(priv->original_slvcmd, SMBSLVCMD(priv));
 }
 
 static void i801_disable_host_notify(struct i801_priv *priv)
@@ -1664,14 +1673,7 @@ static int i801_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		return err;
 	}
 
-	/*
-	 * Enable Host Notify for chips that supports it.
-	 * It is done after i2c_add_adapter() so that we are sure the work queue
-	 * is not used if i2c_add_adapter() fails.
-	 */
-	err = i801_enable_host_notify(&priv->adapter);
-	if (err && err != -ENOTSUPP)
-		dev_warn(&dev->dev, "Unable to enable SMBus Host Notify\n");
+	i801_enable_host_notify(&priv->adapter);
 
 	i801_probe_optional_slaves(priv);
 	/* We ignore errors - multiplexing is optional */
@@ -1731,11 +1733,8 @@ static int i801_resume(struct device *dev)
 {
 	struct pci_dev *pci_dev = to_pci_dev(dev);
 	struct i801_priv *priv = pci_get_drvdata(pci_dev);
-	int err;
 
-	err = i801_enable_host_notify(&priv->adapter);
-	if (err && err != -ENOTSUPP)
-		dev_warn(dev, "Unable to enable SMBus Host Notify\n");
+	i801_enable_host_notify(&priv->adapter);
 
 	return 0;
 }

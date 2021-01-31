@@ -59,6 +59,7 @@ $(warning LSE atomics not supported by binutils)
   endif
 endif
 
+<<<<<<< HEAD
 ifeq ($(CONFIG_COMPAT_VDSO), y)
   CROSS_COMPILE_ARM32 ?= $(CONFIG_CROSS_COMPILE_ARM32:"%"=%)
    # Check that the user has provided a valid prefix for the 32-bit toolchain.
@@ -93,12 +94,25 @@ endif
 
 KBUILD_CFLAGS	+= -mgeneral-regs-only $(lseinstr) $(vdso32)
 
+=======
+brokengasinst := $(call as-instr,1:\n.inst 0\n.rept . - 1b\n\nnop\n.endr\n,,-DCONFIG_BROKEN_GAS_INST=1)
+
+ifneq ($(brokengasinst),)
+$(warning Detected assembler with broken .inst; disassembly will be unreliable)
+endif
+
+KBUILD_CFLAGS	+= -mgeneral-regs-only $(lseinstr) $(brokengasinst)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
 ifeq ($(CONFIG_ARM64_ERRATUM_843419),y)
 KBUILD_CFLAGS	+= $(call cc-option, -mpc-relative-literal-loads)
+<<<<<<< HEAD
 endif
 KBUILD_CFLAGS	+= -fno-pic
 KBUILD_AFLAGS	+= $(lseinstr) $(vdso32)
+=======
+KBUILD_AFLAGS	+= $(lseinstr) $(brokengasinst)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 ifeq ($(CONFIG_CPU_BIG_ENDIAN), y)
 KBUILD_CPPFLAGS	+= -mbig-endian

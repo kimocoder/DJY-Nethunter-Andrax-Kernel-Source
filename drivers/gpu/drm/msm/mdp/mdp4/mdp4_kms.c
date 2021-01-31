@@ -176,16 +176,17 @@ static void mdp4_destroy(struct msm_kms *kms)
 
 	struct mdp4_kms *mdp4_kms = to_mdp4_kms(to_mdp_kms(kms));
 	struct device *dev = mdp4_kms->dev->dev;
-	struct msm_mmu *mmu = mdp4_kms->mmu;
-
-	if (mmu) {
-		mmu->funcs->detach(mmu, iommu_ports, ARRAY_SIZE(iommu_ports));
-		mmu->funcs->destroy(mmu);
-	}
+	struct msm_gem_address_space *aspace = mdp4_kms->aspace;
 
 	if (mdp4_kms->blank_cursor_iova)
 		msm_gem_put_iova(mdp4_kms->blank_cursor_bo, mdp4_kms->aspace);
 	drm_gem_object_unreference_unlocked(mdp4_kms->blank_cursor_bo);
+
+	if (aspace) {
+		aspace->mmu->funcs->detach(aspace->mmu,
+				iommu_ports, ARRAY_SIZE(iommu_ports));
+		msm_gem_address_space_destroy(aspace);
+	}
 
 	if (mdp4_kms->rpm_enabled)
 		pm_runtime_disable(dev);
@@ -463,6 +464,10 @@ struct msm_kms *mdp4_kms_init(struct drm_device *dev)
 	struct mdp4_platform_config *config = mdp4_get_config(pdev);
 	struct mdp4_kms *mdp4_kms;
 	struct msm_kms *kms = NULL;
+<<<<<<< HEAD
+=======
+	struct msm_gem_address_space *aspace;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	int irq, ret;
 	struct msm_gem_address_space *aspace;
 
@@ -554,6 +559,7 @@ struct msm_kms *mdp4_kms_init(struct drm_device *dev)
 	mdelay(16);
 
 	if (config->iommu) {
+<<<<<<< HEAD
 		struct msm_mmu *mmu = msm_iommu_new(&pdev->dev, config->iommu);
 
 		if (IS_ERR(mmu)) {
@@ -568,18 +574,35 @@ struct msm_kms *mdp4_kms_init(struct drm_device *dev)
 			goto fail;
 		}
 
+=======
+		aspace = msm_gem_address_space_create(&pdev->dev,
+				config->iommu, "mdp4");
+		if (IS_ERR(aspace)) {
+			ret = PTR_ERR(aspace);
+			goto fail;
+		}
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		mdp4_kms->aspace = aspace;
 
 		ret = aspace->mmu->funcs->attach(aspace->mmu, iommu_ports,
 				ARRAY_SIZE(iommu_ports));
 		if (ret)
 			goto fail;
-
-		mdp4_kms->mmu = mmu;
 	} else {
 		dev_info(dev->dev, "no iommu, fallback to phys "
 				"contig buffers for scanout\n");
 		aspace = NULL;
+<<<<<<< HEAD
+=======
+	}
+
+	mdp4_kms->id = msm_register_address_space(dev, aspace);
+	if (mdp4_kms->id < 0) {
+		ret = mdp4_kms->id;
+		dev_err(dev->dev, "failed to register mdp4 iommu: %d\n", ret);
+		goto fail;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	ret = modeset_init(mdp4_kms);
@@ -625,6 +648,10 @@ static struct mdp4_platform_config *mdp4_get_config(struct platform_device *dev)
 	/* TODO: Chips that aren't apq8064 have a 200 Mhz max_clk */
 	config.max_clk = 266667000;
 	config.iommu = iommu_domain_alloc(&platform_bus_type);
+	if (config.iommu) {
+		config.iommu->geometry.aperture_start = 0x1000;
+		config.iommu->geometry.aperture_end = 0xffffffff;
+	}
 
 #else
 	if (cpu_is_apq8064())

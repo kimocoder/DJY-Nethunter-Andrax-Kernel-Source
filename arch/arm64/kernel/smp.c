@@ -233,8 +233,11 @@ asmlinkage notrace void secondary_start_kernel(void)
 	atomic_inc(&mm->mm_count);
 	current->active_mm = mm;
 
+<<<<<<< HEAD
 	pr_debug("CPU%u: Booted secondary processor\n", cpu);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/*
 	 * TTBR0 is only used for the identity mapping at this stage. Make it
 	 * point to zero page to avoid speculatively fetching new entries.

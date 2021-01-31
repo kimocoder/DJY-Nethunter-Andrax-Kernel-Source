@@ -6991,11 +6991,15 @@ static bool perf_addr_filter_match(struct perf_addr_filter *filter,
 				     struct file *file, unsigned long offset,
 				     unsigned long size)
 {
+<<<<<<< HEAD
 	/* d_inode(NULL) won't be equal to any mapped user-space file */
 	if (!filter->path.dentry)
 		return false;
 
 	if (d_inode(filter->path.dentry) != file_inode(file))
+=======
+	if (filter->inode != file_inode(file))
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		return false;
 
 	if (filter->offset > offset + size)
@@ -8039,7 +8043,7 @@ static void bpf_overflow_handler(struct perf_event *event,
 	if (unlikely(__this_cpu_inc_return(bpf_prog_active) != 1))
 		goto out;
 	rcu_read_lock();
-	ret = BPF_PROG_RUN(event->prog, (void *)&ctx);
+	ret = BPF_PROG_RUN(event->prog, &ctx);
 	rcu_read_unlock();
 out:
 	__this_cpu_dec(bpf_prog_active);

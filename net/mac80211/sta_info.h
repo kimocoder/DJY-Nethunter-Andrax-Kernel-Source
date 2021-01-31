@@ -215,9 +215,14 @@ struct tid_ampdu_rx {
 	u16 ssn;
 	u16 buf_size;
 	u16 timeout;
+<<<<<<< HEAD
 	u8 auto_seq:1,
 	   removed:1,
 	   started:1;
+=======
+	bool auto_seq;
+	bool removed;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 };
 
 /**

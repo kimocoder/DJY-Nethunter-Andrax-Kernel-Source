@@ -313,6 +313,14 @@ struct ufs_pwr_mode_info {
  * @pwr_change_notify: called before and after a power mode change
  *			is carried out to allow vendor spesific capabilities
  *			to be set.
+<<<<<<< HEAD
+=======
+ * @setup_xfer_req: called before any transfer request is issued
+ *                  to set some things
+ * @setup_task_mgmt: called before any task management request is issued
+ *                  to set some things
+ * @hibern8_notify: called around hibern8 enter/exit
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  * @apply_dev_quirks: called to apply device specific quirks
  * @suspend: called during host controller PM callback
  * @resume: called during host controller PM callback
@@ -332,8 +340,14 @@ struct ufs_hba_variant_ops {
 	u32	(*get_ufs_hci_version)(struct ufs_hba *);
 	int	(*clk_scale_notify)(struct ufs_hba *, bool,
 				    enum ufs_notify_change_status);
+<<<<<<< HEAD
 	int	(*setup_clocks)(struct ufs_hba *, bool, bool);
 	int	(*setup_regulators)(struct ufs_hba *, bool);
+=======
+	int	(*setup_clocks)(struct ufs_hba *, bool,
+				enum ufs_notify_change_status);
+	int     (*setup_regulators)(struct ufs_hba *, bool);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	int	(*hce_enable_notify)(struct ufs_hba *,
 				     enum ufs_notify_change_status);
 	int	(*link_startup_notify)(struct ufs_hba *,
@@ -342,6 +356,7 @@ struct ufs_hba_variant_ops {
 					enum ufs_notify_change_status status,
 					struct ufs_pa_layer_attr *,
 					struct ufs_pa_layer_attr *);
+<<<<<<< HEAD
 	int	(*apply_dev_quirks)(struct ufs_hba *);
 	int	(*suspend)(struct ufs_hba *, enum ufs_pm_op);
 	int	(*resume)(struct ufs_hba *, enum ufs_pm_op);
@@ -397,6 +412,13 @@ struct ufs_hba_variant {
 	struct ufs_hba_variant_ops		*vops;
 	struct ufs_hba_crypto_variant_ops	*crypto_vops;
 	struct ufs_hba_pm_qos_variant_ops	*pm_qos_vops;
+=======
+	void	(*setup_xfer_req)(struct ufs_hba *, int, bool);
+	void	(*setup_task_mgmt)(struct ufs_hba *, int, u8);
+	void    (*hibern8_notify)(struct ufs_hba *, enum uic_cmd_dme,
+					enum ufs_notify_change_status);
+	int	(*apply_dev_quirks)(struct ufs_hba *);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	int     (*suspend)(struct ufs_hba *, enum ufs_pm_op);
 	int     (*resume)(struct ufs_hba *, enum ufs_pm_op);
 	void	(*dbg_register_dump)(struct ufs_hba *hba);
@@ -851,13 +873,21 @@ struct ufs_hba {
 	 */
 	#define UFSHCD_QUIRK_BROKEN_UFS_HCI_VERSION		UFS_BIT(5)
 
+<<<<<<< HEAD
 	/* Auto hibern8 support is broken */
 	#define UFSHCD_QUIRK_BROKEN_AUTO_HIBERN8		UFS_BIT(6)
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/*
 	 * This quirk needs to be enabled if the host contoller regards
 	 * resolution of the values of PRDTO and PRDTL in UTRD as byte.
 	 */
 	#define UFSHCD_QUIRK_PRDT_BYTE_GRAN			UFS_BIT(7)
+<<<<<<< HEAD
+=======
+
+	unsigned int quirks;	/* Deviations from standard UFSHCI spec. */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	unsigned int quirks;	/* Deviations from standard UFSHCI spec. */
 
@@ -1294,10 +1324,17 @@ static inline int ufshcd_vops_clk_scale_notify(struct ufs_hba *hba,
 }
 
 static inline int ufshcd_vops_setup_clocks(struct ufs_hba *hba, bool on,
+<<<<<<< HEAD
 					   bool is_gating_context)
 {
 	if (hba->var && hba->var->vops && hba->var->vops->setup_clocks)
 		return hba->var->vops->setup_clocks(hba, on, is_gating_context);
+=======
+					enum ufs_notify_change_status status)
+{
+	if (hba->vops && hba->vops->setup_clocks)
+		return hba->vops->setup_clocks(hba, on, status);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	return 0;
 }
 
@@ -1334,7 +1371,40 @@ static inline int ufshcd_vops_pwr_change_notify(struct ufs_hba *hba,
 	return -ENOTSUPP;
 }
 
+<<<<<<< HEAD
 static inline int ufshcd_vops_apply_dev_quirks(struct ufs_hba *hba)
+=======
+static inline void ufshcd_vops_setup_xfer_req(struct ufs_hba *hba, int tag,
+					bool is_scsi_cmd)
+{
+	if (hba->vops && hba->vops->setup_xfer_req)
+		return hba->vops->setup_xfer_req(hba, tag, is_scsi_cmd);
+}
+
+static inline void ufshcd_vops_setup_task_mgmt(struct ufs_hba *hba,
+					int tag, u8 tm_function)
+{
+	if (hba->vops && hba->vops->setup_task_mgmt)
+		return hba->vops->setup_task_mgmt(hba, tag, tm_function);
+}
+
+static inline void ufshcd_vops_hibern8_notify(struct ufs_hba *hba,
+					enum uic_cmd_dme cmd,
+					enum ufs_notify_change_status status)
+{
+	if (hba->vops && hba->vops->hibern8_notify)
+		return hba->vops->hibern8_notify(hba, cmd, status);
+}
+
+static inline int ufshcd_vops_apply_dev_quirks(struct ufs_hba *hba)
+{
+	if (hba->vops && hba->vops->apply_dev_quirks)
+		return hba->vops->apply_dev_quirks(hba);
+	return 0;
+}
+
+static inline int ufshcd_vops_suspend(struct ufs_hba *hba, enum ufs_pm_op op)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	if (hba->var && hba->var->vops && hba->var->vops->apply_dev_quirks)
 		return hba->var->vops->apply_dev_quirks(hba);

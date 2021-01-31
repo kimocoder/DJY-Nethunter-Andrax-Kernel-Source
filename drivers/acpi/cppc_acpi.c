@@ -778,9 +778,6 @@ int acpi_cppc_processor_probe(struct acpi_processor *pr)
 		init_waitqueue_head(&pcc_data.pcc_write_wait_q);
 	}
 
-	/* Plug PSD data into this CPUs CPC descriptor. */
-	per_cpu(cpc_desc_ptr, pr->id) = cpc_ptr;
-
 	/* Everything looks okay */
 	pr_debug("Parsed CPC struct for CPU: %d\n", pr->id);
 
@@ -790,11 +787,21 @@ int acpi_cppc_processor_probe(struct acpi_processor *pr)
 		ret = -EINVAL;
 		goto out_free;
 	}
+<<<<<<< HEAD
+=======
+
+	/* Plug PSD data into this CPUs CPC descriptor. */
+	per_cpu(cpc_desc_ptr, pr->id) = cpc_ptr;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	ret = kobject_init_and_add(&cpc_ptr->kobj, &cppc_ktype, &cpu_dev->kobj,
 			"acpi_cppc");
 	if (ret) {
+<<<<<<< HEAD
 		kobject_put(&cpc_ptr->kobj);
+=======
+		per_cpu(cpc_desc_ptr, pr->id) = NULL;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		goto out_free;
 	}
 
@@ -830,6 +837,8 @@ void acpi_cppc_processor_exit(struct acpi_processor *pr)
 	void __iomem *addr;
 
 	cpc_ptr = per_cpu(cpc_desc_ptr, pr->id);
+	if (!cpc_ptr)
+		return;
 
 	/* Free all the mapped sys mem areas for this CPU */
 	for (i = 2; i < cpc_ptr->num_entries; i++) {

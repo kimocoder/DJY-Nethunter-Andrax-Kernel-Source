@@ -24,7 +24,7 @@
 #include <linux/icmpv6.h>
 #include <net/ipv6.h>
 #include <net/compat.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/mutex.h>
 #include <linux/proc_fs.h>
 #include <linux/err.h>
@@ -300,11 +300,7 @@ ip6t_do_table(struct sk_buff *skb,
 	 * rule is also a fragment-specific rule, non-fragments won't
 	 * match it. */
 	acpar.hotdrop = false;
-	acpar.net     = state->net;
-	acpar.in      = state->in;
-	acpar.out     = state->out;
-	acpar.family  = NFPROTO_IPV6;
-	acpar.hooknum = hook;
+	acpar.state   = state;
 
 	IP_NF_ASSERT(table->valid_hooks & (1 << hook));
 
@@ -1020,7 +1016,7 @@ static int get_info(struct net *net, void __user *user,
 #endif
 	t = try_then_request_module(xt_find_table_lock(net, AF_INET6, name),
 				    "ip6table_%s", name);
-	if (!IS_ERR_OR_NULL(t)) {
+	if (t) {
 		struct ip6t_getinfo info;
 		const struct xt_table_info *private = t->private;
 #ifdef CONFIG_COMPAT
@@ -1050,7 +1046,7 @@ static int get_info(struct net *net, void __user *user,
 		xt_table_unlock(t);
 		module_put(t->me);
 	} else
-		ret = t ? PTR_ERR(t) : -ENOENT;
+		ret = -ENOENT;
 #ifdef CONFIG_COMPAT
 	if (compat)
 		xt_compat_unlock(AF_INET6);
@@ -1076,7 +1072,7 @@ get_entries(struct net *net, struct ip6t_get_entries __user *uptr,
 	get.name[sizeof(get.name) - 1] = '\0';
 
 	t = xt_find_table_lock(net, AF_INET6, get.name);
-	if (!IS_ERR_OR_NULL(t)) {
+	if (t) {
 		struct xt_table_info *private = t->private;
 		if (get.size == private->size)
 			ret = copy_entries_to_user(private->size,
@@ -1087,7 +1083,7 @@ get_entries(struct net *net, struct ip6t_get_entries __user *uptr,
 		module_put(t->me);
 		xt_table_unlock(t);
 	} else
-		ret = t ? PTR_ERR(t) : -ENOENT;
+		ret = -ENOENT;
 
 	return ret;
 }
@@ -1112,8 +1108,8 @@ __do_replace(struct net *net, const char *name, unsigned int valid_hooks,
 
 	t = try_then_request_module(xt_find_table_lock(net, AF_INET6, name),
 				    "ip6table_%s", name);
-	if (IS_ERR_OR_NULL(t)) {
-		ret = t ? PTR_ERR(t) : -ENOENT;
+	if (!t) {
+		ret = -ENOENT;
 		goto free_newinfo_counters_untrans;
 	}
 
@@ -1227,8 +1223,8 @@ do_add_counters(struct net *net, const void __user *user, unsigned int len,
 	if (IS_ERR(paddc))
 		return PTR_ERR(paddc);
 	t = xt_find_table_lock(net, AF_INET6, tmp.name);
-	if (IS_ERR_OR_NULL(t)) {
-		ret = t ? PTR_ERR(t) : -ENOENT;
+	if (!t) {
+		ret = -ENOENT;
 		goto free;
 	}
 
@@ -1664,7 +1660,7 @@ compat_get_entries(struct net *net, struct compat_ip6t_get_entries __user *uptr,
 
 	xt_compat_lock(AF_INET6);
 	t = xt_find_table_lock(net, AF_INET6, get.name);
-	if (!IS_ERR_OR_NULL(t)) {
+	if (t) {
 		const struct xt_table_info *private = t->private;
 		struct xt_table_info info;
 		ret = compat_table_info(private, &info);
@@ -1678,7 +1674,7 @@ compat_get_entries(struct net *net, struct compat_ip6t_get_entries __user *uptr,
 		module_put(t->me);
 		xt_table_unlock(t);
 	} else
-		ret = t ? PTR_ERR(t) : -ENOENT;
+		ret = -ENOENT;
 
 	xt_compat_unlock(AF_INET6);
 	return ret;

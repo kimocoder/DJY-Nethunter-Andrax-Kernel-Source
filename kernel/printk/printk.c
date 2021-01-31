@@ -48,7 +48,7 @@
 #include <linux/ctype.h>
 #include <linux/uio.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/sections.h>
 
 #define CREATE_TRACE_POINTS
@@ -753,7 +753,7 @@ static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 		return -ENOMEM;
 
 	buf[len] = '\0';
-	if (copy_from_iter(buf, len, from) != len) {
+	if (!copy_from_iter_full(buf, len, from)) {
 		kfree(buf);
 		return -EFAULT;
 	}
@@ -1606,46 +1606,25 @@ static inline void printk_delay(void)
 static struct cont {
 	char buf[LOG_LINE_MAX];
 	size_t len;			/* length == 0 means unused buffer */
-	size_t cons;			/* bytes written to console */
 	struct task_struct *owner;	/* task of first print*/
 	u64 ts_nsec;			/* time of first print */
 	u8 level;			/* log level of first message */
 	u8 facility;			/* log facility of first message */
 	enum log_flags flags;		/* prefix, newline flags */
-	bool flushed:1;			/* buffer sealed and committed */
 } cont;
 
 static void cont_flush(void)
 {
-	if (cont.flushed)
-		return;
 	if (cont.len == 0)
 		return;
-	if (cont.cons) {
-		/*
-		 * If a fragment of this line was directly flushed to the
-		 * console; wait for the console to pick up the rest of the
-		 * line. LOG_NOCONS suppresses a duplicated output.
-		 */
-		log_store(cont.facility, cont.level, cont.flags | LOG_NOCONS,
-			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
-		cont.flushed = true;
-	} else {
-		/*
-		 * If no fragment of this line ever reached the console,
-		 * just submit it to the store and free the buffer.
-		 */
-		log_store(cont.facility, cont.level, cont.flags, 0,
-			  NULL, 0, cont.buf, cont.len);
-		cont.len = 0;
-	}
+
+	log_store(cont.facility, cont.level, cont.flags, cont.ts_nsec,
+		  NULL, 0, cont.buf, cont.len);
+	cont.len = 0;
 }
 
 static bool cont_add(int facility, int level, enum log_flags flags, const char *text, size_t len)
 {
-	if (cont.len && cont.flushed)
-		return false;
-
 	/*
 	 * If ext consoles are present, flush and skip in-kernel
 	 * continuation.  See nr_ext_console_drivers definition.  Also, if
@@ -1662,8 +1641,6 @@ static bool cont_add(int facility, int level, enum log_flags flags, const char *
 		cont.owner = current;
 		cont.ts_nsec = local_clock();
 		cont.flags = flags;
-		cont.cons = 0;
-		cont.flushed = false;
 	}
 
 	memcpy(cont.buf + cont.len, text, len);
@@ -1682,6 +1659,7 @@ static bool cont_add(int facility, int level, enum log_flags flags, const char *
 	return true;
 }
 
+<<<<<<< HEAD
 static size_t cont_print_text(char *text, size_t size)
 {
 	size_t textlen = 0;
@@ -1708,6 +1686,8 @@ static size_t cont_print_text(char *text, size_t size)
 	return textlen;
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static size_t log_output(int facility, int level, enum log_flags lflags, const char *dict, size_t dictlen, char *text, size_t text_len)
 {
 	/*
@@ -1946,7 +1926,8 @@ int vprintk_default(const char *fmt, va_list args)
 	int r;
 
 #ifdef CONFIG_KGDB_KDB
-	if (unlikely(kdb_trap_printk)) {
+	/* Allow to pass printk() to kdb but avoid a recursion. */
+	if (unlikely(kdb_trap_printk && kdb_printf_cpu < 0)) {
 		r = vkdb_printf(KDB_MSGSRC_PRINTK, fmt, args);
 		return r;
 	}
@@ -2003,12 +1984,15 @@ static u32 console_idx;
 static u64 log_first_seq;
 static u32 log_first_idx;
 static u64 log_next_seq;
+<<<<<<< HEAD
 static struct cont {
 	size_t len;
 	size_t cons;
 	u8 level;
 	bool flushed:1;
 } cont;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static char *log_text(const struct printk_log *msg) { return NULL; }
 static char *log_dict(const struct printk_log *msg) { return NULL; }
 static struct printk_log *log_from_idx(u32 idx) { return NULL; }
@@ -2024,7 +2008,6 @@ static void call_console_drivers(int level,
 				 const char *text, size_t len) {}
 static size_t msg_print_text(const struct printk_log *msg,
 			     bool syslog, char *buf, size_t size) { return 0; }
-static size_t cont_print_text(char *text, size_t size) { return 0; }
 static bool suppress_message_printing(int level) { return false; }
 
 /* Still needs to be defined for users */
@@ -2196,27 +2179,20 @@ void resume_console(void)
 
 /**
  * console_cpu_notify - print deferred console messages after CPU hotplug
- * @self: notifier struct
- * @action: CPU hotplug event
- * @hcpu: unused
+ * @cpu: unused
  *
  * If printk() is called from a CPU that is not online yet, the messages
  * will be spooled but will not show up on the console.  This function is
  * called when a new CPU comes online (or fails to come up), and ensures
  * that any such output gets printed.
  */
-static int console_cpu_notify(struct notifier_block *self,
-	unsigned long action, void *hcpu)
+static int console_cpu_notify(unsigned int cpu)
 {
-	switch (action) {
-	case CPU_ONLINE:
-	case CPU_DEAD:
-	case CPU_DOWN_FAILED:
-	case CPU_UP_CANCELED:
+	if (!cpuhp_tasks_frozen) {
 		console_lock();
 		console_unlock();
 	}
-	return NOTIFY_OK;
+	return 0;
 }
 
 #endif
@@ -2309,42 +2285,6 @@ static inline int can_use_console(void)
 	return cpu_online(raw_smp_processor_id()) || have_callable_console();
 }
 
-static void console_cont_flush(char *text, size_t size)
-{
-	unsigned long flags;
-	size_t len;
-
-	raw_spin_lock_irqsave(&logbuf_lock, flags);
-
-	if (!cont.len)
-		goto out;
-
-	if (suppress_message_printing(cont.level)) {
-		cont.cons = cont.len;
-		if (cont.flushed)
-			cont.len = 0;
-		goto out;
-	}
-
-	/*
-	 * We still queue earlier records, likely because the console was
-	 * busy. The earlier ones need to be printed before this one, we
-	 * did not flush any fragment so far, so just let it queue up.
-	 */
-	if (console_seq < log_next_seq && !cont.cons)
-		goto out;
-
-	len = cont_print_text(text, size);
-	raw_spin_unlock(&logbuf_lock);
-	stop_critical_timings();
-	call_console_drivers(cont.level, NULL, 0, text, len);
-	start_critical_timings();
-	local_irq_restore(flags);
-	return;
-out:
-	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
-}
-
 /**
  * console_unlock - unlock the console system
  *
@@ -2402,9 +2342,6 @@ again:
 		return;
 	}
 
-	/* flush buffered message fragment immediately to console */
-	console_cont_flush(text, sizeof(text));
-
 	for (;;) {
 		struct printk_log *msg;
 		size_t ext_len = 0;
@@ -2433,8 +2370,7 @@ skip:
 
 		msg = log_from_idx(console_idx);
 		level = msg->level;
-		if ((msg->flags & LOG_NOCONS) ||
-				suppress_message_printing(level)) {
+		if (suppress_message_printing(level)) {
 			/*
 			 * Skip record we have buffered and already printed
 			 * directly to the console when we received it, and
@@ -2442,12 +2378,15 @@ skip:
 			 */
 			console_idx = log_next(console_idx);
 			console_seq++;
+<<<<<<< HEAD
 			/*
 			 * We will get here again when we register a new
 			 * CON_PRINTBUFFER console. Clear the flag so we
 			 * will properly dump everything later.
 			 */
 			msg->flags &= ~LOG_NOCONS;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			goto skip;
 		}
 
@@ -2855,6 +2794,7 @@ EXPORT_SYMBOL(unregister_console);
 static int __init printk_late_init(void)
 {
 	struct console *con;
+	int ret;
 
 	for_each_console(con) {
 		if (!keep_bootcon && con->flags & CON_BOOT) {
@@ -2869,9 +2809,18 @@ static int __init printk_late_init(void)
 				unregister_console(con);
 		}
 	}
+<<<<<<< HEAD
 #ifdef CONFIG_CONSOLE_FLUSH_ON_HOTPLUG
 	hotcpu_notifier(console_cpu_notify, 0);
 #endif
+=======
+	ret = cpuhp_setup_state_nocalls(CPUHP_PRINTK_DEAD, "printk:dead", NULL,
+					console_cpu_notify);
+	WARN_ON(ret < 0);
+	ret = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN, "printk:online",
+					console_cpu_notify, NULL);
+	WARN_ON(ret < 0);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	return 0;
 }
 late_initcall(printk_late_init);
@@ -3210,7 +3159,11 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
 	/* move first record forward until length fits into the buffer */
 	seq = dumper->cur_seq;
 	idx = dumper->cur_idx;
+<<<<<<< HEAD
 	while (l >= size && seq < dumper->next_seq) {
+=======
+	while (l > size && seq < dumper->next_seq) {
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		struct printk_log *msg = log_from_idx(idx);
 
 		l -= msg_print_text(msg, true, NULL, 0);

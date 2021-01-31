@@ -23,7 +23,10 @@ void lkdtm_ATOMIC_UNDERFLOW(void);
 void lkdtm_ATOMIC_OVERFLOW(void);
 void lkdtm_CORRUPT_LIST_ADD(void);
 void lkdtm_CORRUPT_LIST_DEL(void);
+<<<<<<< HEAD
 void lkdtm_CORRUPT_USER_DS(void);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* lkdtm_heap.c */
 void lkdtm_OVERWRITE_ALLOCATION(void);

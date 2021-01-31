@@ -253,11 +253,19 @@ NOKPROBE_SYMBOL(kgdb_compiled_brk_fn);
 
 static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
 {
+<<<<<<< HEAD
 	if (user_mode(regs))
 		return DBG_HOOK_ERROR;
 
 	kgdb_handle_exception(0, SIGTRAP, 0, regs);
 	return DBG_HOOK_HANDLED;
+=======
+	if (!kgdb_single_step)
+		return DBG_HOOK_ERROR;
+
+	kgdb_handle_exception(1, SIGTRAP, 0, regs);
+	return 0;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 NOKPROBE_SYMBOL(kgdb_step_brk_fn);
 

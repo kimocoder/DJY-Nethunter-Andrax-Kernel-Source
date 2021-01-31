@@ -52,6 +52,9 @@ int efi_set_mapping_permissions(struct mm_struct *mm, efi_memory_desc_t *md);
 #define __efi_call_early(f, ...)	f(__VA_ARGS__)
 #define efi_is_64bit()			(true)
 
+#define efi_call_proto(protocol, f, instance, ...)			\
+	((protocol##_t *)instance)->f(instance, ##__VA_ARGS__)
+
 #define alloc_screen_info(x...)		&screen_info
 
 static inline void free_screen_info(efi_system_table_t *sys_table_arg,
@@ -89,6 +92,7 @@ static inline void efi_set_pgd(struct mm_struct *mm)
 		if (mm != current->active_mm) {
 			/*
 			 * Update the current thread's saved ttbr0 since it is
+<<<<<<< HEAD
 			 * restored as part of a return from exception. Enable
 			 * access to the valid TTBR0_EL1 and invoke the errata
 			 * workaround directly since there is no return from
@@ -97,14 +101,30 @@ static inline void efi_set_pgd(struct mm_struct *mm)
 			update_saved_ttbr0(current, mm);
 			uaccess_ttbr0_enable();
 			post_ttbr_update_workaround();
+=======
+			 * restored as part of a return from exception. Set
+			 * the hardware TTBR0_EL1 using cpu_switch_mm()
+			 * directly to enable potential errata workarounds.
+			 */
+			update_saved_ttbr0(current, mm);
+			cpu_switch_mm(mm->pgd, mm);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		} else {
 			/*
 			 * Defer the switch to the current thread's TTBR0_EL1
 			 * until uaccess_enable(). Restore the current
 			 * thread's saved ttbr0 corresponding to its active_mm
+<<<<<<< HEAD
 			 */
 			uaccess_ttbr0_disable();
 			update_saved_ttbr0(current, current->active_mm);
+=======
+			 * (if different from init_mm).
+			 */
+			cpu_set_reserved_ttbr0();
+			if (current->active_mm != &init_mm)
+				update_saved_ttbr0(current, current->active_mm);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		}
 	}
 }

@@ -160,6 +160,7 @@ enum ufs_qcom_phy_init_type {
 	 UFS_QCOM_DBG_PRINT_TEST_BUS_EN)
 
 /* QUniPro Vendor specific attributes */
+<<<<<<< HEAD
 #define PA_VS_CONFIG_REG1		0x9000
 #define SAVECONFIGTIME_MODE_MASK	0x6000
 
@@ -169,6 +170,9 @@ enum ufs_qcom_phy_init_type {
 #define DL_VS_CLK_CFG		0xA00B
 #define DL_VS_CLK_CFG_MASK	0x3FF
 
+=======
+#define PA_VS_CONFIG_REG1	0x9000
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #define DME_VS_CORE_CLK_CTRL	0xD002
 /* bit and mask definitions for DME_VS_CORE_CLK_CTRL attribute */
 #define DME_VS_CORE_CLK_CTRL_MAX_CORE_CLK_1US_CYCLES_MASK	0xFF

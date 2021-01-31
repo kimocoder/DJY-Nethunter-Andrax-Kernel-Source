@@ -86,7 +86,11 @@
 
 #define SO_CNX_ADVICE		0x0037
 
+<<<<<<< HEAD
 #define SO_COOKIE		0x003b
+=======
+#define SCM_TIMESTAMPING_OPT_STATS	0x0038
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* Security levels - as per NRL IPv6 - don't actually do anything */
 #define SO_SECURITY_AUTHENTICATION		0x5001

@@ -283,6 +283,7 @@ void *trace_event_buffer_reserve(struct trace_event_buffer *fbuffer,
 }
 EXPORT_SYMBOL_GPL(trace_event_buffer_reserve);
 
+<<<<<<< HEAD
 static DEFINE_SPINLOCK(tracepoint_iter_lock);
 
 static void output_printk(struct trace_event_buffer *fbuffer)
@@ -324,6 +325,8 @@ void trace_event_buffer_commit(struct trace_event_buffer *fbuffer,
 }
 EXPORT_SYMBOL_GPL(trace_event_buffer_commit);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 int trace_event_reg(struct trace_event_call *call,
 		    enum trace_reg type, void *data)
 {
@@ -743,6 +746,7 @@ __ftrace_set_clr_event_nolock(struct trace_array *tr, const char *match,
 	struct trace_event_call *call;
 	const char *name;
 	int ret = -EINVAL;
+	int eret = 0;
 
 	list_for_each_entry(file, &tr->events, list) {
 
@@ -766,9 +770,17 @@ __ftrace_set_clr_event_nolock(struct trace_array *tr, const char *match,
 		if (event && strcmp(event, name) != 0)
 			continue;
 
-		ftrace_event_enable_disable(file, set);
+		ret = ftrace_event_enable_disable(file, set);
 
-		ret = 0;
+		/*
+		 * Save the first error and return that. Some events
+		 * may still have been enabled, but let the user
+		 * know that something went wrong.
+		 */
+		if (ret && !eret)
+			eret = ret;
+
+		ret = eret;
 	}
 
 	return ret;
@@ -2857,20 +2869,32 @@ create_event_toplevel_files(struct dentry *parent, struct trace_array *tr)
 		return -ENOMEM;
 	}
 
+	entry = trace_create_file("enable", 0644, d_events,
+				  tr, &ftrace_tr_enable_fops);
+	if (!entry) {
+		pr_warn("Could not create tracefs 'enable' entry\n");
+		return -ENOMEM;
+	}
+
+	/* There are not as crucial, just warn if they are not created */
+
 	entry = tracefs_create_file("set_event_pid", 0644, parent,
 				    tr, &ftrace_set_event_pid_fops);
+	if (!entry)
+		pr_warn("Could not create tracefs 'set_event_pid' entry\n");
 
 	/* ring buffer internal formats */
-	trace_create_file("header_page", 0444, d_events,
-			  ring_buffer_print_page_header,
-			  &ftrace_show_header_fops);
+	entry = trace_create_file("header_page", 0444, d_events,
+				  ring_buffer_print_page_header,
+				  &ftrace_show_header_fops);
+	if (!entry)
+		pr_warn("Could not create tracefs 'header_page' entry\n");
 
-	trace_create_file("header_event", 0444, d_events,
-			  ring_buffer_print_entry_header,
-			  &ftrace_show_header_fops);
-
-	trace_create_file("enable", 0644, d_events,
-			  tr, &ftrace_tr_enable_fops);
+	entry = trace_create_file("header_event", 0444, d_events,
+				  ring_buffer_print_entry_header,
+				  &ftrace_show_header_fops);
+	if (!entry)
+		pr_warn("Could not create tracefs 'header_event' entry\n");
 
 	tr->event_dir = d_events;
 

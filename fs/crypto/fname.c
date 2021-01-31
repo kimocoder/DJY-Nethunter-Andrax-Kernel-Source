@@ -12,7 +12,10 @@
 
 #include <linux/scatterlist.h>
 #include <linux/ratelimit.h>
+<<<<<<< HEAD
 #include <crypto/skcipher.h>
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #include "fscrypt_private.h"
 
 static inline bool fscrypt_is_dot_dotdot(const struct qstr *str)
@@ -182,8 +185,12 @@ static int digest_decode(const char *src, int len, char *dst)
 	return cp - dst;
 }
 
+<<<<<<< HEAD
 bool fscrypt_fname_encrypted_size(const struct inode *inode, u32 orig_len,
 				  u32 max_len, u32 *encrypted_len_ret)
+=======
+u32 fscrypt_fname_encrypted_size(const struct inode *inode, u32 ilen)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	int padding = 4 << (inode->i_crypt_info->ci_flags &
 			    FS_POLICY_FLAGS_PAD_MASK);
@@ -206,8 +213,12 @@ bool fscrypt_fname_encrypted_size(const struct inode *inode, u32 orig_len,
  * Return: 0 on success, -errno on failure
  */
 int fscrypt_fname_alloc_buffer(const struct inode *inode,
+<<<<<<< HEAD
 			       u32 max_encrypted_len,
 			       struct fscrypt_str *crypto_str)
+=======
+				u32 ilen, struct fscrypt_str *crypto_str)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	const u32 max_encoded_len =
 		max_t(u32, BASE64_CHARS(FSCRYPT_FNAME_MAX_UNDIGESTED_SIZE),
@@ -331,8 +342,13 @@ int fscrypt_setup_filename(struct inode *dir, const struct qstr *iname,
 		fname->disk_name.len = iname->len;
 		return 0;
 	}
+<<<<<<< HEAD
 	ret = fscrypt_get_encryption_info(dir);
 	if (ret)
+=======
+	ret = fscrypt_get_crypt_info(dir);
+	if (ret && ret != -EOPNOTSUPP)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		return ret;
 
 	if (dir->i_crypt_info) {

@@ -13,9 +13,13 @@
 #include <linux/mm.h>
 #include <asm/page.h>
 #include <asm/code-patching.h>
+<<<<<<< HEAD
 #include <asm/uaccess.h>
 #include <asm/setup.h>
 #include <asm/sections.h>
+=======
+#include <linux/uaccess.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 
 int patch_instruction(unsigned int *addr, unsigned int instr)

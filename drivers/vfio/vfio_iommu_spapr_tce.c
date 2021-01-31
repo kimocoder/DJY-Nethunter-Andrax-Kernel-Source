@@ -195,11 +195,14 @@ static long tce_iommu_register_pages(struct tce_container *container,
 		return ret;
 
 	tcemem = kzalloc(sizeof(*tcemem), GFP_KERNEL);
+<<<<<<< HEAD
 	if (!tcemem) {
 		mm_iommu_put(container->mm, mem);
 		return -ENOMEM;
 	}
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	tcemem->mem = mem;
 	list_add(&tcemem->next, &container->prereg_list);
 
@@ -427,6 +430,17 @@ static void tce_iommu_release(void *iommu_data)
 
 		tce_iommu_clear(container, tbl, tbl->it_offset, tbl->it_size);
 		tce_iommu_free_table(container, tbl);
+<<<<<<< HEAD
+=======
+	}
+
+	while (!list_empty(&container->prereg_list)) {
+		struct tce_iommu_prereg *tcemem;
+
+		tcemem = list_first_entry(&container->prereg_list,
+				struct tce_iommu_prereg, next);
+		WARN_ON_ONCE(tce_iommu_prereg_free(container, tcemem));
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	list_for_each_entry_safe(tcemem, tmtmp, &container->prereg_list, next)
@@ -836,6 +850,7 @@ static long tce_iommu_ioctl(void *iommu_data,
 
 		return (ret < 0) ? 0 : ret;
 	}
+<<<<<<< HEAD
 
 	/*
 	 * Sanity check to prevent one userspace from manipulating
@@ -845,6 +860,17 @@ static long tce_iommu_ioctl(void *iommu_data,
 	if (container->mm && container->mm != current->mm)
 		return -EPERM;
 
+=======
+
+	/*
+	 * Sanity check to prevent one userspace from manipulating
+	 * another userspace mm.
+	 */
+	BUG_ON(!container);
+	if (container->mm && container->mm != current->mm)
+		return -EPERM;
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	switch (cmd) {
 	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
 		struct vfio_iommu_spapr_tce_info info;
@@ -1124,11 +1150,20 @@ static long tce_iommu_ioctl(void *iommu_data,
 		mutex_lock(&container->lock);
 
 		ret = tce_iommu_create_default_window(container);
+<<<<<<< HEAD
 		if (!ret)
 			ret = tce_iommu_create_window(container,
 					create.page_shift,
 					create.window_size, create.levels,
 					&create.start_addr);
+=======
+		if (ret)
+			return ret;
+
+		ret = tce_iommu_create_window(container, create.page_shift,
+				create.window_size, create.levels,
+				&create.start_addr);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 		mutex_unlock(&container->lock);
 
@@ -1246,8 +1281,11 @@ static void tce_iommu_release_ownership_ddw(struct tce_container *container,
 static long tce_iommu_take_ownership_ddw(struct tce_container *container,
 		struct iommu_table_group *table_group)
 {
+<<<<<<< HEAD
 	long i, ret = 0;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (!table_group->ops->create_table || !table_group->ops->set_window ||
 			!table_group->ops->release_ownership) {
 		WARN_ON_ONCE(1);
@@ -1256,6 +1294,7 @@ static long tce_iommu_take_ownership_ddw(struct tce_container *container,
 
 	table_group->ops->take_ownership(table_group);
 
+<<<<<<< HEAD
 	/* Set all windows to the new group */
 	for (i = 0; i < IOMMU_TABLE_GROUP_MAX_TABLES; ++i) {
 		struct iommu_table *tbl = container->tables[i];
@@ -1268,15 +1307,9 @@ static long tce_iommu_take_ownership_ddw(struct tce_container *container,
 			goto release_exit;
 	}
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	return 0;
-
-release_exit:
-	for (i = 0; i < IOMMU_TABLE_GROUP_MAX_TABLES; ++i)
-		table_group->ops->unset_window(table_group, i);
-
-	table_group->ops->release_ownership(table_group);
-
-	return ret;
 }
 
 static int tce_iommu_attach_group(void *iommu_data,
@@ -1333,6 +1366,7 @@ static int tce_iommu_attach_group(void *iommu_data,
 
 	if (!table_group->ops || !table_group->ops->take_ownership ||
 			!table_group->ops->release_ownership) {
+<<<<<<< HEAD
 		if (container->v2) {
 			ret = -EPERM;
 			goto unlock_exit;
@@ -1343,6 +1377,10 @@ static int tce_iommu_attach_group(void *iommu_data,
 			ret = -EPERM;
 			goto unlock_exit;
 		}
+=======
+		ret = tce_iommu_take_ownership(container, table_group);
+	} else {
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		ret = tce_iommu_take_ownership_ddw(container, table_group);
 		if (!tce_groups_attached(container) && !container->tables[0])
 			container->def_window_pending = true;

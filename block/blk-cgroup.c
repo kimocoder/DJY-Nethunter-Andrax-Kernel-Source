@@ -184,7 +184,11 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
 		goto err_free_blkg;
 	}
 
+<<<<<<< HEAD
 	wb_congested = wb_congested_get_create(q->backing_dev_info,
+=======
+	wb_congested = wb_congested_get_create(&q->backing_dev_info,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 					       blkcg->css.id,
 					       GFP_NOWAIT | __GFP_NOWARN);
 	if (!wb_congested) {

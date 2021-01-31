@@ -548,7 +548,7 @@ out:
 	return ret;
 }
 
-static int uvcg_control_class_drop_link(struct config_item *src,
+static void uvcg_control_class_drop_link(struct config_item *src,
 					struct config_item *target)
 {
 	struct config_item *control, *header;
@@ -556,7 +556,6 @@ static int uvcg_control_class_drop_link(struct config_item *src,
 	struct mutex *su_mutex = &src->ci_group->cg_subsys->su_mutex;
 	struct uvc_descriptor_header **class_array;
 	struct uvcg_control_header *target_hdr;
-	int ret = -EINVAL;
 
 	mutex_lock(su_mutex); /* for navigating configfs hierarchy */
 
@@ -570,24 +569,18 @@ static int uvcg_control_class_drop_link(struct config_item *src,
 	mutex_lock(&opts->lock);
 
 	class_array = uvcg_get_ctl_class_arr(src, opts);
-	if (!class_array)
+	if (!class_array || opts->refcnt)
 		goto unlock;
-	if (opts->refcnt) {
-		ret = -EBUSY;
-		goto unlock;
-	}
 
 	target_hdr = to_uvcg_control_header(target);
 	--target_hdr->linked;
 	class_array[0] = NULL;
-	ret = 0;
 
 unlock:
 	mutex_unlock(&opts->lock);
 out:
 	config_item_put(header);
 	mutex_unlock(su_mutex);
-	return ret;
 }
 
 static struct configfs_item_operations uvcg_control_class_item_ops = {
@@ -787,7 +780,7 @@ out:
 	return ret;
 }
 
-static int uvcg_streaming_header_drop_link(struct config_item *src,
+static void uvcg_streaming_header_drop_link(struct config_item *src,
 					   struct config_item *target)
 {
 	struct mutex *su_mutex = &src->ci_group->cg_subsys->su_mutex;
@@ -796,7 +789,6 @@ static int uvcg_streaming_header_drop_link(struct config_item *src,
 	struct uvcg_streaming_header *src_hdr;
 	struct uvcg_format *target_fmt = NULL;
 	struct uvcg_format_ptr *format_ptr, *tmp;
-	int ret = -EINVAL;
 
 	src_hdr = to_uvcg_streaming_header(src);
 	mutex_lock(su_mutex); /* for navigating configfs hierarchy */
@@ -823,8 +815,6 @@ static int uvcg_streaming_header_drop_link(struct config_item *src,
 out:
 	mutex_unlock(&opts->lock);
 	mutex_unlock(su_mutex);
-	return ret;
-
 }
 
 static struct configfs_item_operations uvcg_streaming_header_item_ops = {
@@ -2435,7 +2425,7 @@ out:
 	return ret;
 }
 
-static int uvcg_streaming_class_drop_link(struct config_item *src,
+static void uvcg_streaming_class_drop_link(struct config_item *src,
 					  struct config_item *target)
 {
 	struct config_item *streaming, *header;
@@ -2443,7 +2433,6 @@ static int uvcg_streaming_class_drop_link(struct config_item *src,
 	struct mutex *su_mutex = &src->ci_group->cg_subsys->su_mutex;
 	struct uvc_descriptor_header ***class_array;
 	struct uvcg_streaming_header *target_hdr;
-	int ret = -EINVAL;
 
 	mutex_lock(su_mutex); /* for navigating configfs hierarchy */
 
@@ -2460,24 +2449,20 @@ static int uvcg_streaming_class_drop_link(struct config_item *src,
 	if (!class_array || !*class_array)
 		goto unlock;
 
-	if (opts->refcnt) {
-		ret = -EBUSY;
+	if (opts->refcnt)
 		goto unlock;
-	}
 
 	target_hdr = to_uvcg_streaming_header(target);
 	--target_hdr->linked;
 	kfree(**class_array);
 	kfree(*class_array);
 	*class_array = NULL;
-	ret = 0;
 
 unlock:
 	mutex_unlock(&opts->lock);
 out:
 	config_item_put(header);
 	mutex_unlock(su_mutex);
-	return ret;
 }
 
 static struct configfs_item_operations uvcg_streaming_class_item_ops = {

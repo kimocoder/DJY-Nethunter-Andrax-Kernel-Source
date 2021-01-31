@@ -24,8 +24,11 @@ wil6210-y += ftm.o
 
 # for tracing framework to find trace.h
 CFLAGS_trace.o := -I$(src)
+<<<<<<< HEAD
 
 subdir-ccflags-y += -D__CHECK_ENDIAN__
 
 MSM_11AD_PATH = drivers/platform/msm/msm_11ad
 CFLAGS_wil_platform.o := -I$(MSM_11AD_PATH)
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

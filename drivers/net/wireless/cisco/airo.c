@@ -2341,14 +2341,6 @@ static int airo_set_mac_address(struct net_device *dev, void *p)
 	return 0;
 }
 
-static int airo_change_mtu(struct net_device *dev, int new_mtu)
-{
-	if ((new_mtu < 68) || (new_mtu > 2400))
-		return -EINVAL;
-	dev->mtu = new_mtu;
-	return 0;
-}
-
 static LIST_HEAD(airo_devices);
 
 static void add_airo_dev(struct airo_info *ai)
@@ -2668,7 +2660,6 @@ static const struct net_device_ops airo11_netdev_ops = {
 	.ndo_get_stats 		= airo_get_stats,
 	.ndo_set_mac_address	= airo_set_mac_address,
 	.ndo_do_ioctl		= airo_ioctl,
-	.ndo_change_mtu		= airo_change_mtu,
 };
 
 static void wifi_setup(struct net_device *dev)
@@ -2680,6 +2671,8 @@ static void wifi_setup(struct net_device *dev)
 	dev->type               = ARPHRD_IEEE80211;
 	dev->hard_header_len    = ETH_HLEN;
 	dev->mtu                = AIRO_DEF_MTU;
+	dev->min_mtu            = 68;
+	dev->max_mtu            = MIC_MSGLEN_MAX;
 	dev->addr_len           = ETH_ALEN;
 	dev->tx_queue_len       = 100; 
 
@@ -2766,7 +2759,6 @@ static const struct net_device_ops airo_netdev_ops = {
 	.ndo_set_rx_mode	= airo_set_multicast_list,
 	.ndo_set_mac_address	= airo_set_mac_address,
 	.ndo_do_ioctl		= airo_ioctl,
-	.ndo_change_mtu		= airo_change_mtu,
 	.ndo_validate_addr	= eth_validate_addr,
 };
 
@@ -2778,7 +2770,6 @@ static const struct net_device_ops mpi_netdev_ops = {
 	.ndo_set_rx_mode	= airo_set_multicast_list,
 	.ndo_set_mac_address	= airo_set_mac_address,
 	.ndo_do_ioctl		= airo_ioctl,
-	.ndo_change_mtu		= airo_change_mtu,
 	.ndo_validate_addr	= eth_validate_addr,
 };
 
@@ -2834,6 +2825,7 @@ static struct net_device *_init_airo_card( unsigned short irq, int port,
 	dev->irq = irq;
 	dev->base_addr = port;
 	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+	dev->max_mtu = MIC_MSGLEN_MAX;
 
 	SET_NETDEV_DEV(dev, dmdev);
 

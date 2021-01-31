@@ -819,6 +819,10 @@ static void ak8975_fill_buffer(struct iio_dev *indio_dev)
 	const struct i2c_client *client = data->client;
 	const struct ak_def *def = data->def;
 	int ret;
+<<<<<<< HEAD
+=======
+	s16 buff[8]; /* 3 x 16 bits axis values + 1 aligned 64 bits timestamp */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	__le16 fval[3];
 
 	mutex_lock(&data->lock);
@@ -841,9 +845,15 @@ static void ak8975_fill_buffer(struct iio_dev *indio_dev)
 	mutex_unlock(&data->lock);
 
 	/* Clamp to valid range. */
+<<<<<<< HEAD
 	data->scan.channels[0] = clamp_t(s16, le16_to_cpu(fval[0]), -def->range, def->range);
 	data->scan.channels[1] = clamp_t(s16, le16_to_cpu(fval[1]), -def->range, def->range);
 	data->scan.channels[2] = clamp_t(s16, le16_to_cpu(fval[2]), -def->range, def->range);
+=======
+	buff[0] = clamp_t(s16, le16_to_cpu(fval[0]), -def->range, def->range);
+	buff[1] = clamp_t(s16, le16_to_cpu(fval[1]), -def->range, def->range);
+	buff[2] = clamp_t(s16, le16_to_cpu(fval[2]), -def->range, def->range);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	iio_push_to_buffers_with_timestamp(indio_dev, &data->scan,
 					   iio_get_time_ns(indio_dev));

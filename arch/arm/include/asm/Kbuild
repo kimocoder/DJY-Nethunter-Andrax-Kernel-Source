@@ -37,3 +37,10 @@ generic-y += termbits.h
 generic-y += termios.h
 generic-y += timex.h
 generic-y += trace_clock.h
+<<<<<<< HEAD
+=======
+generic-y += unaligned.h
+
+generated-y += mach-types.h
+generated-y += unistd-nr.h
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

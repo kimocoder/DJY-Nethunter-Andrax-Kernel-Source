@@ -361,10 +361,14 @@ struct fw_map {
 };
 
 /* array size should be in sync with actual definition in the wmi.c */
+<<<<<<< HEAD
 extern const struct fw_map sparrow_fw_mapping[SPARROW_FW_MAPPING_TABLE_SIZE];
 extern const struct fw_map sparrow_d0_mac_rgf_ext;
 extern const struct fw_map talyn_fw_mapping[TALYN_FW_MAPPING_TABLE_SIZE];
 extern struct fw_map fw_mapping[MAX_FW_MAPPING_TABLE_SIZE];
+=======
+extern const struct fw_map fw_mapping[10];
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /**
  * mk_cidxtid - construct @cidxtid field
@@ -1002,9 +1006,12 @@ int wmi_ps_dev_profile_cfg(struct wil6210_priv *wil,
 			   enum wmi_ps_profile_type ps_profile);
 int wmi_set_mgmt_retry(struct wil6210_priv *wil, u8 retry_short);
 int wmi_get_mgmt_retry(struct wil6210_priv *wil, u8 *retry_short);
+<<<<<<< HEAD
 int wmi_new_sta(struct wil6210_priv *wil, const u8 *mac, u8 aid);
 int wmi_set_tt_cfg(struct wil6210_priv *wil, struct wmi_tt_data *tt_data);
 int wmi_get_tt_cfg(struct wil6210_priv *wil, struct wmi_tt_data *tt_data);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 int wil_addba_rx_request(struct wil6210_priv *wil, u8 cidxtid,
 			 u8 dialog_token, __le16 ba_param_set,
 			 __le16 ba_timeout, __le16 ba_seq_ctrl);
@@ -1066,11 +1073,17 @@ int wmi_pcp_start(struct wil6210_priv *wil, int bi, u8 wmi_nettype,
 		  u8 chan, u8 hidden_ssid, u8 is_go);
 int wmi_pcp_stop(struct wil6210_priv *wil);
 int wmi_led_cfg(struct wil6210_priv *wil, bool enable);
+<<<<<<< HEAD
 int wmi_aoa_meas(struct wil6210_priv *wil, const void *mac_addr, u8 chan,
 		 u8 type);
 int wmi_abort_scan(struct wil6210_priv *wil);
 void wil_abort_scan(struct wil6210_priv *wil, bool sync);
 void wil6210_bus_request(struct wil6210_priv *wil, u32 kbps);
+=======
+int wmi_abort_scan(struct wil6210_priv *wil);
+void wil_abort_scan(struct wil6210_priv *wil, bool sync);
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 void wil6210_disconnect(struct wil6210_priv *wil, const u8 *bssid,
 			u16 reason_code, bool from_event);
 void wil_probe_client_flush(struct wil6210_priv *wil);

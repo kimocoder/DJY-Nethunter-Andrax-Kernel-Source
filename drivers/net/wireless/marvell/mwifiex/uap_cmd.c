@@ -409,7 +409,7 @@ mwifiex_set_wmm_params(struct mwifiex_private *priv,
 		       struct cfg80211_ap_settings *params)
 {
 	const u8 *vendor_ie;
-	struct ieee_types_header *wmm_ie;
+	const u8 *wmm_ie;
 	u8 wmm_oui[] = {0x00, 0x50, 0xf2, 0x02};
 
 	vendor_ie = cfg80211_find_vendor_ie(WLAN_OUI_MICROSOFT,
@@ -417,11 +417,17 @@ mwifiex_set_wmm_params(struct mwifiex_private *priv,
 					    params->beacon.tail,
 					    params->beacon.tail_len);
 	if (vendor_ie) {
+<<<<<<< HEAD
 		wmm_ie = (struct ieee_types_header *)vendor_ie;
 		if (*(vendor_ie + 1) > sizeof(struct mwifiex_types_wmm_info))
 			return;
 		memcpy(&bss_cfg->wmm_info, wmm_ie + 1,
 		       sizeof(bss_cfg->wmm_info));
+=======
+		wmm_ie = vendor_ie;
+		memcpy(&bss_cfg->wmm_info, wmm_ie +
+		       sizeof(struct ieee_types_header), *(wmm_ie + 1));
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		priv->wmm_enabled = 1;
 	} else {
 		memset(&bss_cfg->wmm_info, 0, sizeof(bss_cfg->wmm_info));

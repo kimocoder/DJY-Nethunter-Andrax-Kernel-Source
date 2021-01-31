@@ -40,7 +40,10 @@ struct bpf_reg_state {
 	 */
 	s64 min_value;
 	u64 max_value;
+<<<<<<< HEAD
 	bool value_from_signed;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 };
 
 enum bpf_stack_slot_type {

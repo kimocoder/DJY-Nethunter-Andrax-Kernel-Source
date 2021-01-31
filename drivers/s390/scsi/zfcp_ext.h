@@ -3,7 +3,11 @@
  *
  * External function declarations.
  *
+<<<<<<< HEAD
  * Copyright IBM Corp. 2002, 2018
+=======
+ * Copyright IBM Corp. 2002, 2016
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  */
 
 #ifndef ZFCP_EXT_H
@@ -96,8 +100,8 @@ extern void zfcp_fc_link_test_work(struct work_struct *);
 extern void zfcp_fc_wka_ports_force_offline(struct zfcp_fc_wka_ports *);
 extern int zfcp_fc_gs_setup(struct zfcp_adapter *);
 extern void zfcp_fc_gs_destroy(struct zfcp_adapter *);
-extern int zfcp_fc_exec_bsg_job(struct fc_bsg_job *);
-extern int zfcp_fc_timeout_bsg_job(struct fc_bsg_job *);
+extern int zfcp_fc_exec_bsg_job(struct bsg_job *);
+extern int zfcp_fc_timeout_bsg_job(struct bsg_job *);
 extern void zfcp_fc_sym_name_update(struct work_struct *);
 extern unsigned int zfcp_fc_port_scan_backoff(void);
 extern void zfcp_fc_conditional_port_scan(struct zfcp_adapter *);

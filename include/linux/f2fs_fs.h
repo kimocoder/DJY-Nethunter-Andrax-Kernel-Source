@@ -107,10 +107,14 @@ struct f2fs_super_block {
 	__u8 encryption_level;		/* versioning level for encryption */
 	__u8 encrypt_pw_salt[16];	/* Salt used for string2key algorithm */
 	struct f2fs_device devs[MAX_DEVICES];	/* device list */
+<<<<<<< HEAD
 	__le32 qf_ino[F2FS_MAX_QUOTAS];	/* quota inode numbers */
 	__u8 hot_ext_count;		/* # of hot file extension */
 	__u8 reserved[310];		/* valid reserved region */
 	__le32 crc;			/* checksum of superblock */
+=======
+	__u8 reserved[327];		/* valid reserved region */
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 } __packed;
 
 /*

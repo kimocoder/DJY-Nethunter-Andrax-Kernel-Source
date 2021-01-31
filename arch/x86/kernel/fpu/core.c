@@ -108,7 +108,11 @@ void __kernel_fpu_begin(void)
 		 */
 		copy_fpregs_to_fpstate(fpu);
 	} else {
+<<<<<<< HEAD
 		this_cpu_write(fpu_fpregs_owner_ctx, NULL);
+=======
+		__cpu_invalidate_fpregs_state();
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 }
 EXPORT_SYMBOL(__kernel_fpu_begin);
@@ -137,35 +141,6 @@ void kernel_fpu_end(void)
 	preempt_enable();
 }
 EXPORT_SYMBOL_GPL(kernel_fpu_end);
-
-/*
- * CR0::TS save/restore functions:
- */
-int irq_ts_save(void)
-{
-	/*
-	 * If in process context and not atomic, we can take a spurious DNA fault.
-	 * Otherwise, doing clts() in process context requires disabling preemption
-	 * or some heavy lifting like kernel_fpu_begin()
-	 */
-	if (!in_atomic())
-		return 0;
-
-	if (read_cr0() & X86_CR0_TS) {
-		clts();
-		return 1;
-	}
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(irq_ts_save);
-
-void irq_ts_restore(int TS_state)
-{
-	if (TS_state)
-		stts();
-}
-EXPORT_SYMBOL_GPL(irq_ts_restore);
 
 /*
  * Save the FPU state (mark it for reload if necessary):
@@ -339,7 +314,7 @@ void fpu__activate_fpstate_write(struct fpu *fpu)
 
 	if (fpu->fpstate_active) {
 		/* Invalidate any lazy state: */
-		fpu->last_cpu = -1;
+		__fpu_invalidate_fpregs_state(fpu);
 	} else {
 		fpstate_init(&fpu->state);
 		trace_x86_fpu_init_state(fpu);
@@ -382,7 +357,7 @@ void fpu__current_fpstate_write_begin(void)
 	 * ensures we will not be lazy and skip a XRSTOR in the
 	 * future.
 	 */
-	fpu->last_cpu = -1;
+	__fpu_invalidate_fpregs_state(fpu);
 }
 
 /*

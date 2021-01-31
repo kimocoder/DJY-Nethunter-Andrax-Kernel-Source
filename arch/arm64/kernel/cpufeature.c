@@ -757,6 +757,7 @@ static bool hyp_offset_low(const struct arm64_cpu_capabilities *entry,
 	return idmap_addr > GENMASK(VA_BITS - 2, 0) && !is_kernel_in_hyp_mode();
 }
 
+<<<<<<< HEAD
 #ifdef CONFIG_UNMAP_KERNEL_AT_EL0
 static int __kpti_forced; /* 0: not forced, >0: forced on, <0: forced off */
 
@@ -856,6 +857,14 @@ static int cpu_copy_el2regs(void *__unused)
 		write_sysreg(read_sysreg(tpidr_el1), tpidr_el2);
 
 	return 0;
+=======
+static bool has_no_fpsimd(const struct arm64_cpu_capabilities *entry, int __unused)
+{
+	u64 pfr0 = read_system_reg(SYS_ID_AA64PFR0_EL1);
+
+	return cpuid_feature_extract_signed_field(pfr0,
+					ID_AA64PFR0_FP_SHIFT) < 0;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static const struct arm64_cpu_capabilities arm64_features[] = {
@@ -942,6 +951,7 @@ static const struct arm64_cpu_capabilities arm64_features[] = {
 		.def_scope = SCOPE_SYSTEM,
 		.matches = hyp_offset_low,
 	},
+<<<<<<< HEAD
 #ifdef CONFIG_UNMAP_KERNEL_AT_EL0
 	{
 		.desc = "Kernel page table isolation (KPTI)",
@@ -951,6 +961,15 @@ static const struct arm64_cpu_capabilities arm64_features[] = {
 		.enable = kpti_install_ng_mappings,
 	},
 #endif
+=======
+	{
+		/* FP/SIMD is not implemented */
+		.capability = ARM64_HAS_NO_FPSIMD,
+		.def_scope = SCOPE_SYSTEM,
+		.min_field_value = 0,
+		.matches = has_no_fpsimd,
+	},
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	{},
 };
 

@@ -573,7 +573,7 @@ void mei_cl_init(struct mei_cl *cl, struct mei_device *dev)
 	INIT_LIST_HEAD(&cl->rd_pending);
 	INIT_LIST_HEAD(&cl->link);
 	cl->writing_state = MEI_IDLE;
-	cl->state = MEI_FILE_INITIALIZING;
+	cl->state = MEI_FILE_UNINITIALIZED;
 	cl->dev = dev;
 }
 
@@ -674,7 +674,12 @@ int mei_cl_unlink(struct mei_cl *cl)
 
 	list_del_init(&cl->link);
 
-	cl->state = MEI_FILE_INITIALIZING;
+	cl->state = MEI_FILE_UNINITIALIZED;
+	cl->writing_state = MEI_IDLE;
+
+	WARN_ON(!list_empty(&cl->rd_completed) ||
+		!list_empty(&cl->rd_pending) ||
+		!list_empty(&cl->link));
 
 	return 0;
 }
@@ -758,7 +763,7 @@ void mei_cl_set_disconnected(struct mei_cl *cl)
 	struct mei_device *dev = cl->dev;
 
 	if (cl->state == MEI_FILE_DISCONNECTED ||
-	    cl->state == MEI_FILE_INITIALIZING)
+	    cl->state <= MEI_FILE_INITIALIZING)
 		return;
 
 	cl->state = MEI_FILE_DISCONNECTED;
@@ -1607,18 +1612,17 @@ err:
  *
  * @cl: host client
  * @cb: write callback with filled data
- * @blocking: block until completed
  *
  * Return: number of bytes sent on success, <0 on failure.
  */
-int mei_cl_write(struct mei_cl *cl, struct mei_cl_cb *cb, bool blocking)
+int mei_cl_write(struct mei_cl *cl, struct mei_cl_cb *cb)
 {
 	struct mei_device *dev;
 	struct mei_msg_data *buf;
 	struct mei_msg_hdr mei_hdr;
 	int size;
 	int rets;
-
+	bool blocking;
 
 	if (WARN_ON(!cl || !cl->dev))
 		return -ENODEV;
@@ -1630,6 +1634,7 @@ int mei_cl_write(struct mei_cl *cl, struct mei_cl_cb *cb, bool blocking)
 
 	buf = &cb->buf;
 	size = buf->size;
+	blocking = cb->blocking;
 
 	cl_dbg(dev, cl, "size=%d\n", size);
 

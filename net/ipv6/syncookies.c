@@ -209,7 +209,11 @@ struct sock *cookie_v6_check(struct sock *sk, struct sk_buff *skb)
 	treq->snt_synack.v64	= 0;
 	treq->rcv_isn = ntohl(th->seq) - 1;
 	treq->snt_isn = cookie;
+<<<<<<< HEAD
 	treq->txhash = net_tx_rndhash();
+=======
+	treq->ts_off = 0;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/*
 	 * We need to lookup the dst_entry to get the correct window size.

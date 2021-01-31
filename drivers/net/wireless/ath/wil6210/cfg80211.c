@@ -714,7 +714,12 @@ static int wil_cfg80211_scan(struct wiphy *wiphy,
 	uint i, n;
 	int rc;
 
+<<<<<<< HEAD
 	wil_dbg_misc(wil, "scan: wdev=0x%p iftype=%d\n", wdev, wdev->iftype);
+=======
+	wil_dbg_misc(wil, "%s(), wdev=0x%p iftype=%d\n",
+		     __func__, wdev, wdev->iftype);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* check we are client side */
 	switch (wdev->iftype) {
@@ -743,7 +748,13 @@ static int wil_cfg80211_scan(struct wiphy *wiphy,
 	}
 	mutex_unlock(&wil->p2p_wdev_mutex);
 
+<<<<<<< HEAD
 	if (wdev->iftype == NL80211_IFTYPE_P2P_DEVICE) {
+=======
+	/* social scan on P2P_DEVICE is handled as p2p search */
+	if (wdev->iftype == NL80211_IFTYPE_P2P_DEVICE &&
+	    wil_p2p_is_social_scan(request)) {
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		if (!wil->p2p.p2p_dev_started) {
 			wil_err(wil, "P2P search requested on stopped P2P device\n");
 			rc = -EIO;
@@ -760,6 +771,10 @@ static int wil_cfg80211_scan(struct wiphy *wiphy,
 			}
 			goto out;
 		}
+<<<<<<< HEAD
+=======
+		goto out;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	(void)wil_p2p_stop_discovery(wil);
@@ -1363,9 +1378,14 @@ static int wil_remain_on_channel(struct wiphy *wiphy,
 	struct wil6210_priv *wil = wiphy_to_wil(wiphy);
 	int rc;
 
+<<<<<<< HEAD
 	wil_dbg_misc(wil,
 		     "remain_on_channel: center_freq=%d, duration=%d iftype=%d\n",
 		     chan->center_freq, duration, wdev->iftype);
+=======
+	wil_dbg_misc(wil, "%s() center_freq=%d, duration=%d iftype=%d\n",
+		     __func__, chan->center_freq, duration, wdev->iftype);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	rc = wil_p2p_listen(wil, wdev, duration, chan, cookie);
 	return rc;
@@ -1942,10 +1962,15 @@ static int wil_cfg80211_suspend(struct wiphy *wiphy,
 	mutex_lock(&wil->mutex);
 	mutex_lock(&wil->p2p_wdev_mutex);
 	wil_p2p_stop_radio_operations(wil);
+<<<<<<< HEAD
 	wil_abort_scan(wil, true);
+=======
+	p2p->p2p_dev_started = 0;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	mutex_unlock(&wil->p2p_wdev_mutex);
 	mutex_unlock(&wil->mutex);
 
+<<<<<<< HEAD
 out:
 	return rc;
 }
@@ -2096,6 +2121,34 @@ static void wil_cfg80211_reg_notify(struct wiphy *wiphy,
 		wil_err(wil, "switch board file failed %d\n", rc);
 
 	memcpy(wil->regdomain, request->alpha2, 2);
+=======
+static int wil_cfg80211_set_power_mgmt(struct wiphy *wiphy,
+				       struct net_device *dev,
+				       bool enabled, int timeout)
+{
+	struct wil6210_priv *wil = wiphy_to_wil(wiphy);
+	enum wmi_ps_profile_type ps_profile;
+	int rc;
+
+	if (!test_bit(WMI_FW_CAPABILITY_PS_CONFIG, wil->fw_capabilities)) {
+		wil_err(wil, "set_power_mgmt not supported\n");
+		return -EOPNOTSUPP;
+	}
+
+	wil_dbg_misc(wil, "enabled=%d, timeout=%d\n",
+		     enabled, timeout);
+
+	if (enabled)
+		ps_profile = WMI_PS_PROFILE_TYPE_DEFAULT;
+	else
+		ps_profile = WMI_PS_PROFILE_TYPE_PS_DISABLED;
+
+	rc  = wmi_ps_dev_profile_cfg(wil, ps_profile);
+	if (rc)
+		wil_err(wil, "wmi_ps_dev_profile_cfg failed (%d)\n", rc);
+
+	return rc;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static struct cfg80211_ops wil_cfg80211_ops = {
@@ -2120,19 +2173,26 @@ static struct cfg80211_ops wil_cfg80211_ops = {
 	.change_beacon = wil_cfg80211_change_beacon,
 	.start_ap = wil_cfg80211_start_ap,
 	.stop_ap = wil_cfg80211_stop_ap,
+<<<<<<< HEAD
 	.add_station = wil_cfg80211_add_station,
 	.del_station = wil_cfg80211_del_station,
 	.change_station = wil_cfg80211_change_station,
+=======
+	.del_station = wil_cfg80211_del_station,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	.probe_client = wil_cfg80211_probe_client,
 	.change_bss = wil_cfg80211_change_bss,
 	/* P2P device */
 	.start_p2p_device = wil_cfg80211_start_p2p_device,
 	.stop_p2p_device = wil_cfg80211_stop_p2p_device,
 	.set_power_mgmt = wil_cfg80211_set_power_mgmt,
+<<<<<<< HEAD
 	.suspend = wil_cfg80211_suspend,
 	.resume = wil_cfg80211_resume,
 	.sched_scan_start = wil_cfg80211_sched_scan_start,
 	.sched_scan_stop = wil_cfg80211_sched_scan_stop,
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 };
 
 static void wil_wiphy_init(struct wiphy *wiphy)
@@ -2147,11 +2207,18 @@ static void wil_wiphy_init(struct wiphy *wiphy)
 				 BIT(NL80211_IFTYPE_P2P_GO) |
 				 BIT(NL80211_IFTYPE_P2P_DEVICE) |
 				 BIT(NL80211_IFTYPE_MONITOR);
+<<<<<<< HEAD
 	wiphy->flags |= WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL |
 			WIPHY_FLAG_AP_PROBE_RESP_OFFLOAD |
 			WIPHY_FLAG_PS_ON_BY_DEFAULT;
 	if (!disable_ap_sme)
 		wiphy->flags |= WIPHY_FLAG_HAVE_AP_SME;
+=======
+	wiphy->flags |= WIPHY_FLAG_HAVE_AP_SME |
+			WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL |
+			WIPHY_FLAG_AP_PROBE_RESP_OFFLOAD |
+			WIPHY_FLAG_PS_ON_BY_DEFAULT;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	dev_dbg(wiphy_dev(wiphy), "%s : flags = 0x%08x\n",
 		__func__, wiphy->flags);
 	wiphy->probe_resp_offload =

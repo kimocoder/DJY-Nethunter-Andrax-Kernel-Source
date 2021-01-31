@@ -232,6 +232,7 @@ u64 bpf_tail_call(u64 ctx, u64 r2, u64 index, u64 r4, u64 r5);
 u64 bpf_get_stackid(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
 
 bool bpf_prog_array_compatible(struct bpf_array *array, const struct bpf_prog *fp);
+int bpf_prog_calc_digest(struct bpf_prog *fp);
 
 const struct bpf_func_proto *bpf_get_trace_printk_proto(void);
 
@@ -304,13 +305,16 @@ extern const struct file_operations bpf_prog_fops;
 
 struct bpf_prog *bpf_prog_get(u32 ufd);
 struct bpf_prog *bpf_prog_get_type(u32 ufd, enum bpf_prog_type type);
-struct bpf_prog *bpf_prog_add(struct bpf_prog *prog, int i);
-struct bpf_prog *bpf_prog_inc(struct bpf_prog *prog);
+struct bpf_prog * __must_check bpf_prog_add(struct bpf_prog *prog, int i);
+void bpf_prog_sub(struct bpf_prog *prog, int i);
+struct bpf_prog * __must_check bpf_prog_inc(struct bpf_prog *prog);
 void bpf_prog_put(struct bpf_prog *prog);
+int __bpf_prog_charge(struct user_struct *user, u32 pages);
+void __bpf_prog_uncharge(struct user_struct *user, u32 pages);
 
 struct bpf_map *bpf_map_get_with_uref(u32 ufd);
 struct bpf_map *__bpf_map_get(struct fd f);
-struct bpf_map *bpf_map_inc(struct bpf_map *map, bool uref);
+struct bpf_map * __must_check bpf_map_inc(struct bpf_map *map, bool uref);
 void bpf_map_put_with_uref(struct bpf_map *map);
 void bpf_map_put(struct bpf_map *map);
 int bpf_map_precharge_memlock(u32 pages);
@@ -376,18 +380,25 @@ static inline struct bpf_prog *bpf_prog_get_type(u32 ufd,
 {
 	return ERR_PTR(-EOPNOTSUPP);
 }
-static inline struct bpf_prog *bpf_prog_add(struct bpf_prog *prog, int i)
+static inline struct bpf_prog * __must_check bpf_prog_add(struct bpf_prog *prog,
+							  int i)
 {
 	return ERR_PTR(-EOPNOTSUPP);
+}
+
+static inline void bpf_prog_sub(struct bpf_prog *prog, int i)
+{
 }
 
 static inline void bpf_prog_put(struct bpf_prog *prog)
 {
 }
-static inline struct bpf_prog *bpf_prog_inc(struct bpf_prog *prog)
+
+static inline struct bpf_prog * __must_check bpf_prog_inc(struct bpf_prog *prog)
 {
 	return ERR_PTR(-EOPNOTSUPP);
 }
+<<<<<<< HEAD
 static inline int bpf_obj_get_user(const char __user *pathname)
 {
 	return -EOPNOTSUPP;
@@ -397,6 +408,16 @@ static inline struct bpf_prog *bpf_prog_get_type_path(const char *name,
 				enum bpf_prog_type type)
 {
 	return ERR_PTR(-EOPNOTSUPP);
+=======
+
+static inline int __bpf_prog_charge(struct user_struct *user, u32 pages)
+{
+	return 0;
+}
+
+static inline void __bpf_prog_uncharge(struct user_struct *user, u32 pages)
+{
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 #endif /* CONFIG_BPF_SYSCALL */
 
@@ -407,6 +428,7 @@ extern const struct bpf_func_proto bpf_map_delete_elem_proto;
 
 extern const struct bpf_func_proto bpf_get_prandom_u32_proto;
 extern const struct bpf_func_proto bpf_get_smp_processor_id_proto;
+extern const struct bpf_func_proto bpf_get_numa_node_id_proto;
 extern const struct bpf_func_proto bpf_tail_call_proto;
 extern const struct bpf_func_proto bpf_ktime_get_ns_proto;
 extern const struct bpf_func_proto bpf_get_current_pid_tgid_proto;

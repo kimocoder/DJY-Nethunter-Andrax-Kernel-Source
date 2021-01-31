@@ -258,6 +258,7 @@ static ssize_t goldfish_pipe_read_write(struct file *filp, char __user *buffer,
 		/*
 		 * Attempt to grab multiple physically contiguous pages.
 		 */
+<<<<<<< HEAD
 		first_page = address & PAGE_MASK;
 		last_page = (address_end - 1) & PAGE_MASK;
 		requested_pages = ((last_page - first_page) >> PAGE_SHIFT) + 1;
@@ -281,6 +282,12 @@ static ssize_t goldfish_pipe_read_write(struct file *filp, char __user *buffer,
 			mutex_unlock(&pipe->lock);
 			return ret;
 		}
+=======
+		ret = get_user_pages_unlocked(address, 1, &page,
+				is_write ? 0 : FOLL_WRITE);
+		if (ret < 0)
+			break;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 		xaddr = page_to_phys(pages[0]) | (address & ~PAGE_MASK);
 		xaddr_prev = xaddr;

@@ -33,7 +33,11 @@
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/export.h>
+<<<<<<< HEAD
 #include <linux/fence.h>
+=======
+#include <linux/dma-fence.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_edid.h>
@@ -41,23 +45,11 @@
 #include <drm/drm_modeset_lock.h>
 #include <drm/drm_atomic.h>
 #include <drm/drm_auth.h>
-#include <drm/drm_framebuffer.h>
+#include <drm/drm_debugfs_crc.h>
 
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"
 
-/*
- * Global properties
- */
-static const struct drm_prop_enum_list drm_plane_type_enum_list[] = {
-	{ DRM_PLANE_TYPE_OVERLAY, "Overlay" },
-	{ DRM_PLANE_TYPE_PRIMARY, "Primary" },
-	{ DRM_PLANE_TYPE_CURSOR, "Cursor" },
-};
-
-/*
- * Optional properties
- */
 /**
  * drm_crtc_force_disable - Forcibly turn off a CRTC
  * @crtc: CRTC to turn off
@@ -103,8 +95,6 @@ out:
 }
 EXPORT_SYMBOL(drm_crtc_force_disable_all);
 
-DEFINE_WW_CLASS(crtc_ww_class);
-
 static unsigned int drm_num_crtcs(struct drm_device *dev)
 {
 	unsigned int num = 0;
@@ -117,12 +107,16 @@ static unsigned int drm_num_crtcs(struct drm_device *dev)
 	return num;
 }
 
-static int drm_crtc_register_all(struct drm_device *dev)
+int drm_crtc_register_all(struct drm_device *dev)
 {
 	struct drm_crtc *crtc;
 	int ret = 0;
 
 	drm_for_each_crtc(crtc, dev) {
+		if (drm_debugfs_crtc_add(crtc))
+			DRM_ERROR("Failed to initialize debugfs entry for CRTC '%s'.\n",
+				  crtc->name);
+
 		if (crtc->funcs->late_register)
 			ret = crtc->funcs->late_register(crtc);
 		if (ret)
@@ -132,43 +126,82 @@ static int drm_crtc_register_all(struct drm_device *dev)
 	return 0;
 }
 
-static void drm_crtc_unregister_all(struct drm_device *dev)
+void drm_crtc_unregister_all(struct drm_device *dev)
 {
 	struct drm_crtc *crtc;
 
 	drm_for_each_crtc(crtc, dev) {
 		if (crtc->funcs->early_unregister)
 			crtc->funcs->early_unregister(crtc);
+		drm_debugfs_crtc_remove(crtc);
 	}
 }
 
+<<<<<<< HEAD
 static const struct fence_ops drm_crtc_fence_ops;
 
 static struct drm_crtc *fence_to_crtc(struct fence *fence)
+=======
+static int drm_crtc_crc_init(struct drm_crtc *crtc)
+{
+#ifdef CONFIG_DEBUG_FS
+	spin_lock_init(&crtc->crc.lock);
+	init_waitqueue_head(&crtc->crc.wq);
+	crtc->crc.source = kstrdup("auto", GFP_KERNEL);
+	if (!crtc->crc.source)
+		return -ENOMEM;
+#endif
+	return 0;
+}
+
+static void drm_crtc_crc_fini(struct drm_crtc *crtc)
+{
+#ifdef CONFIG_DEBUG_FS
+	kfree(crtc->crc.source);
+#endif
+}
+
+static const struct dma_fence_ops drm_crtc_fence_ops;
+
+static struct drm_crtc *fence_to_crtc(struct dma_fence *fence)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	BUG_ON(fence->ops != &drm_crtc_fence_ops);
 	return container_of(fence->lock, struct drm_crtc, fence_lock);
 }
 
+<<<<<<< HEAD
 static const char *drm_crtc_fence_get_driver_name(struct fence *fence)
+=======
+static const char *drm_crtc_fence_get_driver_name(struct dma_fence *fence)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	struct drm_crtc *crtc = fence_to_crtc(fence);
 
 	return crtc->dev->driver->name;
 }
 
+<<<<<<< HEAD
 static const char *drm_crtc_fence_get_timeline_name(struct fence *fence)
+=======
+static const char *drm_crtc_fence_get_timeline_name(struct dma_fence *fence)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	struct drm_crtc *crtc = fence_to_crtc(fence);
 
 	return crtc->timeline_name;
 }
 
+<<<<<<< HEAD
 static bool drm_crtc_fence_enable_signaling(struct fence *fence)
+=======
+static bool drm_crtc_fence_enable_signaling(struct dma_fence *fence)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	return true;
 }
 
+<<<<<<< HEAD
 static const struct fence_ops drm_crtc_fence_ops = {
 	.get_driver_name = drm_crtc_fence_get_driver_name,
 	.get_timeline_name = drm_crtc_fence_get_timeline_name,
@@ -179,12 +212,28 @@ static const struct fence_ops drm_crtc_fence_ops = {
 struct fence *drm_crtc_create_fence(struct drm_crtc *crtc)
 {
 	struct fence *fence;
+=======
+static const struct dma_fence_ops drm_crtc_fence_ops = {
+	.get_driver_name = drm_crtc_fence_get_driver_name,
+	.get_timeline_name = drm_crtc_fence_get_timeline_name,
+	.enable_signaling = drm_crtc_fence_enable_signaling,
+	.wait = dma_fence_default_wait,
+};
+
+struct dma_fence *drm_crtc_create_fence(struct drm_crtc *crtc)
+{
+	struct dma_fence *fence;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	fence = kzalloc(sizeof(*fence), GFP_KERNEL);
 	if (!fence)
 		return NULL;
 
+<<<<<<< HEAD
 	fence_init(fence, &drm_crtc_fence_ops, &crtc->fence_lock,
+=======
+	dma_fence_init(fence, &drm_crtc_fence_ops, &crtc->fence_lock,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		       crtc->fence_context, ++crtc->fence_seqno);
 
 	return fence;
@@ -247,7 +296,11 @@ int drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *crtc,
 		return -ENOMEM;
 	}
 
+<<<<<<< HEAD
 	crtc->fence_context = fence_context_alloc(1);
+=======
+	crtc->fence_context = dma_fence_context_alloc(1);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	spin_lock_init(&crtc->fence_lock);
 	snprintf(crtc->timeline_name, sizeof(crtc->timeline_name),
 		 "CRTC:%d-%s", crtc->base.id, crtc->name);
@@ -259,10 +312,16 @@ int drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *crtc,
 
 	crtc->primary = primary;
 	crtc->cursor = cursor;
-	if (primary)
+	if (primary && !primary->possible_crtcs)
 		primary->possible_crtcs = 1 << drm_crtc_index(crtc);
-	if (cursor)
+	if (cursor && !cursor->possible_crtcs)
 		cursor->possible_crtcs = 1 << drm_crtc_index(crtc);
+
+	ret = drm_crtc_crc_init(crtc);
+	if (ret) {
+		drm_mode_object_unregister(dev, &crtc->base);
+		return ret;
+	}
 
 	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
 		drm_object_attach_property(&crtc->base, config->prop_active, 0);
@@ -292,6 +351,8 @@ void drm_crtc_cleanup(struct drm_crtc *crtc)
 	 * the indices on the drm_crtc after us in the crtc_list.
 	 */
 
+	drm_crtc_crc_fini(crtc);
+
 	kfree(crtc->gamma_store);
 	crtc->gamma_store = NULL;
 
@@ -311,6 +372,7 @@ void drm_crtc_cleanup(struct drm_crtc *crtc)
 }
 EXPORT_SYMBOL(drm_crtc_cleanup);
 
+<<<<<<< HEAD
 int drm_modeset_register_all(struct drm_device *dev)
 {
 	int ret;
@@ -618,6 +680,8 @@ out:
 	return ret;
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /**
  * drm_mode_getcrtc - get CRTC configuration
  * @dev: drm device for the ioctl
@@ -763,8 +827,7 @@ int drm_crtc_check_viewport(const struct drm_crtc *crtc,
 	drm_crtc_get_hv_timing(mode, &hdisplay, &vdisplay);
 
 	if (crtc->state &&
-	    crtc->primary->state->rotation & (DRM_ROTATE_90 |
-					      DRM_ROTATE_270))
+	    drm_rotation_90_or_270(crtc->primary->state->rotation))
 		swap(hdisplay, vdisplay);
 
 	return drm_framebuffer_check_src_coords(x << 16, y << 16,
@@ -864,9 +927,10 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
 			ret = drm_plane_check_pixel_format(crtc->primary,
 							   fb->pixel_format);
 			if (ret) {
-				char *format_name = drm_get_format_name(fb->pixel_format);
-				DRM_DEBUG_KMS("Invalid pixel format %s\n", format_name);
-				kfree(format_name);
+				struct drm_format_name_buf format_name;
+				DRM_DEBUG_KMS("Invalid pixel format %s\n",
+				              drm_get_format_name(fb->pixel_format,
+				                                  &format_name));
 				goto out;
 			}
 		}
@@ -970,362 +1034,3 @@ int drm_mode_crtc_set_obj_prop(struct drm_mode_object *obj,
 
 	return ret;
 }
-
-/**
- * drm_mode_config_reset - call ->reset callbacks
- * @dev: drm device
- *
- * This functions calls all the crtc's, encoder's and connector's ->reset
- * callback. Drivers can use this in e.g. their driver load or resume code to
- * reset hardware and software state.
- */
-void drm_mode_config_reset(struct drm_device *dev)
-{
-	struct drm_crtc *crtc;
-	struct drm_plane *plane;
-	struct drm_encoder *encoder;
-	struct drm_connector *connector;
-
-	drm_for_each_plane(plane, dev)
-		if (plane->funcs->reset)
-			plane->funcs->reset(plane);
-
-	drm_for_each_crtc(crtc, dev)
-		if (crtc->funcs->reset)
-			crtc->funcs->reset(crtc);
-
-	drm_for_each_encoder(encoder, dev)
-		if (encoder->funcs->reset)
-			encoder->funcs->reset(encoder);
-
-	mutex_lock(&dev->mode_config.mutex);
-	drm_for_each_connector(connector, dev)
-		if (connector->funcs->reset)
-			connector->funcs->reset(connector);
-	mutex_unlock(&dev->mode_config.mutex);
-}
-EXPORT_SYMBOL(drm_mode_config_reset);
-
-/**
- * drm_mode_create_dumb_ioctl - create a dumb backing storage buffer
- * @dev: DRM device
- * @data: ioctl data
- * @file_priv: DRM file info
- *
- * This creates a new dumb buffer in the driver's backing storage manager (GEM,
- * TTM or something else entirely) and returns the resulting buffer handle. This
- * handle can then be wrapped up into a framebuffer modeset object.
- *
- * Note that userspace is not allowed to use such objects for render
- * acceleration - drivers must create their own private ioctls for such a use
- * case.
- *
- * Called by the user via ioctl.
- *
- * Returns:
- * Zero on success, negative errno on failure.
- */
-int drm_mode_create_dumb_ioctl(struct drm_device *dev,
-			       void *data, struct drm_file *file_priv)
-{
-	struct drm_mode_create_dumb *args = data;
-	u32 cpp, stride, size;
-
-	if (!dev->driver->dumb_create)
-		return -ENOSYS;
-	if (!args->width || !args->height || !args->bpp)
-		return -EINVAL;
-
-	/* overflow checks for 32bit size calculations */
-	/* NOTE: DIV_ROUND_UP() can overflow */
-	cpp = DIV_ROUND_UP(args->bpp, 8);
-	if (!cpp || cpp > 0xffffffffU / args->width)
-		return -EINVAL;
-	stride = cpp * args->width;
-	if (args->height > 0xffffffffU / stride)
-		return -EINVAL;
-
-	/* test for wrap-around */
-	size = args->height * stride;
-	if (PAGE_ALIGN(size) == 0)
-		return -EINVAL;
-
-	/*
-	 * handle, pitch and size are output parameters. Zero them out to
-	 * prevent drivers from accidentally using uninitialized data. Since
-	 * not all existing userspace is clearing these fields properly we
-	 * cannot reject IOCTL with garbage in them.
-	 */
-	args->handle = 0;
-	args->pitch = 0;
-	args->size = 0;
-
-	return dev->driver->dumb_create(file_priv, dev, args);
-}
-
-/**
- * drm_mode_mmap_dumb_ioctl - create an mmap offset for a dumb backing storage buffer
- * @dev: DRM device
- * @data: ioctl data
- * @file_priv: DRM file info
- *
- * Allocate an offset in the drm device node's address space to be able to
- * memory map a dumb buffer.
- *
- * Called by the user via ioctl.
- *
- * Returns:
- * Zero on success, negative errno on failure.
- */
-int drm_mode_mmap_dumb_ioctl(struct drm_device *dev,
-			     void *data, struct drm_file *file_priv)
-{
-	struct drm_mode_map_dumb *args = data;
-
-	/* call driver ioctl to get mmap offset */
-	if (!dev->driver->dumb_map_offset)
-		return -ENOSYS;
-
-	return dev->driver->dumb_map_offset(file_priv, dev, args->handle, &args->offset);
-}
-
-/**
- * drm_mode_destroy_dumb_ioctl - destroy a dumb backing strage buffer
- * @dev: DRM device
- * @data: ioctl data
- * @file_priv: DRM file info
- *
- * This destroys the userspace handle for the given dumb backing storage buffer.
- * Since buffer objects must be reference counted in the kernel a buffer object
- * won't be immediately freed if a framebuffer modeset object still uses it.
- *
- * Called by the user via ioctl.
- *
- * Returns:
- * Zero on success, negative errno on failure.
- */
-int drm_mode_destroy_dumb_ioctl(struct drm_device *dev,
-				void *data, struct drm_file *file_priv)
-{
-	struct drm_mode_destroy_dumb *args = data;
-
-	if (!dev->driver->dumb_destroy)
-		return -ENOSYS;
-
-	return dev->driver->dumb_destroy(file_priv, dev, args->handle);
-}
-
-/**
- * drm_mode_config_init - initialize DRM mode_configuration structure
- * @dev: DRM device
- *
- * Initialize @dev's mode_config structure, used for tracking the graphics
- * configuration of @dev.
- *
- * Since this initializes the modeset locks, no locking is possible. Which is no
- * problem, since this should happen single threaded at init time. It is the
- * driver's problem to ensure this guarantee.
- *
- */
-void drm_mode_config_init(struct drm_device *dev)
-{
-	mutex_init(&dev->mode_config.mutex);
-	drm_modeset_lock_init(&dev->mode_config.connection_mutex);
-	mutex_init(&dev->mode_config.idr_mutex);
-	mutex_init(&dev->mode_config.fb_lock);
-	mutex_init(&dev->mode_config.blob_lock);
-	INIT_LIST_HEAD(&dev->mode_config.fb_list);
-	INIT_LIST_HEAD(&dev->mode_config.crtc_list);
-	INIT_LIST_HEAD(&dev->mode_config.connector_list);
-	INIT_LIST_HEAD(&dev->mode_config.encoder_list);
-	INIT_LIST_HEAD(&dev->mode_config.property_list);
-	INIT_LIST_HEAD(&dev->mode_config.property_blob_list);
-	INIT_LIST_HEAD(&dev->mode_config.plane_list);
-	idr_init(&dev->mode_config.crtc_idr);
-	idr_init(&dev->mode_config.tile_idr);
-	ida_init(&dev->mode_config.connector_ida);
-
-	drm_modeset_lock_all(dev);
-	drm_mode_create_standard_properties(dev);
-	drm_modeset_unlock_all(dev);
-
-	/* Just to be sure */
-	dev->mode_config.num_fb = 0;
-	dev->mode_config.num_connector = 0;
-	dev->mode_config.num_crtc = 0;
-	dev->mode_config.num_encoder = 0;
-	dev->mode_config.num_overlay_plane = 0;
-	dev->mode_config.num_total_plane = 0;
-}
-EXPORT_SYMBOL(drm_mode_config_init);
-
-/**
- * drm_mode_config_cleanup - free up DRM mode_config info
- * @dev: DRM device
- *
- * Free up all the connectors and CRTCs associated with this DRM device, then
- * free up the framebuffers and associated buffer objects.
- *
- * Note that since this /should/ happen single-threaded at driver/device
- * teardown time, no locking is required. It's the driver's job to ensure that
- * this guarantee actually holds true.
- *
- * FIXME: cleanup any dangling user buffer objects too
- */
-void drm_mode_config_cleanup(struct drm_device *dev)
-{
-	struct drm_connector *connector, *ot;
-	struct drm_crtc *crtc, *ct;
-	struct drm_encoder *encoder, *enct;
-	struct drm_framebuffer *fb, *fbt;
-	struct drm_property *property, *pt;
-	struct drm_property_blob *blob, *bt;
-	struct drm_plane *plane, *plt;
-
-	list_for_each_entry_safe(encoder, enct, &dev->mode_config.encoder_list,
-				 head) {
-		encoder->funcs->destroy(encoder);
-	}
-
-	list_for_each_entry_safe(connector, ot,
-				 &dev->mode_config.connector_list, head) {
-		connector->funcs->destroy(connector);
-	}
-
-	list_for_each_entry_safe(property, pt, &dev->mode_config.property_list,
-				 head) {
-		drm_property_destroy(dev, property);
-	}
-
-	list_for_each_entry_safe(plane, plt, &dev->mode_config.plane_list,
-				 head) {
-		plane->funcs->destroy(plane);
-	}
-
-	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
-		crtc->funcs->destroy(crtc);
-	}
-
-	list_for_each_entry_safe(blob, bt, &dev->mode_config.property_blob_list,
-				 head_global) {
-		drm_property_unreference_blob(blob);
-	}
-
-	/*
-	 * Single-threaded teardown context, so it's not required to grab the
-	 * fb_lock to protect against concurrent fb_list access. Contrary, it
-	 * would actually deadlock with the drm_framebuffer_cleanup function.
-	 *
-	 * Also, if there are any framebuffers left, that's a driver leak now,
-	 * so politely WARN about this.
-	 */
-	WARN_ON(!list_empty(&dev->mode_config.fb_list));
-	list_for_each_entry_safe(fb, fbt, &dev->mode_config.fb_list, head) {
-		drm_framebuffer_free(&fb->base.refcount);
-	}
-
-	ida_destroy(&dev->mode_config.connector_ida);
-	idr_destroy(&dev->mode_config.tile_idr);
-	idr_destroy(&dev->mode_config.crtc_idr);
-	drm_modeset_lock_fini(&dev->mode_config.connection_mutex);
-}
-EXPORT_SYMBOL(drm_mode_config_cleanup);
-
-/**
- * DOC: Tile group
- *
- * Tile groups are used to represent tiled monitors with a unique
- * integer identifier. Tiled monitors using DisplayID v1.3 have
- * a unique 8-byte handle, we store this in a tile group, so we
- * have a common identifier for all tiles in a monitor group.
- */
-static void drm_tile_group_free(struct kref *kref)
-{
-	struct drm_tile_group *tg = container_of(kref, struct drm_tile_group, refcount);
-	struct drm_device *dev = tg->dev;
-	mutex_lock(&dev->mode_config.idr_mutex);
-	idr_remove(&dev->mode_config.tile_idr, tg->id);
-	mutex_unlock(&dev->mode_config.idr_mutex);
-	kfree(tg);
-}
-
-/**
- * drm_mode_put_tile_group - drop a reference to a tile group.
- * @dev: DRM device
- * @tg: tile group to drop reference to.
- *
- * drop reference to tile group and free if 0.
- */
-void drm_mode_put_tile_group(struct drm_device *dev,
-			     struct drm_tile_group *tg)
-{
-	kref_put(&tg->refcount, drm_tile_group_free);
-}
-
-/**
- * drm_mode_get_tile_group - get a reference to an existing tile group
- * @dev: DRM device
- * @topology: 8-bytes unique per monitor.
- *
- * Use the unique bytes to get a reference to an existing tile group.
- *
- * RETURNS:
- * tile group or NULL if not found.
- */
-struct drm_tile_group *drm_mode_get_tile_group(struct drm_device *dev,
-					       char topology[8])
-{
-	struct drm_tile_group *tg;
-	int id;
-	mutex_lock(&dev->mode_config.idr_mutex);
-	idr_for_each_entry(&dev->mode_config.tile_idr, tg, id) {
-		if (!memcmp(tg->group_data, topology, 8)) {
-			if (!kref_get_unless_zero(&tg->refcount))
-				tg = NULL;
-			mutex_unlock(&dev->mode_config.idr_mutex);
-			return tg;
-		}
-	}
-	mutex_unlock(&dev->mode_config.idr_mutex);
-	return NULL;
-}
-EXPORT_SYMBOL(drm_mode_get_tile_group);
-
-/**
- * drm_mode_create_tile_group - create a tile group from a displayid description
- * @dev: DRM device
- * @topology: 8-bytes unique per monitor.
- *
- * Create a tile group for the unique monitor, and get a unique
- * identifier for the tile group.
- *
- * RETURNS:
- * new tile group or error.
- */
-struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,
-						  char topology[8])
-{
-	struct drm_tile_group *tg;
-	int ret;
-
-	tg = kzalloc(sizeof(*tg), GFP_KERNEL);
-	if (!tg)
-		return ERR_PTR(-ENOMEM);
-
-	kref_init(&tg->refcount);
-	memcpy(tg->group_data, topology, 8);
-	tg->dev = dev;
-
-	mutex_lock(&dev->mode_config.idr_mutex);
-	ret = idr_alloc(&dev->mode_config.tile_idr, tg, 1, 0, GFP_KERNEL);
-	if (ret >= 0) {
-		tg->id = ret;
-	} else {
-		kfree(tg);
-		tg = ERR_PTR(ret);
-	}
-
-	mutex_unlock(&dev->mode_config.idr_mutex);
-	return tg;
-}
-EXPORT_SYMBOL(drm_mode_create_tile_group);

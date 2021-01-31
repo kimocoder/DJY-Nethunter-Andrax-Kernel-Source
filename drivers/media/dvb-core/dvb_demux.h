@@ -174,11 +174,14 @@ struct dvb_demux_feed {
 	int type;
 	int state;
 	u16 pid;
+<<<<<<< HEAD
 	u8 *buffer;
 	int buffer_size;
 	enum dmx_tsp_format_t tsp_out_format;
 	struct dmx_secure_mode secure_mode;
 	struct dmx_cipher_operations cipher_ops;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	ktime_t timeout;
 	struct dvb_demux_filter *filter;

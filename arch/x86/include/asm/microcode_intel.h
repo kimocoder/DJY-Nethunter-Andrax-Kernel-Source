@@ -52,6 +52,7 @@ struct extended_sigtable {
 
 #define exttable_size(et) ((et)->count * EXT_SIGNATURE_SIZE + EXT_HEADER_SIZE)
 
+<<<<<<< HEAD
 static inline u32 intel_get_microcode_revision(void)
 {
 	u32 rev, dummy;
@@ -71,6 +72,8 @@ extern int has_newer_microcode(void *mc, unsigned int csig, int cpf, int rev);
 extern int microcode_sanity_check(void *mc, int print_err);
 extern int find_matching_signature(void *mc, unsigned int csig, int cpf);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #ifdef CONFIG_MICROCODE_INTEL
 extern void __init load_ucode_intel_bsp(void);
 extern void load_ucode_intel_ap(void);

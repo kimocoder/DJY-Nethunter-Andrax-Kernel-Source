@@ -74,6 +74,10 @@
 enum pageflags {
 	PG_locked,		/* Page is locked. Don't touch. */
 	PG_waiters,		/* Page has waiters, check its waitqueue */
+<<<<<<< HEAD
+=======
+	PG_error,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	PG_referenced,
 	PG_uptodate,
 	PG_dirty,
@@ -89,7 +93,6 @@ enum pageflags {
 	PG_private_2,		/* If pagecache, has fs aux data */
 	PG_writeback,		/* Page is under writeback */
 	PG_head,		/* A head page */
-	PG_swapcache,		/* Swap page: swp_entry_t in private */
 	PG_mappedtodisk,	/* Has blocks allocated on-disk */
 	PG_reclaim,		/* To be reclaimed asap */
 	PG_swapbacked,		/* Page is backed by RAM/swap */
@@ -117,6 +120,9 @@ enum pageflags {
 
 	/* Filesystems */
 	PG_checked = PG_owner_priv_1,
+
+	/* SwapBacked */
+	PG_swapcache = PG_owner_priv_1,	/* Swap page: swp_entry_t in private */
 
 	/* Two page bits are conscripted by FS-Cache to maintain local caching
 	 * state.  These bits are set on pages belonging to the netfs's inodes
@@ -340,6 +346,7 @@ PAGEFLAG_FALSE(HighMem)
 #endif
 
 #ifdef CONFIG_SWAP
+<<<<<<< HEAD
 /* CONFIG_MEMPLUS modify start by bin.zhong@ASTI */
 #include <oneplus/memplus/memplus_helper.h>
 static __always_inline int PageSwapCache(struct page *page)
@@ -361,6 +368,15 @@ static __always_inline void SetPageSwapCache(struct page *page)
 	memplus_move_anon_to_swapcache_lru(page);
 }
 /* modify end */
+=======
+static __always_inline int PageSwapCache(struct page *page)
+{
+	return PageSwapBacked(page) && test_bit(PG_swapcache, &page->flags);
+
+}
+SETPAGEFLAG(SwapCache, swapcache, PF_NO_COMPOUND)
+CLEARPAGEFLAG(SwapCache, swapcache, PF_NO_COMPOUND)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #else
 PAGEFLAG_FALSE(SwapCache)
 #endif
@@ -763,12 +779,12 @@ static inline void ClearPageSlabPfmemalloc(struct page *page)
  * Flags checked when a page is freed.  Pages being freed should not have
  * these flags set.  It they are, there is a problem.
  */
-#define PAGE_FLAGS_CHECK_AT_FREE \
-	(1UL << PG_lru	 | 1UL << PG_locked    | \
-	 1UL << PG_private | 1UL << PG_private_2 | \
-	 1UL << PG_writeback | 1UL << PG_reserved | \
-	 1UL << PG_slab	 | 1UL << PG_swapcache | 1UL << PG_active | \
-	 1UL << PG_unevictable | __PG_MLOCKED)
+#define PAGE_FLAGS_CHECK_AT_FREE				\
+	(1UL << PG_lru		| 1UL << PG_locked	|	\
+	 1UL << PG_private	| 1UL << PG_private_2	|	\
+	 1UL << PG_writeback	| 1UL << PG_reserved	|	\
+	 1UL << PG_slab		| 1UL << PG_active 	|	\
+	 1UL << PG_unevictable	| __PG_MLOCKED)
 
 /*
  * Flags checked when a page is prepped for return by the page allocator.

@@ -1,10 +1,14 @@
 #!/bin/sh
 
 HEADERS='
+<<<<<<< HEAD
 include/uapi/linux/fcntl.h
 include/uapi/linux/perf_event.h
 include/uapi/linux/stat.h
 include/linux/bits.h
+=======
+include/uapi/linux/perf_event.h
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 include/linux/hash.h
 include/uapi/linux/hw_breakpoint.h
 arch/x86/include/asm/disabled-features.h

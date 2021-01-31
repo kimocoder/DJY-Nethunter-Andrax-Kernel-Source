@@ -3,7 +3,12 @@
 
 /* genelf.c */
 int jit_write_elf(int fd, uint64_t code_addr, const char *sym,
+<<<<<<< HEAD
 		  const void *code, int csize, void *debug, int nr_debug_entries);
+=======
+		  const void *code, int csize, void *debug, int nr_debug_entries,
+		  void *unwinding, uint64_t unwinding_header_size, uint64_t unwinding_size);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #ifdef HAVE_DWARF_SUPPORT
 /* genelf_debug.c */
 int jit_add_debug_info(Elf *e, uint64_t code_addr, void *debug, int nr_debug_entries);

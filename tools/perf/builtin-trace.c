@@ -74,8 +74,6 @@ struct trace {
 		size_t		nr;
 		int		*entries;
 	}			ev_qualifier_ids;
-	struct intlist		*tid_list;
-	struct intlist		*pid_list;
 	struct {
 		size_t		nr;
 		pid_t		*entries;
@@ -856,7 +854,6 @@ static size_t fprintf_duration(unsigned long t, bool calculated, FILE *fp)
  */
 struct thread_trace {
 	u64		  entry_time;
-	u64		  exit_time;
 	bool		  entry_pending;
 	unsigned long	  nr_events;
 	unsigned long	  pfmaj, pfmin;
@@ -1479,7 +1476,11 @@ static int trace__printf_interrupted_entry(struct trace *trace, struct perf_samp
 
 	duration = sample->time - ttrace->entry_time;
 
+<<<<<<< HEAD
 	printed  = trace__fprintf_entry_head(trace, trace->current, duration, true, ttrace->entry_time, trace->output);
+=======
+	printed  = trace__fprintf_entry_head(trace, trace->current, duration, ttrace->entry_time, trace->output);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	printed += fprintf(trace->output, "%-70s) ...\n", ttrace->entry_str);
 	ttrace->entry_pending = false;
 
@@ -1526,7 +1527,11 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
 
 	if (sc->is_exit) {
 		if (!(trace->duration_filter || trace->summary_only || trace->min_stack)) {
+<<<<<<< HEAD
 			trace__fprintf_entry_head(trace, thread, 0, false, ttrace->entry_time, trace->output);
+=======
+			trace__fprintf_entry_head(trace, thread, 1, ttrace->entry_time, trace->output);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			fprintf(trace->output, "%-70s)\n", ttrace->entry_str);
 		}
 	} else {
@@ -1599,8 +1604,6 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
 		++trace->stats.vfs_getname;
 	}
 
-	ttrace->exit_time = sample->time;
-
 	if (ttrace->entry_time) {
 		duration = sample->time - ttrace->entry_time;
 		if (trace__filter_duration(trace, duration))
@@ -1621,7 +1624,11 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
 	if (trace->summary_only)
 		goto out;
 
+<<<<<<< HEAD
 	trace__fprintf_entry_head(trace, thread, duration, duration_calculated, ttrace->entry_time, trace->output);
+=======
+	trace__fprintf_entry_head(trace, thread, duration, ttrace->entry_time, trace->output);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (ttrace->entry_pending) {
 		fprintf(trace->output, "%-70s", ttrace->entry_str);
@@ -1922,18 +1929,6 @@ out_put:
 	return err;
 }
 
-static bool skip_sample(struct trace *trace, struct perf_sample *sample)
-{
-	if ((trace->pid_list && intlist__find(trace->pid_list, sample->pid)) ||
-	    (trace->tid_list && intlist__find(trace->tid_list, sample->tid)))
-		return false;
-
-	if (trace->pid_list || trace->tid_list)
-		return true;
-
-	return false;
-}
-
 static void trace__set_base_time(struct trace *trace,
 				 struct perf_evsel *evsel,
 				 struct perf_sample *sample)
@@ -1958,11 +1953,13 @@ static int trace__process_sample(struct perf_tool *tool,
 				 struct machine *machine __maybe_unused)
 {
 	struct trace *trace = container_of(tool, struct trace, tool);
+	struct thread *thread;
 	int err = 0;
 
 	tracepoint_handler handler = evsel->handler;
 
-	if (skip_sample(trace, sample))
+	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
+	if (thread && thread__is_filtered(thread))
 		return 0;
 
 	trace__set_base_time(trace, evsel, sample);
@@ -1973,27 +1970,6 @@ static int trace__process_sample(struct perf_tool *tool,
 	}
 
 	return err;
-}
-
-static int parse_target_str(struct trace *trace)
-{
-	if (trace->opts.target.pid) {
-		trace->pid_list = intlist__new(trace->opts.target.pid);
-		if (trace->pid_list == NULL) {
-			pr_err("Error parsing process id string\n");
-			return -EINVAL;
-		}
-	}
-
-	if (trace->opts.target.tid) {
-		trace->tid_list = intlist__new(trace->opts.target.tid);
-		if (trace->tid_list == NULL) {
-			pr_err("Error parsing thread id string\n");
-			return -EINVAL;
-		}
-	}
-
-	return 0;
 }
 
 static int trace__record(struct trace *trace, int argc, const char **argv)
@@ -2339,11 +2315,16 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
 	if (err < 0)
 		goto out_error_mmap;
 
-	if (!target__none(&trace->opts.target))
+	if (!target__none(&trace->opts.target) && !trace->opts.initial_delay)
 		perf_evlist__enable(evlist);
 
 	if (forks)
 		perf_evlist__start_workload(evlist);
+
+	if (trace->opts.initial_delay) {
+		usleep(trace->opts.initial_delay * 1000);
+		perf_evlist__enable(evlist);
+	}
 
 	trace->multiple_threads = thread_map__pid(evlist->threads, 0) == -1 ||
 				  evlist->threads->nr > 1 ||
@@ -2487,6 +2468,12 @@ static int trace__replay(struct trace *trace)
 	if (session == NULL)
 		return -1;
 
+	if (trace->opts.target.pid)
+		symbol_conf.pid_list_str = strdup(trace->opts.target.pid);
+
+	if (trace->opts.target.tid)
+		symbol_conf.tid_list_str = strdup(trace->opts.target.tid);
+
 	if (symbol__init(&session->header.env) < 0)
 		goto out;
 
@@ -2529,10 +2516,6 @@ static int trace__replay(struct trace *trace)
 		     evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS))
 			evsel->handler = trace__pgfault;
 	}
-
-	err = parse_target_str(trace);
-	if (err != 0)
-		goto out;
 
 	setup_pager();
 
@@ -2845,6 +2828,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
 		     "Default: kernel.perf_event_max_stack or " __stringify(PERF_MAX_STACK_DEPTH)),
 	OPT_UINTEGER(0, "proc-map-timeout", &trace.opts.proc_map_timeout,
 			"per thread proc mmap processing timeout in ms"),
+	OPT_UINTEGER('D', "delay", &trace.opts.initial_delay,
+		     "ms to wait before starting measurement after program "
+		     "start"),
 	OPT_END()
 	};
 	bool __maybe_unused max_stack_user_set = true;

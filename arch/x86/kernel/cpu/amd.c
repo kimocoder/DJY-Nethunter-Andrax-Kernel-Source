@@ -335,6 +335,7 @@ static void amd_get_topology(struct cpuinfo_x86 *c)
 
 		cpuid(0x8000001e, &eax, &ebx, &ecx, &edx);
 
+<<<<<<< HEAD
 		node_id  = ecx & 0xff;
 
 		if (c->x86 == 0x15)
@@ -346,6 +347,12 @@ static void amd_get_topology(struct cpuinfo_x86 *c)
 			if (smp_num_siblings > 1)
 				c->x86_max_cores /= smp_num_siblings;
 		}
+=======
+		/* get compute unit information */
+		smp_num_siblings = ((ebx >> 8) & 3) + 1;
+		c->x86_max_cores /= smp_num_siblings;
+		c->cpu_core_id = ebx & 0xff;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 		/*
 		 * We may have multiple LLCs if L3 caches exist, so check if we
@@ -375,7 +382,14 @@ static void amd_get_topology(struct cpuinfo_x86 *c)
 
 	if (nodes_per_socket > 1) {
 		set_cpu_cap(c, X86_FEATURE_AMD_DCM);
+<<<<<<< HEAD
 		legacy_fixup_core_id(c);
+=======
+		cus_per_node = c->x86_max_cores / nodes_per_socket;
+
+		/* core id has to be in the [0 .. cores_per_node - 1] range */
+		c->cpu_core_id %= cus_per_node;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 }
 
@@ -396,6 +410,10 @@ static void amd_detect_cmp(struct cpuinfo_x86 *c)
 	/* use socket ID also for last level cache */
 	per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
 	amd_get_topology(c);
+<<<<<<< HEAD
+=======
+#endif
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 u16 amd_get_nb_id(int cpu)
@@ -642,6 +660,7 @@ static void early_init_amd(struct cpuinfo_x86 *c)
 	 */
 	if (cpu_has_amd_erratum(c, amd_erratum_400))
 		set_cpu_bug(c, X86_BUG_AMD_E400);
+<<<<<<< HEAD
 
 
 	/* Re-enable TopologyExtensions if switched off by BIOS */
@@ -659,6 +678,8 @@ static void early_init_amd(struct cpuinfo_x86 *c)
 	}
 
 	amd_get_topology_early(c);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static void init_amd_k8(struct cpuinfo_x86 *c)

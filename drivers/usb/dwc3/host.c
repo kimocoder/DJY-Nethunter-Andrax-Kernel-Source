@@ -52,7 +52,10 @@ out:
 	return irq;
 }
 
+<<<<<<< HEAD
 #define NUMBER_OF_PROPS	5
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 int dwc3_host_init(struct dwc3 *dwc)
 {
 	struct property_entry	props[NUMBER_OF_PROPS];
@@ -154,6 +157,14 @@ int dwc3_host_init(struct dwc3 *dwc)
 	}
 
 	return 0;
+<<<<<<< HEAD
+=======
+err2:
+	phy_remove_lookup(dwc->usb2_generic_phy, "usb2-phy",
+			  dev_name(dwc->dev));
+	phy_remove_lookup(dwc->usb3_generic_phy, "usb3-phy",
+			  dev_name(dwc->dev));
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 err1:
 	platform_device_put(xhci);
 	return ret;

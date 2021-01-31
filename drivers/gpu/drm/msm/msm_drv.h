@@ -574,7 +574,11 @@ struct msm_drm_private {
 	struct msm_gem_address_space *aspace[NUM_DOMAINS];
 
 	unsigned int num_planes;
+<<<<<<< HEAD
 	struct drm_plane *planes[MAX_PLANES];
+=======
+	struct drm_plane *planes[16];
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	unsigned int num_crtcs;
 	struct drm_crtc *crtcs[MAX_CRTCS];
@@ -659,7 +663,26 @@ void __msm_fence_worker(struct work_struct *work);
 
 int msm_atomic_commit(struct drm_device *dev,
 		struct drm_atomic_state *state, bool nonblock);
+struct drm_atomic_state *msm_atomic_state_alloc(struct drm_device *dev);
+void msm_atomic_state_clear(struct drm_atomic_state *state);
+void msm_atomic_state_free(struct drm_atomic_state *state);
 
+int msm_register_address_space(struct drm_device *dev,
+		struct msm_gem_address_space *aspace);
+
+void msm_gem_unmap_vma(struct msm_gem_address_space *aspace,
+		struct msm_gem_vma *vma, struct sg_table *sgt);
+int msm_gem_map_vma(struct msm_gem_address_space *aspace,
+		struct msm_gem_vma *vma, struct sg_table *sgt, int npages);
+
+<<<<<<< HEAD
+=======
+void msm_gem_address_space_destroy(struct msm_gem_address_space *aspace);
+struct msm_gem_address_space *
+msm_gem_address_space_create(struct device *dev, struct iommu_domain *domain,
+		const char *name);
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 void msm_gem_submit_free(struct msm_gem_submit *submit);
 void msm_gem_unmap_vma(struct msm_gem_address_space *aspace,
 		struct msm_gem_vma *vma, struct sg_table *sgt,
@@ -739,12 +762,19 @@ int msm_gem_mmap_obj(struct drm_gem_object *obj,
 int msm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 int msm_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
 uint64_t msm_gem_mmap_offset(struct drm_gem_object *obj);
+<<<<<<< HEAD
 int msm_gem_get_iova_locked(struct drm_gem_object *obj,
 		struct msm_gem_address_space *aspace, uint32_t *iova);
 int msm_gem_get_iova(struct drm_gem_object *obj,
 		struct msm_gem_address_space *aspace, uint32_t *iova);
 uint32_t msm_gem_iova(struct drm_gem_object *obj,
 		struct msm_gem_address_space *aspace);
+=======
+int msm_gem_get_iova_locked(struct drm_gem_object *obj, int id,
+		uint64_t *iova);
+int msm_gem_get_iova(struct drm_gem_object *obj, int id, uint64_t *iova);
+uint64_t msm_gem_iova(struct drm_gem_object *obj, int id);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 struct page **msm_gem_get_pages(struct drm_gem_object *obj);
 void msm_gem_put_pages(struct drm_gem_object *obj);
 void msm_gem_put_iova(struct drm_gem_object *obj,
@@ -773,7 +803,7 @@ void msm_gem_vunmap(struct drm_gem_object *obj);
 int msm_gem_sync_object(struct drm_gem_object *obj,
 		struct msm_fence_context *fctx, bool exclusive);
 void msm_gem_move_to_active(struct drm_gem_object *obj,
-		struct msm_gpu *gpu, bool exclusive, struct fence *fence);
+		struct msm_gpu *gpu, bool exclusive, struct dma_fence *fence);
 void msm_gem_move_to_inactive(struct drm_gem_object *obj);
 int msm_gem_cpu_prep(struct drm_gem_object *obj, uint32_t op, ktime_t *timeout);
 int msm_gem_cpu_fini(struct drm_gem_object *obj);
@@ -894,8 +924,8 @@ void msm_iounmap(struct platform_device *dev, void __iomem *addr);
 void msm_writel(u32 data, void __iomem *addr);
 u32 msm_readl(const void __iomem *addr);
 
-#define DBG(fmt, ...) DRM_DEBUG(fmt"\n", ##__VA_ARGS__)
-#define VERB(fmt, ...) if (0) DRM_DEBUG(fmt"\n", ##__VA_ARGS__)
+#define DBG(fmt, ...) DRM_DEBUG_DRIVER(fmt"\n", ##__VA_ARGS__)
+#define VERB(fmt, ...) if (0) DRM_DEBUG_DRIVER(fmt"\n", ##__VA_ARGS__)
 
 static inline int align_pitch(int width, int bpp)
 {

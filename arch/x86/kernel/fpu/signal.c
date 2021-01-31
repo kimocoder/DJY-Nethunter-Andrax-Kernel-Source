@@ -344,8 +344,14 @@ static int __fpu__restore_sig(void __user *buf, void __user *buf_fx, int size)
 
 		local_bh_disable();
 		fpu->fpstate_active = 1;
+<<<<<<< HEAD
 		fpu__restore(fpu);
 		local_bh_enable();
+=======
+		preempt_disable();
+		fpu__restore(fpu);
+		preempt_enable();
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 		return err;
 	} else {

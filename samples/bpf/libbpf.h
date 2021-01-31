@@ -2,19 +2,9 @@
 #ifndef __LIBBPF_H
 #define __LIBBPF_H
 
-struct bpf_insn;
+#include <bpf/bpf.h>
 
-int bpf_create_map(enum bpf_map_type map_type, int key_size, int value_size,
-		   int max_entries, int map_flags);
-int bpf_update_elem(int fd, void *key, void *value, unsigned long long flags);
-int bpf_lookup_elem(int fd, void *key, void *value);
-int bpf_delete_elem(int fd, void *key);
-int bpf_get_next_key(int fd, void *key, void *next_key);
-
-int bpf_prog_load(enum bpf_prog_type prog_type,
-		  const struct bpf_insn *insns, int insn_len,
-		  const char *license, int kern_version);
-
+<<<<<<< HEAD
 int bpf_prog_attach(int prog_fd, int attachable_fd, enum bpf_attach_type type,
 		    unsigned int flags);
 int bpf_prog_detach(int attachable_fd, enum bpf_attach_type type);
@@ -24,6 +14,9 @@ int bpf_obj_get(const char *pathname);
 
 #define LOG_BUF_SIZE 65536
 extern char bpf_log_buf[LOG_BUF_SIZE];
+=======
+struct bpf_insn;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* ALU ops on registers, bpf_add|sub|...: dst_reg += src_reg */
 
@@ -204,10 +197,4 @@ extern char bpf_log_buf[LOG_BUF_SIZE];
 		.off   = 0,					\
 		.imm   = 0 })
 
-/* create RAW socket and bind to interface 'name' */
-int open_raw_sock(const char *name);
-
-struct perf_event_attr;
-int perf_event_open(struct perf_event_attr *attr, int pid, int cpu,
-		    int group_fd, unsigned long flags);
 #endif

@@ -159,6 +159,7 @@ MODULE_LICENSE("GPL");
 #define USB_INTEL_XUSB2PR		0xD0
 #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI	0x9c31
 
+<<<<<<< HEAD
 static const char * const ashs_ids[] = { "ATK4001", "ATK4002", NULL };
 
 static bool ashs_present(void)
@@ -171,6 +172,8 @@ static bool ashs_present(void)
 	return false;
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 struct bios_args {
 	u32 arg0;
 	u32 arg1;
@@ -1115,6 +1118,7 @@ static void asus_wmi_set_xusb2pr(struct asus_wmi *asus)
 			orig_ports_available, ports_available);
 }
 
+<<<<<<< HEAD
 /*
  * Some devices dont support or have borcken get_als method
  * but still support set method.
@@ -1124,6 +1128,8 @@ static void asus_wmi_set_als(void)
 	asus_wmi_set_devstate(ASUS_WMI_DEVID_ALS_ENABLE, 1, NULL);
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /*
  * Hwmon device
  */

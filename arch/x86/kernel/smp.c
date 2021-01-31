@@ -272,10 +272,8 @@ static inline void __smp_reschedule_interrupt(void)
 
 __visible void __irq_entry smp_reschedule_interrupt(struct pt_regs *regs)
 {
-	irq_enter();
 	ack_APIC_irq();
 	__smp_reschedule_interrupt();
-	irq_exit();
 	/*
 	 * KVM uses this interrupt to force a cpu out of guest mode
 	 */

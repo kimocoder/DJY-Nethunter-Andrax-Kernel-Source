@@ -137,6 +137,9 @@ struct netns_ipv4 {
 #ifdef CONFIG_IP_ROUTE_MULTIPATH
 	int sysctl_fib_multipath_use_neigh;
 #endif
+
+	unsigned int	fib_seq;	/* protected by rtnl_mutex */
+
 	atomic_t	rt_genid;
 	siphash_key_t	ip_id_key;
 };

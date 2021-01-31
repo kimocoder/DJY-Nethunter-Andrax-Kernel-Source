@@ -166,11 +166,20 @@ static inline void next_free_nid(struct f2fs_sb_info *sbi, nid_t *nid)
 	struct free_nid *fnid;
 
 	spin_lock(&nm_i->nid_list_lock);
+<<<<<<< HEAD
 	if (nm_i->nid_cnt[FREE_NID] <= 0) {
 		spin_unlock(&nm_i->nid_list_lock);
 		return;
 	}
 	fnid = list_first_entry(&nm_i->free_nid_list, struct free_nid, list);
+=======
+	if (nm_i->nid_cnt[FREE_NID_LIST] <= 0) {
+		spin_unlock(&nm_i->nid_list_lock);
+		return;
+	}
+	fnid = list_entry(nm_i->nid_list[FREE_NID_LIST].next,
+						struct free_nid, list);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	*nid = fnid->nid;
 	spin_unlock(&nm_i->nid_list_lock);
 }
@@ -308,6 +317,7 @@ static inline bool is_recoverable_dnode(struct page *page)
 	struct f2fs_checkpoint *ckpt = F2FS_CKPT(F2FS_P_SB(page));
 	__u64 cp_ver = cur_cp_version(ckpt);
 
+<<<<<<< HEAD
 	/* Don't care crc part, if fsck.f2fs sets it. */
 	if (__is_set_ckpt_flags(ckpt, CP_NOCRC_RECOVERY_FLAG))
 		return (cp_ver << 32) == (cpver_of_node(page) << 32);
@@ -315,6 +325,13 @@ static inline bool is_recoverable_dnode(struct page *page)
 	if (__is_set_ckpt_flags(ckpt, CP_CRC_RECOVERY_FLAG))
 		cp_ver |= (cur_cp_crc(ckpt) << 32);
 
+=======
+	if (__is_set_ckpt_flags(ckpt, CP_CRC_RECOVERY_FLAG)) {
+		__u64 crc = le32_to_cpu(*((__le32 *)
+				((unsigned char *)ckpt + crc_offset)));
+		cp_ver |= (crc << 32);
+	}
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	return cp_ver == cpver_of_node(page);
 }
 

@@ -984,6 +984,7 @@ u32 tcp_slow_start(struct tcp_sock *tp, u32 acked);
 void tcp_cong_avoid_ai(struct tcp_sock *tp, u32 w, u32 acked);
 
 u32 tcp_reno_ssthresh(struct sock *sk);
+u32 tcp_reno_undo_cwnd(struct sock *sk);
 void tcp_reno_cong_avoid(struct sock *sk, u32 ack, u32 acked);
 extern struct tcp_congestion_ops tcp_reno;
 
@@ -1551,13 +1552,30 @@ struct tcp_fastopen_context {
 	struct rcu_head		rcu;
 };
 
+<<<<<<< HEAD
 static inline void tcp_init_send_head(struct sock *sk);
+=======
+/* Latencies incurred by various limits for a sender. They are
+ * chronograph-like stats that are mutually exclusive.
+ */
+enum tcp_chrono {
+	TCP_CHRONO_UNSPEC,
+	TCP_CHRONO_BUSY, /* Actively sending data (non-empty write queue) */
+	TCP_CHRONO_RWND_LIMITED, /* Stalled by insufficient receive window */
+	TCP_CHRONO_SNDBUF_LIMITED, /* Stalled by insufficient send buffer */
+	__TCP_CHRONO_MAX,
+};
+
+void tcp_chrono_start(struct sock *sk, const enum tcp_chrono type);
+void tcp_chrono_stop(struct sock *sk, const enum tcp_chrono type);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* write queue abstraction */
 static inline void tcp_write_queue_purge(struct sock *sk)
 {
 	struct sk_buff *skb;
 
+	tcp_chrono_stop(sk, TCP_CHRONO_BUSY);
 	while ((skb = __skb_dequeue(&sk->sk_write_queue)) != NULL)
 		sk_wmem_free_skb(sk, skb);
 	tcp_init_send_head(sk);
@@ -1619,8 +1637,10 @@ static inline void tcp_advance_send_head(struct sock *sk, const struct sk_buff *
 
 static inline void tcp_check_send_head(struct sock *sk, struct sk_buff *skb_unlinked)
 {
-	if (sk->sk_send_head == skb_unlinked)
+	if (sk->sk_send_head == skb_unlinked) {
 		sk->sk_send_head = NULL;
+		tcp_chrono_stop(sk, TCP_CHRONO_BUSY);
+	}
 	if (tcp_sk(sk)->highest_sack == skb_unlinked)
 		tcp_sk(sk)->highest_sack = NULL;
 }
@@ -1658,6 +1678,7 @@ static inline void tcp_add_write_queue_tail(struct sock *sk, struct sk_buff *skb
 	/* Queue it, remembering where we must start sending. */
 	if (sk->sk_send_head == NULL) {
 		sk->sk_send_head = skb;
+		tcp_chrono_start(sk, TCP_CHRONO_BUSY);
 
 		if (tcp_sk(sk)->highest_sack == NULL)
 			tcp_sk(sk)->highest_sack = skb;
@@ -1865,7 +1886,7 @@ struct tcp_request_sock_ops {
 	struct dst_entry *(*route_req)(const struct sock *sk, struct flowi *fl,
 				       const struct request_sock *req,
 				       bool *strict);
-	__u32 (*init_seq)(const struct sk_buff *skb);
+	__u32 (*init_seq)(const struct sk_buff *skb, u32 *tsoff);
 	int (*send_synack)(const struct sock *sk, struct dst_entry *dst,
 			   struct flowi *fl, struct request_sock *req,
 			   struct tcp_fastopen_cookie *foc,

@@ -683,9 +683,16 @@ static int maps__fixup_overlappings(struct maps *maps, struct map *map, FILE *fp
 			continue;
 
 		if (verbose >= 2) {
-			fputs("overlapping maps:\n", fp);
-			map__fprintf(map, fp);
-			map__fprintf(pos, fp);
+
+			if (use_browser) {
+				pr_warning("overlapping maps in %s "
+					   "(disable tui for more info)\n",
+					   map->dso->name);
+			} else {
+				fputs("overlapping maps:\n", fp);
+				map__fprintf(map, fp);
+				map__fprintf(pos, fp);
+			}
 		}
 
 		rb_erase_init(&pos->rb_node, root);
@@ -703,7 +710,7 @@ static int maps__fixup_overlappings(struct maps *maps, struct map *map, FILE *fp
 
 			before->end = map->start;
 			__map_groups__insert(pos->groups, before);
-			if (verbose >= 2)
+			if (verbose >= 2 && !use_browser)
 				map__fprintf(before, fp);
 			map__put(before);
 		}
@@ -720,7 +727,7 @@ static int maps__fixup_overlappings(struct maps *maps, struct map *map, FILE *fp
 			after->pgoff += map->end - pos->start;
 			assert(pos->map_ip(pos, map->end) == after->map_ip(after, map->end));
 			__map_groups__insert(pos->groups, after);
-			if (verbose >= 2)
+			if (verbose >= 2 && !use_browser)
 				map__fprintf(after, fp);
 			map__put(after);
 		}

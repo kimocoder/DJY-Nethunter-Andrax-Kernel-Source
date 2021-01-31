@@ -13,8 +13,11 @@
 #include <net/dsfield.h>
 #include <linux/if_vlan.h>
 #include <linux/mpls.h>
+<<<<<<< HEAD
 #include <net/ndisc.h>
 #include <linux/if_arp.h>
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #include <linux/gcd.h>
 #include "core.h"
 #include "rdev-ops.h"
@@ -1259,6 +1262,25 @@ static bool ieee80211_id_in_list(const u8 *ids, int n_ids, u8 id)
 	return false;
 }
 
+static size_t skip_ie(const u8 *ies, size_t ielen, size_t pos)
+{
+	/* we assume a validly formed IEs buffer */
+	u8 len = ies[pos + 1];
+
+	pos += 2 + len;
+
+	/* the IE itself must have 255 bytes for fragments to follow */
+	if (len < 255)
+		return pos;
+
+	while (pos < ielen && ies[pos] == WLAN_EID_FRAGMENT) {
+		len = ies[pos + 1];
+		pos += 2 + len;
+	}
+
+	return pos;
+}
+
 size_t ieee80211_ie_split_ric(const u8 *ies, size_t ielen,
 			      const u8 *ids, int n_ids,
 			      const u8 *after_ric, int n_after_ric,
@@ -1268,14 +1290,14 @@ size_t ieee80211_ie_split_ric(const u8 *ies, size_t ielen,
 
 	while (pos < ielen && ieee80211_id_in_list(ids, n_ids, ies[pos])) {
 		if (ies[pos] == WLAN_EID_RIC_DATA && n_after_ric) {
-			pos += 2 + ies[pos + 1];
+			pos = skip_ie(ies, ielen, pos);
 
 			while (pos < ielen &&
 			       !ieee80211_id_in_list(after_ric, n_after_ric,
 						     ies[pos]))
-				pos += 2 + ies[pos + 1];
+				pos = skip_ie(ies, ielen, pos);
 		} else {
-			pos += 2 + ies[pos + 1];
+			pos = skip_ie(ies, ielen, pos);
 		}
 	}
 
@@ -1459,8 +1481,34 @@ static void cfg80211_calculate_bi_data(struct wiphy *wiphy, u32 new_beacon_int,
 
 		*beacon_int_different = true;
 		*beacon_int_gcd = gcd(*beacon_int_gcd, wdev->beacon_interval);
+<<<<<<< HEAD
 	}
 
+	if (new_beacon_int && *beacon_int_gcd != new_beacon_int) {
+		if (*beacon_int_gcd)
+			*beacon_int_different = true;
+		*beacon_int_gcd = gcd(*beacon_int_gcd, new_beacon_int);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
+	}
+}
+
+int cfg80211_validate_beacon_int(struct cfg80211_registered_device *rdev,
+				 enum nl80211_iftype iftype, u32 beacon_int)
+{
+	/*
+	 * This is just a basic pre-condition check; if interface combinations
+	 * are possible the driver must already be checking those with a call
+	 * to cfg80211_check_combinations(), in which case we'll validate more
+	 * through the cfg80211_calculate_bi_data() call and code in
+	 * cfg80211_iter_combinations().
+	 */
+
+	if (beacon_int < 10 || beacon_int > 10000)
+		return -EINVAL;
+
+<<<<<<< HEAD
+=======
 	if (new_beacon_int && *beacon_int_gcd != new_beacon_int) {
 		if (*beacon_int_gcd)
 			*beacon_int_different = true;
@@ -1482,6 +1530,7 @@ int cfg80211_validate_beacon_int(struct cfg80211_registered_device *rdev,
 	if (beacon_int < 10 || beacon_int > 10000)
 		return -EINVAL;
 
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	return 0;
 }
 

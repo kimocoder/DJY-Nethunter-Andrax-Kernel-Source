@@ -452,6 +452,9 @@ static int log_invalid_proto_max __read_mostly = 255;
 /* size the user *wants to set */
 static unsigned int nf_conntrack_htable_size_user __read_mostly;
 
+extern unsigned int nf_conntrack_default_on;
+unsigned int nf_conntrack_default_on __read_mostly = 1;
+
 static int
 nf_conntrack_hash_sysctl(struct ctl_table *table, int write,
 			 void __user *buffer, size_t *lenp, loff_t *ppos)
@@ -521,6 +524,7 @@ static struct ctl_table nf_ct_sysctl_table[] = {
 		.proc_handler	= proc_dointvec,
 	},
 	{
+<<<<<<< HEAD
 		.procname	= "nf_conntrack_pkt_threshold",
 		.data		= &nf_conntrack_pkt_threshold,
 		.maxlen		= sizeof(int),
@@ -528,6 +532,14 @@ static struct ctl_table nf_ct_sysctl_table[] = {
 		.proc_handler	= proc_dointvec,
 	},
 
+=======
+		.procname	= "nf_conntrack_default_on",
+		.data		= &nf_conntrack_default_on,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec,
+	},
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	{ }
 };
 

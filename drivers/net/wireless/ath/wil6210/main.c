@@ -26,9 +26,12 @@
 
 #define WAIT_FOR_HALP_VOTE_MS 100
 #define WAIT_FOR_SCAN_ABORT_MS 1000
+<<<<<<< HEAD
 #define WIL_BOARD_FILE_MAX_NAMELEN 128
 #define WIL6210_ITR_VR_RX_MAX_BURST_DURATION (5) /* usec */
 #define WIL6210_VR_TX_RING_ORDER 10
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 bool debug_fw; /* = false; */
 module_param(debug_fw, bool, 0444);
@@ -895,8 +898,11 @@ static void wil_collect_fw_info(struct wil6210_priv *wil)
 	u8 retry_short;
 	int rc;
 
+<<<<<<< HEAD
 	wil_refresh_fw_capabilities(wil);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	rc = wmi_get_mgmt_retry(wil, &retry_short);
 	if (!rc) {
 		wiphy->retry_short = retry_short;
@@ -904,6 +910,7 @@ static void wil_collect_fw_info(struct wil6210_priv *wil)
 	}
 }
 
+<<<<<<< HEAD
 void wil_refresh_fw_capabilities(struct wil6210_priv *wil)
 {
 	struct wiphy *wiphy = wil_to_wiphy(wil);
@@ -941,6 +948,8 @@ void wil_refresh_fw_capabilities(struct wil6210_priv *wil)
 	}
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 void wil_mbox_ring_le2cpus(struct wil6210_mbox_ring *r)
 {
 	le32_to_cpus(&r->base);
@@ -1130,6 +1139,7 @@ void wil_abort_scan(struct wil6210_priv *wil, bool sync)
 	}
 }
 
+<<<<<<< HEAD
 int wil_ps_update(struct wil6210_priv *wil, enum wmi_ps_profile_type ps_profile)
 {
 	int rc;
@@ -1204,6 +1214,8 @@ static void wil_pre_fw_config(struct wil6210_priv *wil)
 	}
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /*
  * We reset all the structures, and we reset the UMAC.
  * After calling this routine, you're expected to reload
@@ -1285,6 +1297,13 @@ int wil_reset(struct wil6210_priv *wil, bool load_fw)
 	wil_dbg_misc(wil, "wil->status (0x%lx)\n", *wil->status);
 	mutex_unlock(&wil->wmi_mutex);
 
+<<<<<<< HEAD
+=======
+	mutex_lock(&wil->p2p_wdev_mutex);
+	wil_abort_scan(wil, false);
+	mutex_unlock(&wil->p2p_wdev_mutex);
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	wil_mask_irq(wil);
 
 	wmi_event_flush(wil);
@@ -1371,6 +1390,7 @@ int wil_reset(struct wil6210_priv *wil, bool load_fw)
 			return rc;
 		}
 
+<<<<<<< HEAD
 		/* Update VR mode before configuring interrupt moderation */
 		if (wil->vr_profile != WMI_VR_PROFILE_DISABLED)
 			wil_vr_update_profile(wil, wil->vr_profile);
@@ -1388,6 +1408,10 @@ int wil_reset(struct wil6210_priv *wil, bool load_fw)
 			wmi_set_snr_thresh(wil, wil->snr_thresh.omni,
 					   wil->snr_thresh.direct);
 
+=======
+		wil_collect_fw_info(wil);
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		if (wil->platform_ops.notify) {
 			rc = wil->platform_ops.notify(wil->platform_handle,
 						      WIL_PLATFORM_EVT_FW_RDY);
@@ -1504,8 +1528,11 @@ int __wil_down(struct wil6210_priv *wil)
 	}
 	wil_enable_irq(wil);
 
+<<<<<<< HEAD
 	wil_ftm_stop_operations(wil);
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	mutex_lock(&wil->p2p_wdev_mutex);
 	wil_p2p_stop_radio_operations(wil);
 	wil_abort_scan(wil, false);

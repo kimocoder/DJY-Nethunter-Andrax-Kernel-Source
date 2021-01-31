@@ -30,6 +30,7 @@
 #include <linux/mii.h>
 #include <linux/ethtool.h>
 #include <linux/phy.h>
+#include <linux/phy_led_triggers.h>
 #include <linux/mdio.h>
 #include <linux/io.h>
 #include <linux/uaccess.h>
@@ -236,6 +237,53 @@ int phy_register_fixup_for_id(const char *bus_id,
 }
 EXPORT_SYMBOL(phy_register_fixup_for_id);
 
+/**
+ * phy_unregister_fixup - remove a phy_fixup from the list
+ * @bus_id: A string matches fixup->bus_id (or PHY_ANY_ID) in phy_fixup_list
+ * @phy_uid: A phy id matches fixup->phy_id (or PHY_ANY_UID) in phy_fixup_list
+ * @phy_uid_mask: Applied to phy_uid and fixup->phy_uid before comparison
+ */
+int phy_unregister_fixup(const char *bus_id, u32 phy_uid, u32 phy_uid_mask)
+{
+	struct list_head *pos, *n;
+	struct phy_fixup *fixup;
+	int ret;
+
+	ret = -ENODEV;
+
+	mutex_lock(&phy_fixup_lock);
+	list_for_each_safe(pos, n, &phy_fixup_list) {
+		fixup = list_entry(pos, struct phy_fixup, list);
+
+		if ((!strcmp(fixup->bus_id, bus_id)) &&
+		    ((fixup->phy_uid & phy_uid_mask) ==
+		     (phy_uid & phy_uid_mask))) {
+			list_del(&fixup->list);
+			kfree(fixup);
+			ret = 0;
+			break;
+		}
+	}
+	mutex_unlock(&phy_fixup_lock);
+
+	return ret;
+}
+EXPORT_SYMBOL(phy_unregister_fixup);
+
+/* Unregisters a fixup of any PHY with the UID in phy_uid */
+int phy_unregister_fixup_for_uid(u32 phy_uid, u32 phy_uid_mask)
+{
+	return phy_unregister_fixup(PHY_ANY_ID, phy_uid, phy_uid_mask);
+}
+EXPORT_SYMBOL(phy_unregister_fixup_for_uid);
+
+/* Unregisters a fixup of the PHY with id string bus_id */
+int phy_unregister_fixup_for_id(const char *bus_id)
+{
+	return phy_unregister_fixup(bus_id, PHY_ANY_UID, 0xffffffff);
+}
+EXPORT_SYMBOL(phy_unregister_fixup_for_id);
+
 /* Returns 1 if fixup matches phydev in bus_id and phy_uid.
  * Fixups can be set to match any in one or more fields.
  */
@@ -349,7 +397,7 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
 
 	mutex_init(&dev->lock);
 	INIT_DELAYED_WORK(&dev->state_queue, phy_state_machine);
-	INIT_WORK(&dev->phy_queue, phy_change);
+	INIT_WORK(&dev->phy_queue, phy_change_work);
 
 	/* Request the appropriate module unconditionally; don't
 	 * bother trying to do so only if it isn't already loaded,
@@ -935,13 +983,15 @@ int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
 	 */
 	err = phy_init_hw(phydev);
 	if (err)
-		phy_detach(phydev);
-	else
-		phy_resume(phydev);
+		goto error;
+
+	phy_resume(phydev);
+	phy_led_triggers_register(phydev);
 
 	return err;
 
 error:
+<<<<<<< HEAD
 	/* phy_detach() does all of the cleanup below */
 	phy_detach(phydev);
 	return err;
@@ -949,6 +999,9 @@ error:
 error_module_put:
 	module_put(d->driver->owner);
 error_put_device:
+=======
+	phy_detach(phydev);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	put_device(d);
 	if (ndev_owner != bus->owner)
 		module_put(bus->owner);
@@ -1013,8 +1066,12 @@ void phy_detach(struct phy_device *phydev)
 	phydev->attached_dev = NULL;
 	phy_suspend(phydev);
 
+<<<<<<< HEAD
 	if (phydev->mdio.dev.driver)
 		module_put(phydev->mdio.dev.driver->owner);
+=======
+	phy_led_triggers_unregister(phydev);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* If the device had no specific driver before (i.e. - it
 	 * was using the generic driver), we unbind the device
@@ -1702,6 +1759,28 @@ static int phy_probe(struct device *dev)
 	 */
 	of_set_phy_eee_broken(phydev);
 
+<<<<<<< HEAD
+=======
+	/* The Pause Frame bits indicate that the PHY can support passing
+	 * pause frames. During autonegotiation, the PHYs will determine if
+	 * they should allow pause frames to pass.  The MAC driver should then
+	 * use that result to determine whether to enable flow control via
+	 * pause frames.
+	 *
+	 * Normally, PHY drivers should not set the Pause bits, and instead
+	 * allow phylib to do that.  However, there may be some situations
+	 * (e.g. hardware erratum) where the driver wants to set only one
+	 * of these bits.
+	 */
+	if (phydrv->features & (SUPPORTED_Pause | SUPPORTED_Asym_Pause)) {
+		phydev->supported &= ~(SUPPORTED_Pause | SUPPORTED_Asym_Pause);
+		phydev->supported |= phydrv->features &
+				     (SUPPORTED_Pause | SUPPORTED_Asym_Pause);
+	} else {
+		phydev->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
+	}
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* Set the state to READY by default */
 	phydev->state = PHY_READY;
 

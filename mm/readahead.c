@@ -382,7 +382,10 @@ ondemand_readahead(struct address_space *mapping,
 {
 	struct backing_dev_info *bdi = inode_to_bdi(mapping->host);
 	unsigned long max_pages = ra->ra_pages;
+<<<<<<< HEAD
 	unsigned long add_pages;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	pgoff_t prev_offset;
 
 	/*
@@ -475,6 +478,7 @@ readit:
 	 * Take care of maximum IO pages as above.
 	 */
 	if (offset == ra->start && ra->size == ra->async_size) {
+<<<<<<< HEAD
 		add_pages = get_next_ra_size(ra, max_pages);
 		if (ra->size + add_pages <= max_pages) {
 			ra->async_size = add_pages;
@@ -483,6 +487,10 @@ readit:
 			ra->size = max_pages;
 			ra->async_size = max_pages >> 1;
 		}
+=======
+		ra->async_size = get_next_ra_size(ra, max_pages);
+		ra->size += ra->async_size;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	return ra_submit(ra, mapping, filp);

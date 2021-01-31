@@ -1,7 +1,7 @@
 /*
  * drivers/net/ethernet/mellanox/mlxsw/pci.h
- * Copyright (c) 2015 Mellanox Technologies. All rights reserved.
- * Copyright (c) 2015 Jiri Pirko <jiri@mellanox.com>
+ * Copyright (c) 2016 Mellanox Technologies. All rights reserved.
+ * Copyright (c) 2016 Jiri Pirko <jiri@mellanox.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -35,46 +35,32 @@
 #ifndef _MLXSW_PCI_H
 #define _MLXSW_PCI_H
 
-#include <linux/bitops.h>
+#include <linux/pci.h>
 
-#include "item.h"
+#define PCI_DEVICE_ID_MELLANOX_SWITCHX2		0xc738
+#define PCI_DEVICE_ID_MELLANOX_SPECTRUM		0xcb84
+#define PCI_DEVICE_ID_MELLANOX_SWITCHIB		0xcb20
+#define PCI_DEVICE_ID_MELLANOX_SWITCHIB2	0xcf08
 
-#define PCI_DEVICE_ID_MELLANOX_SWITCHX2	0xc738
-#define PCI_DEVICE_ID_MELLANOX_SPECTRUM	0xcb84
-#define MLXSW_PCI_BAR0_SIZE		(1024 * 1024) /* 1MB */
-#define MLXSW_PCI_PAGE_SIZE		4096
+#if IS_ENABLED(CONFIG_MLXSW_PCI)
 
-#define MLXSW_PCI_CIR_BASE			0x71000
-#define MLXSW_PCI_CIR_IN_PARAM_HI		MLXSW_PCI_CIR_BASE
-#define MLXSW_PCI_CIR_IN_PARAM_LO		(MLXSW_PCI_CIR_BASE + 0x04)
-#define MLXSW_PCI_CIR_IN_MODIFIER		(MLXSW_PCI_CIR_BASE + 0x08)
-#define MLXSW_PCI_CIR_OUT_PARAM_HI		(MLXSW_PCI_CIR_BASE + 0x0C)
-#define MLXSW_PCI_CIR_OUT_PARAM_LO		(MLXSW_PCI_CIR_BASE + 0x10)
-#define MLXSW_PCI_CIR_TOKEN			(MLXSW_PCI_CIR_BASE + 0x14)
-#define MLXSW_PCI_CIR_CTRL			(MLXSW_PCI_CIR_BASE + 0x18)
-#define MLXSW_PCI_CIR_CTRL_GO_BIT		BIT(23)
-#define MLXSW_PCI_CIR_CTRL_EVREQ_BIT		BIT(22)
-#define MLXSW_PCI_CIR_CTRL_OPCODE_MOD_SHIFT	12
-#define MLXSW_PCI_CIR_CTRL_STATUS_SHIFT		24
-#define MLXSW_PCI_CIR_TIMEOUT_MSECS		1000
+int mlxsw_pci_driver_register(struct pci_driver *pci_driver);
+void mlxsw_pci_driver_unregister(struct pci_driver *pci_driver);
 
-#define MLXSW_PCI_SW_RESET			0xF0010
-#define MLXSW_PCI_SW_RESET_RST_BIT		BIT(0)
-#define MLXSW_PCI_SW_RESET_TIMEOUT_MSECS	5000
-#define MLXSW_PCI_FW_READY			0xA1844
-#define MLXSW_PCI_FW_READY_MASK			0xFF
-#define MLXSW_PCI_FW_READY_MAGIC		0x5E
+#else
 
-#define MLXSW_PCI_DOORBELL_SDQ_OFFSET		0x000
-#define MLXSW_PCI_DOORBELL_RDQ_OFFSET		0x200
-#define MLXSW_PCI_DOORBELL_CQ_OFFSET		0x400
-#define MLXSW_PCI_DOORBELL_EQ_OFFSET		0x600
-#define MLXSW_PCI_DOORBELL_ARM_CQ_OFFSET	0x800
-#define MLXSW_PCI_DOORBELL_ARM_EQ_OFFSET	0xA00
+static inline int
+mlxsw_pci_driver_register(struct pci_driver *pci_driver)
+{
+	return 0;
+}
 
-#define MLXSW_PCI_DOORBELL(offset, type_offset, num)	\
-	((offset) + (type_offset) + (num) * 4)
+static inline void
+mlxsw_pci_driver_unregister(struct pci_driver *pci_driver)
+{
+}
 
+<<<<<<< HEAD
 #define MLXSW_PCI_CQS_MAX	96
 #define MLXSW_PCI_EQS_COUNT	2
 #define MLXSW_PCI_EQ_ASYNC_NUM	0
@@ -227,5 +213,8 @@ MLXSW_ITEM32(pci, eqe, cmd_out_param_h, 0x04, 0, 32);
  * Command completion event - output parameter - lower part
  */
 MLXSW_ITEM32(pci, eqe, cmd_out_param_l, 0x08, 0, 32);
+=======
+#endif
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #endif

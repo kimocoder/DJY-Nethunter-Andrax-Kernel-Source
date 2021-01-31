@@ -150,6 +150,13 @@ config TEGRA_ACONNECT
 	  Driver for the Tegra ACONNECT bus which is used to interface with
 	  the devices inside the Audio Processing Engine (APE) for Tegra210.
 
+config TEGRA_GMI
+	tristate "Tegra Generic Memory Interface bus driver"
+	depends on ARCH_TEGRA
+	help
+	  Driver for the Tegra Generic Memory Interface bus which can be used
+	  to attach devices such as NOR, UART, FPGA and more.
+
 config UNIPHIER_SYSTEM_BUS
 	tristate "UniPhier System Bus driver"
 	depends on ARCH_UNIPHIER && OF
@@ -168,6 +175,7 @@ config VEXPRESS_CONFIG
 	  Platform configuration infrastructure for the ARM Ltd.
 	  Versatile Express.
 
+<<<<<<< HEAD
 config MHI_BUS
         tristate "Modem Host Interface"
         help
@@ -187,5 +195,14 @@ config MHI_DEBUG
 
 source drivers/bus/mhi/controllers/Kconfig
 source drivers/bus/mhi/devices/Kconfig
+=======
+config DA8XX_MSTPRI
+	bool "TI da8xx master peripheral priority driver"
+	depends on ARCH_DAVINCI_DA8XX
+	help
+	  Driver for Texas Instruments da8xx master peripheral priority
+	  configuration. Allows to adjust the priorities of all master
+	  peripherals.
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 endmenu

@@ -2507,6 +2507,7 @@ xfs_agf_verify(
 	      be32_to_cpu(agf->agf_flcount) <= XFS_AGFL_SIZE(mp)))
 		return false;
 
+<<<<<<< HEAD
 	if (be32_to_cpu(agf->agf_length) > mp->m_sb.sb_dblocks)
 		return false;
 
@@ -2514,6 +2515,8 @@ xfs_agf_verify(
 	    be32_to_cpu(agf->agf_freeblks) > be32_to_cpu(agf->agf_length))
 		return false;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (be32_to_cpu(agf->agf_levels[XFS_BTNUM_BNO]) < 1 ||
 	    be32_to_cpu(agf->agf_levels[XFS_BTNUM_CNT]) < 1 ||
 	    be32_to_cpu(agf->agf_levels[XFS_BTNUM_BNO]) > XFS_BTREE_MAXLEVELS ||
@@ -2523,10 +2526,13 @@ xfs_agf_verify(
 	if (xfs_sb_version_hasrmapbt(&mp->m_sb) &&
 	    (be32_to_cpu(agf->agf_levels[XFS_BTNUM_RMAP]) < 1 ||
 	     be32_to_cpu(agf->agf_levels[XFS_BTNUM_RMAP]) > XFS_BTREE_MAXLEVELS))
+<<<<<<< HEAD
 		return false;
 
 	if (xfs_sb_version_hasrmapbt(&mp->m_sb) &&
 	    be32_to_cpu(agf->agf_rmap_blocks) > be32_to_cpu(agf->agf_length))
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		return false;
 
 	/*
@@ -2543,11 +2549,14 @@ xfs_agf_verify(
 		return false;
 
 	if (xfs_sb_version_hasreflink(&mp->m_sb) &&
+<<<<<<< HEAD
 	    be32_to_cpu(agf->agf_refcount_blocks) >
 	    be32_to_cpu(agf->agf_length))
 		return false;
 
 	if (xfs_sb_version_hasreflink(&mp->m_sb) &&
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	    (be32_to_cpu(agf->agf_refcount_level) < 1 ||
 	     be32_to_cpu(agf->agf_refcount_level) > XFS_BTREE_MAXLEVELS))
 		return false;

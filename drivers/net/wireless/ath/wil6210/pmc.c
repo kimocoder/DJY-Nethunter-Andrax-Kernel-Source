@@ -86,6 +86,29 @@ void wil_pmc_alloc(struct wil6210_priv *wil,
 		last_cmd_err = -EINVAL;
 		goto no_release_err;
 	}
+	if ((num_descriptors <= 0) || (descriptor_size <= 0)) {
+		wil_err(wil,
+			"Invalid params num_descriptors(%d), descriptor_size(%d)\n",
+			num_descriptors, descriptor_size);
+		last_cmd_err = -EINVAL;
+		goto no_release_err;
+	}
+
+	if (num_descriptors > (1 << WIL_RING_SIZE_ORDER_MAX)) {
+		wil_err(wil,
+			"num_descriptors(%d) exceeds max ring size %d\n",
+			num_descriptors, 1 << WIL_RING_SIZE_ORDER_MAX);
+		last_cmd_err = -EINVAL;
+		goto no_release_err;
+	}
+
+	if (num_descriptors > INT_MAX / descriptor_size) {
+		wil_err(wil,
+			"Overflow in num_descriptors(%d)*descriptor_size(%d)\n",
+			num_descriptors, descriptor_size);
+		last_cmd_err = -EINVAL;
+		goto no_release_err;
+	}
 
 	pmc->num_descriptors = num_descriptors;
 	pmc->descriptor_size = descriptor_size;

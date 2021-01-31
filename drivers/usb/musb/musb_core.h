@@ -626,10 +626,18 @@ static inline void musb_platform_post_root_reset_end(struct musb *musb)
 		musb->ops->post_root_reset_end(musb);
 }
 
+<<<<<<< HEAD
 static inline void musb_platform_clear_ep_rxintr(struct musb *musb, int epnum)
 {
 	if (musb->ops->clear_ep_rxintr)
 		musb->ops->clear_ep_rxintr(musb, epnum);
 }
+=======
+/*
+ * gets the "dr_mode" property from DT and converts it into musb_mode
+ * if the property is not found or not recognized returns MUSB_OTG
+ */
+extern enum musb_mode musb_get_mode(struct device *dev);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #endif	/* __MUSB_CORE_H__ */

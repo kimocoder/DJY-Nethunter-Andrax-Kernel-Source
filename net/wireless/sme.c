@@ -477,6 +477,17 @@ void cfg80211_sme_abandon_assoc(struct wireless_dev *wdev)
 	schedule_work(&rdev->conn_work);
 }
 
+void cfg80211_sme_abandon_assoc(struct wireless_dev *wdev)
+{
+	struct cfg80211_registered_device *rdev = wiphy_to_rdev(wdev->wiphy);
+
+	if (!wdev->conn)
+		return;
+
+	wdev->conn->state = CFG80211_CONN_ABANDON;
+	schedule_work(&rdev->conn_work);
+}
+
 static int cfg80211_sme_get_conn_ies(struct wireless_dev *wdev,
 				     const u8 *ies, size_t ies_len,
 				     const u8 **out_ies, size_t *out_ies_len)
@@ -1192,7 +1203,7 @@ int cfg80211_disconnect(struct cfg80211_registered_device *rdev,
 		err = cfg80211_sme_disconnect(wdev, reason);
 	else if (!rdev->ops->disconnect)
 		cfg80211_mlme_down(rdev, dev);
-	else if (wdev->current_bss)
+	else if (wdev->ssid_len)
 		err = rdev_disconnect(rdev, dev, reason);
 
 	/*

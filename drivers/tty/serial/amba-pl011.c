@@ -2351,8 +2351,13 @@ static int pl011_console_setup(struct console *co, char *options)
  *
  *	Returns 0 if console matches; otherwise non-zero to use default matching
  */
+<<<<<<< HEAD
 static int pl011_console_match(struct console *co, char *name, int idx,
 			       char *options)
+=======
+static int __init pl011_console_match(struct console *co, char *name, int idx,
+				      char *options)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	unsigned char iotype;
 	resource_size_t addr;
@@ -2430,6 +2435,7 @@ static int __init pl011_early_console_setup(struct earlycon_device *device,
 	return 0;
 }
 OF_EARLYCON_DECLARE(pl011, "arm,pl011", pl011_early_console_setup);
+OF_EARLYCON_DECLARE(pl011, "arm,sbsa-uart", pl011_early_console_setup);
 
 #else
 #define AMBA_CONSOLE	NULL

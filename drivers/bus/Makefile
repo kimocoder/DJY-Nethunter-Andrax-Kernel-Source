@@ -19,6 +19,12 @@ obj-$(CONFIG_QCOM_EBI2)		+= qcom-ebi2.o
 obj-$(CONFIG_SUNXI_RSB)		+= sunxi-rsb.o
 obj-$(CONFIG_SIMPLE_PM_BUS)	+= simple-pm-bus.o
 obj-$(CONFIG_TEGRA_ACONNECT)	+= tegra-aconnect.o
+obj-$(CONFIG_TEGRA_GMI)		+= tegra-gmi.o
 obj-$(CONFIG_UNIPHIER_SYSTEM_BUS)	+= uniphier-system-bus.o
 obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o
+<<<<<<< HEAD
 obj-$(CONFIG_MHI_BUS)	+= mhi/
+=======
+
+obj-$(CONFIG_DA8XX_MSTPRI)	+= da8xx-mstpri.o
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

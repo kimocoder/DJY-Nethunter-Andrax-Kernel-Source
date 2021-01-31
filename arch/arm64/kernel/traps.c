@@ -269,8 +269,12 @@ static unsigned int die_nest_count;
 
 static unsigned long oops_begin(void)
 {
+<<<<<<< HEAD
 	int cpu;
 	unsigned long flags;
+=======
+	int ret;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	oops_enter();
 
@@ -287,11 +291,16 @@ static unsigned long oops_begin(void)
 	die_owner = cpu;
 	console_verbose();
 	bust_spinlocks(1);
+<<<<<<< HEAD
 	return flags;
 }
 
 static void oops_end(unsigned long flags, struct pt_regs *regs, int notify)
 {
+=======
+	ret = __die(str, err, regs);
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (regs && kexec_should_crash(current))
 		crash_kexec(regs);
 
@@ -481,7 +490,11 @@ int cpu_enable_cache_maint_trap(void *__unused)
 }
 
 #define __user_cache_maint(insn, address, res)			\
+<<<<<<< HEAD
 	if (address >= user_addr_max()) {			\
+=======
+	if (untagged_addr(address) >= user_addr_max()) {	\
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		res = -EFAULT;					\
 	} else {						\
 		uaccess_ttbr0_enable();				\

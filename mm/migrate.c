@@ -187,6 +187,8 @@ void putback_movable_pages(struct list_head *l)
 			dec_node_page_state(page, NR_ISOLATED_ANON +
 					page_is_file_cache(page));
 			putback_lru_page(page);
+			dec_node_page_state(page, NR_ISOLATED_ANON +
+					page_is_file_cache(page));
 		}
 	}
 }
@@ -467,13 +469,15 @@ int migrate_page_move_mapping(struct address_space *mapping,
 	 */
 	newpage->index = page->index;
 	newpage->mapping = page->mapping;
-	if (PageSwapBacked(page))
-		__SetPageSwapBacked(newpage);
-
 	get_page(newpage);	/* add cache reference */
-	if (PageSwapCache(page)) {
-		SetPageSwapCache(newpage);
-		set_page_private(newpage, page_private(page));
+	if (PageSwapBacked(page)) {
+		__SetPageSwapBacked(newpage);
+		if (PageSwapCache(page)) {
+			SetPageSwapCache(newpage);
+			set_page_private(newpage, page_private(page));
+		}
+	} else {
+		VM_BUG_ON_PAGE(PageSwapCache(page), page);
 	}
 
 	/* Move dirty while page refs frozen and newpage not yet exposed */
@@ -483,7 +487,7 @@ int migrate_page_move_mapping(struct address_space *mapping,
 		SetPageDirty(newpage);
 	}
 
-	radix_tree_replace_slot(pslot, newpage);
+	radix_tree_replace_slot(&mapping->page_tree, pslot, newpage);
 
 	/*
 	 * Drop cache reference from old page by unfreezing
@@ -557,7 +561,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
 
 	get_page(newpage);
 
-	radix_tree_replace_slot(pslot, newpage);
+	radix_tree_replace_slot(&mapping->page_tree, pslot, newpage);
 
 	page_ref_unfreeze(page, expected_count - 1);
 

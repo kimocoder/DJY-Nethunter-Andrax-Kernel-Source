@@ -8,9 +8,12 @@
 # asflags-y += -I $(srctree)/include/asm/arch/mach/ -I $(srctree)/include/asm/arch
 # LD = gcc-cris -mlinux -march=v32 -nostdlib
 
+<<<<<<< HEAD
 asflags-y += $(LINUXINCLUDE)
 ccflags-y += -O2 $(LINUXINCLUDE)
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 ifdef CONFIG_ETRAX_AXISFLASHMAP
 
 arch-$(CONFIG_ETRAX_ARCH_V10) = v10

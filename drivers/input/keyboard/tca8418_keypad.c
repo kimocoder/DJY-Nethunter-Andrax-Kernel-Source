@@ -189,6 +189,11 @@ static void tca8418_read_keypad(struct tca8418_keypad *keypad_data)
 		input_event(input, EV_MSC, MSC_SCAN, code);
 		input_report_key(input, keymap[code], state);
 
+<<<<<<< HEAD
+=======
+		/* Read for next loop */
+		error = tca8418_read_byte(keypad_data, REG_KEY_EVENT_A, &reg);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	} while (1);
 
 	input_sync(input);

@@ -266,6 +266,7 @@ static int ast_get_dram_info(struct drm_device *dev)
 	uint32_t mcr_cfg, mcr_scu_mpll, mcr_scu_strap;
 	uint32_t denum, num, div, ref_pll, dsel;
 
+<<<<<<< HEAD
 	switch (ast->config_mode) {
 	case ast_use_dt:
 		/*
@@ -296,6 +297,13 @@ static int ast_get_dram_info(struct drm_device *dev)
 		ast->mclk = 396;
 		return 0;
 	}
+=======
+	do {
+		if (pci_channel_offline(dev->pdev))
+			return -EIO;
+	} while (ast_read32(ast, 0x10000) != 0x01);
+	data = ast_read32(ast, 0x10004);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (mcr_cfg & 0x40)
 		ast->dram_bus_width = 16;

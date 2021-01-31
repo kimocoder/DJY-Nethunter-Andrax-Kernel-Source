@@ -473,9 +473,13 @@ static const struct file_operations psb_gem_fops = {
 	.open = drm_open,
 	.release = drm_release,
 	.unlocked_ioctl = psb_unlocked_ioctl,
+<<<<<<< HEAD
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = drm_compat_ioctl,
 #endif
+=======
+	.compat_ioctl = drm_compat_ioctl,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	.mmap = drm_gem_mmap,
 	.poll = drm_poll,
 	.read = drm_read,

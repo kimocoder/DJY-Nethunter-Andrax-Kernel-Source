@@ -1206,13 +1206,21 @@ afunc_bind(struct usb_configuration *cfg, struct usb_function *fn)
 	agdev->out_ep = usb_ep_autoconfig(gadget, &fs_epout_desc);
 	if (!agdev->out_ep) {
 		dev_err(dev, "%s:%d Error!\n", __func__, __LINE__);
+<<<<<<< HEAD
 		return -ENODEV;
+=======
+		return ret;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	agdev->in_ep = usb_ep_autoconfig(gadget, &fs_epin_desc);
 	if (!agdev->in_ep) {
 		dev_err(dev, "%s:%d Error!\n", __func__, __LINE__);
+<<<<<<< HEAD
 		return -ENODEV;
+=======
+		return ret;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	uac2->p_prm.uac2 = uac2;

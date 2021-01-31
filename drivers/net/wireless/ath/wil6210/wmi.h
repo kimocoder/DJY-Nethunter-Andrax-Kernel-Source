@@ -37,11 +37,14 @@
 #define WMI_PROX_RANGE_NUM		(3)
 #define WMI_MAX_LOSS_DMG_BEACONS	(20)
 #define MAX_NUM_OF_SECTORS		(128)
+<<<<<<< HEAD
 #define WMI_SCHED_MAX_ALLOCS_PER_CMD	(4)
 #define WMI_RF_DTYPE_LENGTH		(3)
 #define WMI_RF_ETYPE_LENGTH		(3)
 #define WMI_RF_RX2TX_LENGTH		(3)
 #define WMI_RF_ETYPE_VAL_PER_RANGE	(5)
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* Mailbox interface
  * used for commands and events
@@ -58,6 +61,7 @@ enum wmi_mid {
  * the host
  */
 enum wmi_fw_capability {
+<<<<<<< HEAD
 	WMI_FW_CAPABILITY_FTM				= 0,
 	WMI_FW_CAPABILITY_PS_CONFIG			= 1,
 	WMI_FW_CAPABILITY_RF_SECTORS			= 2,
@@ -75,6 +79,12 @@ enum wmi_fw_capability {
 	WMI_FW_CAPABILITY_PNO				= 15,
 	WMI_FW_CAPABILITY_CONNECT_SNR_THR		= 16,
 	WMI_FW_CAPABILITY_REF_CLOCK_CONTROL		= 18,
+=======
+	WMI_FW_CAPABILITY_FTM			= 0,
+	WMI_FW_CAPABILITY_PS_CONFIG		= 1,
+	WMI_FW_CAPABILITY_RF_SECTORS		= 2,
+	WMI_FW_CAPABILITY_MGMT_RETRY_LIMIT	= 3,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_FW_CAPABILITY_MAX,
 };
 
@@ -91,12 +101,18 @@ enum wmi_command_id {
 	WMI_CONNECT_CMDID				= 0x01,
 	WMI_DISCONNECT_CMDID				= 0x03,
 	WMI_DISCONNECT_STA_CMDID			= 0x04,
+<<<<<<< HEAD
 	WMI_START_SCHED_SCAN_CMDID			= 0x05,
 	WMI_STOP_SCHED_SCAN_CMDID			= 0x06,
 	WMI_START_SCAN_CMDID				= 0x07,
 	WMI_SET_BSS_FILTER_CMDID			= 0x09,
 	WMI_SET_PROBED_SSID_CMDID			= 0x0A,
 	/* deprecated */
+=======
+	WMI_START_SCAN_CMDID				= 0x07,
+	WMI_SET_BSS_FILTER_CMDID			= 0x09,
+	WMI_SET_PROBED_SSID_CMDID			= 0x0A,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_SET_LISTEN_INT_CMDID			= 0x0B,
 	WMI_BCON_CTRL_CMDID				= 0x0F,
 	WMI_ADD_CIPHER_KEY_CMDID			= 0x16,
@@ -111,6 +127,7 @@ enum wmi_command_id {
 	WMI_ECHO_CMDID					= 0x803,
 	WMI_DEEP_ECHO_CMDID				= 0x804,
 	WMI_CONFIG_MAC_CMDID				= 0x805,
+<<<<<<< HEAD
 	/* deprecated */
 	WMI_CONFIG_PHY_DEBUG_CMDID			= 0x806,
 	WMI_ADD_DEBUG_TX_PCKT_CMDID			= 0x808,
@@ -118,10 +135,17 @@ enum wmi_command_id {
 	/* deprecated */
 	WMI_FS_TUNE_CMDID				= 0x80A,
 	/* deprecated */
+=======
+	WMI_CONFIG_PHY_DEBUG_CMDID			= 0x806,
+	WMI_ADD_DEBUG_TX_PCKT_CMDID			= 0x808,
+	WMI_PHY_GET_STATISTICS_CMDID			= 0x809,
+	WMI_FS_TUNE_CMDID				= 0x80A,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_CORR_MEASURE_CMDID				= 0x80B,
 	WMI_READ_RSSI_CMDID				= 0x80C,
 	WMI_TEMP_SENSE_CMDID				= 0x80E,
 	WMI_DC_CALIB_CMDID				= 0x80F,
+<<<<<<< HEAD
 	/* deprecated */
 	WMI_SEND_TONE_CMDID				= 0x810,
 	/* deprecated */
@@ -133,6 +157,20 @@ enum wmi_command_id {
 	WMI_LO_POWER_CALIB_FROM_OTP_CMDID		= 0x817,
 	WMI_SILENT_RSSI_CALIB_CMDID			= 0x81D,
 	/* deprecated */
+=======
+	WMI_SEND_TONE_CMDID				= 0x810,
+	WMI_IQ_TX_CALIB_CMDID				= 0x811,
+	WMI_IQ_RX_CALIB_CMDID				= 0x812,
+	WMI_SET_UCODE_IDLE_CMDID			= 0x813,
+	WMI_SET_WORK_MODE_CMDID				= 0x815,
+	WMI_LO_LEAKAGE_CALIB_CMDID			= 0x816,
+	WMI_MARLON_R_READ_CMDID				= 0x818,
+	WMI_MARLON_R_WRITE_CMDID			= 0x819,
+	WMI_MARLON_R_TXRX_SEL_CMDID			= 0x81A,
+	MAC_IO_STATIC_PARAMS_CMDID			= 0x81B,
+	MAC_IO_DYNAMIC_PARAMS_CMDID			= 0x81C,
+	WMI_SILENT_RSSI_CALIB_CMDID			= 0x81D,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_RF_RX_TEST_CMDID				= 0x81E,
 	WMI_CFG_RX_CHAIN_CMDID				= 0x820,
 	WMI_VRING_CFG_CMDID				= 0x821,
@@ -146,6 +184,14 @@ enum wmi_command_id {
 	WMI_SET_PCP_CHANNEL_CMDID			= 0x829,
 	WMI_GET_PCP_CHANNEL_CMDID			= 0x82A,
 	WMI_SW_TX_REQ_CMDID				= 0x82B,
+<<<<<<< HEAD
+=======
+	WMI_READ_MAC_RXQ_CMDID				= 0x830,
+	WMI_READ_MAC_TXQ_CMDID				= 0x831,
+	WMI_WRITE_MAC_RXQ_CMDID				= 0x832,
+	WMI_WRITE_MAC_TXQ_CMDID				= 0x833,
+	WMI_WRITE_MAC_XQ_FIELD_CMDID			= 0x834,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_MLME_PUSH_CMDID				= 0x835,
 	WMI_BEAMFORMING_MGMT_CMDID			= 0x836,
 	WMI_BF_TXSS_MGMT_CMDID				= 0x837,
@@ -159,6 +205,7 @@ enum wmi_command_id {
 	WMI_MAINTAIN_RESUME_CMDID			= 0x851,
 	WMI_RS_MGMT_CMDID				= 0x852,
 	WMI_RF_MGMT_CMDID				= 0x853,
+<<<<<<< HEAD
 	WMI_RF_XPM_READ_CMDID				= 0x856,
 	WMI_RF_XPM_WRITE_CMDID				= 0x857,
 	WMI_LED_CFG_CMDID				= 0x858,
@@ -166,6 +213,13 @@ enum wmi_command_id {
 	WMI_SET_ACTIVE_SILENT_RSSI_TABLE_CMDID		= 0x85C,
 	WMI_RF_PWR_ON_DELAY_CMDID			= 0x85D,
 	WMI_SET_HIGH_POWER_TABLE_PARAMS_CMDID		= 0x85E,
+=======
+	WMI_THERMAL_THROTTLING_CTRL_CMDID		= 0x854,
+	WMI_THERMAL_THROTTLING_GET_STATUS_CMDID		= 0x855,
+	WMI_OTP_READ_CMDID				= 0x856,
+	WMI_OTP_WRITE_CMDID				= 0x857,
+	WMI_LED_CFG_CMDID				= 0x858,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* Performance monitoring commands */
 	WMI_BF_CTRL_CMDID				= 0x862,
 	WMI_NOTIFY_REQ_CMDID				= 0x863,
@@ -173,10 +227,18 @@ enum wmi_command_id {
 	WMI_GET_RF_STATUS_CMDID				= 0x866,
 	WMI_GET_BASEBAND_TYPE_CMDID			= 0x867,
 	WMI_UNIT_TEST_CMDID				= 0x900,
+<<<<<<< HEAD
 	WMI_FLASH_READ_CMDID				= 0x902,
 	WMI_FLASH_WRITE_CMDID				= 0x903,
 	/* Power management */
 	WMI_TRAFFIC_SUSPEND_CMDID			= 0x904,
+=======
+	WMI_HICCUP_CMDID				= 0x901,
+	WMI_FLASH_READ_CMDID				= 0x902,
+	WMI_FLASH_WRITE_CMDID				= 0x903,
+	/* Power management */
+	WMI_TRAFFIC_DEFERRAL_CMDID			= 0x904,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_TRAFFIC_RESUME_CMDID			= 0x905,
 	/* P2P */
 	WMI_P2P_CFG_CMDID				= 0x910,
@@ -192,6 +254,7 @@ enum wmi_command_id {
 	WMI_GET_PCP_FACTOR_CMDID			= 0x91B,
 	/* Power Save Configuration Commands */
 	WMI_PS_DEV_PROFILE_CFG_CMDID			= 0x91C,
+<<<<<<< HEAD
 	WMI_RS_CFG_CMDID				= 0x921,
 	WMI_GET_DETAILED_RS_RES_CMDID			= 0x922,
 	WMI_AOA_MEAS_CMDID				= 0x923,
@@ -204,14 +267,37 @@ enum wmi_command_id {
 	WMI_GET_THERMAL_THROTTLING_CFG_CMDID		= 0x941,
 	/* Read Power Save profile type */
 	WMI_PS_DEV_PROFILE_CFG_READ_CMDID		= 0x942,
+=======
+	/* Not supported yet */
+	WMI_PS_DEV_CFG_CMDID				= 0x91D,
+	/* Not supported yet */
+	WMI_PS_DEV_CFG_READ_CMDID			= 0x91E,
+	/* Per MAC Power Save Configuration commands
+	 * Not supported yet
+	 */
+	WMI_PS_MID_CFG_CMDID				= 0x91F,
+	/* Not supported yet */
+	WMI_PS_MID_CFG_READ_CMDID			= 0x920,
+	WMI_RS_CFG_CMDID				= 0x921,
+	WMI_GET_DETAILED_RS_RES_CMDID			= 0x922,
+	WMI_AOA_MEAS_CMDID				= 0x923,
+	WMI_SET_MGMT_RETRY_LIMIT_CMDID			= 0x930,
+	WMI_GET_MGMT_RETRY_LIMIT_CMDID			= 0x931,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_TOF_SESSION_START_CMDID			= 0x991,
 	WMI_TOF_GET_CAPABILITIES_CMDID			= 0x992,
 	WMI_TOF_SET_LCR_CMDID				= 0x993,
 	WMI_TOF_SET_LCI_CMDID				= 0x994,
+<<<<<<< HEAD
 	WMI_TOF_CFG_RESPONDER_CMDID			= 0x996,
 	WMI_TOF_SET_TX_RX_OFFSET_CMDID			= 0x997,
 	WMI_TOF_GET_TX_RX_OFFSET_CMDID			= 0x998,
 	WMI_TOF_CHANNEL_INFO_CMDID			= 0x999,
+=======
+	WMI_TOF_CHANNEL_INFO_CMDID			= 0x995,
+	WMI_TOF_SET_TX_RX_OFFSET_CMDID			= 0x997,
+	WMI_TOF_GET_TX_RX_OFFSET_CMDID			= 0x998,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_GET_RF_SECTOR_PARAMS_CMDID			= 0x9A0,
 	WMI_SET_RF_SECTOR_PARAMS_CMDID			= 0x9A1,
 	WMI_GET_SELECTED_RF_SECTOR_INDEX_CMDID		= 0x9A2,
@@ -220,6 +306,7 @@ enum wmi_command_id {
 	WMI_PRIO_TX_SECTORS_ORDER_CMDID			= 0x9A5,
 	WMI_PRIO_TX_SECTORS_NUMBER_CMDID		= 0x9A6,
 	WMI_PRIO_TX_SECTORS_SET_DEFAULT_CFG_CMDID	= 0x9A7,
+<<<<<<< HEAD
 	WMI_SCHEDULING_SCHEME_CMDID			= 0xA01,
 	WMI_FIXED_SCHEDULING_CONFIG_CMDID		= 0xA02,
 	WMI_ENABLE_FIXED_SCHEDULING_CMDID		= 0xA03,
@@ -235,6 +322,14 @@ enum wmi_command_id {
 	/* deprecated */
 	WMI_SEND_ASSOC_RES_CMDID			= 0xF04A,
 	/* deprecated */
+=======
+	WMI_SET_MAC_ADDRESS_CMDID			= 0xF003,
+	WMI_ABORT_SCAN_CMDID				= 0xF007,
+	WMI_SET_PROMISCUOUS_MODE_CMDID			= 0xF041,
+	WMI_GET_PMK_CMDID				= 0xF048,
+	WMI_SET_PASSPHRASE_CMDID			= 0xF049,
+	WMI_SEND_ASSOC_RES_CMDID			= 0xF04A,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_SET_ASSOC_REQ_RELAY_CMDID			= 0xF04B,
 	WMI_MAC_ADDR_REQ_CMDID				= 0xF04D,
 	WMI_FW_VER_CMDID				= 0xF04E,
@@ -1054,6 +1149,7 @@ struct wmi_set_mgmt_retry_limit_cmd {
 	u8 reserved[3];
 } __packed;
 
+<<<<<<< HEAD
 /* Zones: HIGH, MAX, CRITICAL */
 #define WMI_NUM_OF_TT_ZONES	(3)
 
@@ -1099,6 +1195,8 @@ struct wmi_del_sta_cmd {
 	__le16 disconnect_reason;
 } __packed;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 enum wmi_tof_burst_duration {
 	WMI_TOF_BURST_DURATION_250_USEC		= 2,
 	WMI_TOF_BURST_DURATION_500_USEC		= 3,
@@ -1175,6 +1273,7 @@ struct wmi_tof_set_tx_rx_offset_cmd {
 	__le32 tx_offset;
 	/* RX delay offset */
 	__le32 rx_offset;
+<<<<<<< HEAD
 	/* Mask to define which RFs to configure. 0 means all RFs */
 	__le32 rf_mask;
 	/* Offset to strongest tap of CIR */
@@ -1268,6 +1367,9 @@ struct wmi_set_long_range_config_complete_event {
 	/* wmi_fw_status */
 	u8 status;
 	u8 reserved[3];
+=======
+	__le32 reserved[2];
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 } __packed;
 
 /* WMI Events
@@ -1359,6 +1461,7 @@ enum wmi_event_id {
 	WMI_RS_CFG_DONE_EVENTID				= 0x1921,
 	WMI_GET_DETAILED_RS_RES_EVENTID			= 0x1922,
 	WMI_AOA_MEAS_EVENTID				= 0x1923,
+<<<<<<< HEAD
 	WMI_BRP_SET_ANT_LIMIT_EVENTID			= 0x1924,
 	WMI_SET_MGMT_RETRY_LIMIT_EVENTID		= 0x1930,
 	WMI_GET_MGMT_RETRY_LIMIT_EVENTID		= 0x1931,
@@ -1366,15 +1469,25 @@ enum wmi_event_id {
 	WMI_GET_THERMAL_THROTTLING_CFG_EVENTID		= 0x1941,
 	/* return the Power Save profile */
 	WMI_PS_DEV_PROFILE_CFG_READ_EVENTID		= 0x1942,
+=======
+	WMI_SET_MGMT_RETRY_LIMIT_EVENTID		= 0x1930,
+	WMI_GET_MGMT_RETRY_LIMIT_EVENTID		= 0x1931,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_TOF_SESSION_END_EVENTID			= 0x1991,
 	WMI_TOF_GET_CAPABILITIES_EVENTID		= 0x1992,
 	WMI_TOF_SET_LCR_EVENTID				= 0x1993,
 	WMI_TOF_SET_LCI_EVENTID				= 0x1994,
 	WMI_TOF_FTM_PER_DEST_RES_EVENTID		= 0x1995,
+<<<<<<< HEAD
 	WMI_TOF_CFG_RESPONDER_EVENTID			= 0x1996,
 	WMI_TOF_SET_TX_RX_OFFSET_EVENTID		= 0x1997,
 	WMI_TOF_GET_TX_RX_OFFSET_EVENTID		= 0x1998,
 	WMI_TOF_CHANNEL_INFO_EVENTID			= 0x1999,
+=======
+	WMI_TOF_CHANNEL_INFO_EVENTID			= 0x1996,
+	WMI_TOF_SET_TX_RX_OFFSET_EVENTID		= 0x1997,
+	WMI_TOF_GET_TX_RX_OFFSET_EVENTID		= 0x1998,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_GET_RF_SECTOR_PARAMS_DONE_EVENTID		= 0x19A0,
 	WMI_SET_RF_SECTOR_PARAMS_DONE_EVENTID		= 0x19A1,
 	WMI_GET_SELECTED_RF_SECTOR_INDEX_DONE_EVENTID	= 0x19A2,
@@ -1383,12 +1496,15 @@ enum wmi_event_id {
 	WMI_PRIO_TX_SECTORS_ORDER_EVENTID		= 0x19A5,
 	WMI_PRIO_TX_SECTORS_NUMBER_EVENTID		= 0x19A6,
 	WMI_PRIO_TX_SECTORS_SET_DEFAULT_CFG_EVENTID	= 0x19A7,
+<<<<<<< HEAD
 	WMI_SCHEDULING_SCHEME_EVENTID			= 0x1A01,
 	WMI_FIXED_SCHEDULING_CONFIG_COMPLETE_EVENTID	= 0x1A02,
 	WMI_ENABLE_FIXED_SCHEDULING_COMPLETE_EVENTID	= 0x1A03,
 	WMI_SET_MULTI_DIRECTED_OMNIS_CONFIG_EVENTID	= 0x1A04,
 	WMI_SET_LONG_RANGE_CONFIG_COMPLETE_EVENTID	= 0x1A05,
 	WMI_SET_VR_PROFILE_EVENTID			= 0x1A09,
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	WMI_SET_CHANNEL_EVENTID				= 0x9000,
 	WMI_ASSOC_REQ_EVENTID				= 0x9001,
 	WMI_EAPOL_RX_EVENTID				= 0x9002,
@@ -2650,15 +2766,23 @@ struct wmi_tof_set_tx_rx_offset_event {
 struct wmi_tof_get_tx_rx_offset_event {
 	/* enum wmi_fw_status */
 	u8 status;
+<<<<<<< HEAD
 	/* RF index used to read the offsets */
 	u8 rf_index;
 	u8 reserved1[2];
+=======
+	u8 reserved1[3];
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* TX delay offset */
 	__le32 tx_offset;
 	/* RX delay offset */
 	__le32 rx_offset;
+<<<<<<< HEAD
 	/* Offset to strongest tap of CIR */
 	__le32 precursor;
+=======
+	__le32 reserved2[2];
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 } __packed;
 
 /* Result status codes for WMI commands */
@@ -2921,6 +3045,7 @@ struct wmi_prio_tx_sectors_set_default_cfg_event {
 	u8 reserved[3];
 } __packed;
 
+<<<<<<< HEAD
 /* WMI_SET_SILENT_RSSI_TABLE_DONE_EVENTID */
 struct wmi_set_silent_rssi_table_done_event {
 	/* enum wmi_silent_rssi_status */
@@ -2966,4 +3091,6 @@ struct wmi_set_vr_profile_event {
 	u8 reserved[3];
 } __packed;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif /* __WILOCITY_WMI_H__ */

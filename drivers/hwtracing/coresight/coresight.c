@@ -640,7 +640,11 @@ int coresight_store_path(struct coresight_device *csdev, struct list_head *path)
 
 int coresight_enable(struct coresight_device *csdev)
 {
+<<<<<<< HEAD
 	int ret = 0;
+=======
+	int cpu, ret = 0;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	struct coresight_device *sink;
 	struct list_head *path;
 	enum coresight_dev_subtype_source subtype;
@@ -674,6 +678,19 @@ int coresight_enable(struct coresight_device *csdev)
 		goto out;
 	}
 
+<<<<<<< HEAD
+=======
+	/*
+	 * Search for a valid sink for this session but don't reset the
+	 * "enable_sink" flag in sysFS.  Users get to do that explicitly.
+	 */
+	sink = coresight_get_enabled_sink(false);
+	if (!sink) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	path = coresight_build_path(csdev, sink);
 	if (IS_ERR(path)) {
 		pr_err("building path(s) failed\n");

@@ -116,7 +116,11 @@
 #define SECTOR_FROM_BLOCK(blk_addr)					\
 	(((sector_t)blk_addr) << F2FS_LOG_SECTORS_PER_BLOCK)
 #define SECTOR_TO_BLOCK(sectors)					\
+<<<<<<< HEAD
 	((sectors) >> F2FS_LOG_SECTORS_PER_BLOCK)
+=======
+	(sectors >> F2FS_LOG_SECTORS_PER_BLOCK)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /*
  * indicate a block allocation direction: RIGHT and LEFT.
@@ -539,11 +543,17 @@ static inline int reserved_sections(struct f2fs_sb_info *sbi)
 
 static inline bool has_curseg_enough_space(struct f2fs_sb_info *sbi)
 {
+<<<<<<< HEAD
 	unsigned int node_blocks = get_pages(sbi, F2FS_DIRTY_NODES) +
 					get_pages(sbi, F2FS_DIRTY_DENTS);
 	unsigned int dent_blocks = get_pages(sbi, F2FS_DIRTY_DENTS);
 	unsigned int segno, left_blocks;
 	int i;
+=======
+	int node_secs = get_blocktype_secs(sbi, F2FS_DIRTY_NODES);
+	int dent_secs = get_blocktype_secs(sbi, F2FS_DIRTY_DENTS);
+	int imeta_secs = get_blocktype_secs(sbi, F2FS_DIRTY_IMETA);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* check current node segment */
 	for (i = CURSEG_HOT_NODE; i <= CURSEG_COLD_NODE; i++) {
@@ -551,6 +561,7 @@ static inline bool has_curseg_enough_space(struct f2fs_sb_info *sbi)
 		left_blocks = sbi->blocks_per_seg -
 			get_seg_entry(sbi, segno)->ckpt_valid_blocks;
 
+<<<<<<< HEAD
 		if (node_blocks > left_blocks)
 			return false;
 	}
@@ -562,6 +573,10 @@ static inline bool has_curseg_enough_space(struct f2fs_sb_info *sbi)
 	if (dent_blocks > left_blocks)
 		return false;
 	return true;
+=======
+	return free_sections(sbi) <= (node_secs + 2 * dent_secs + imeta_secs +
+						reserved_sections(sbi) + 1);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi,
@@ -580,6 +595,7 @@ static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi,
 	return (free_sections(sbi) + freed) <=
 		(node_secs + 2 * dent_secs + imeta_secs +
 		reserved_sections(sbi) + needed);
+<<<<<<< HEAD
 }
 
 static inline int f2fs_is_checkpoint_ready(struct f2fs_sb_info *sbi)
@@ -589,6 +605,8 @@ static inline int f2fs_is_checkpoint_ready(struct f2fs_sb_info *sbi)
 	if (likely(!has_not_enough_free_secs(sbi, 0, 0)))
 		return 0;
 	return -ENOSPC;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static inline bool excess_prefree_segs(struct f2fs_sb_info *sbi)

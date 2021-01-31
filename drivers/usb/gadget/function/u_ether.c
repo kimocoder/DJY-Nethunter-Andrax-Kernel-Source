@@ -186,6 +186,7 @@ module_param(u_ether_rx_pending_thld, uint, 0644);
 
 /* NETWORK DRIVER HOOKUP (to the layer above this driver) */
 
+<<<<<<< HEAD
 static int ueth_change_mtu(struct net_device *net, int new_mtu)
 {
 	if (new_mtu <= ETH_HLEN || new_mtu > GETHER_MAX_ETH_FRAME_LEN)
@@ -214,6 +215,8 @@ static int ueth_change_mtu_ip(struct net_device *net, int new_mtu)
 	return status;
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static void eth_get_drvinfo(struct net_device *net, struct ethtool_drvinfo *p)
 {
 	struct eth_dev *dev = netdev_priv(net);
@@ -292,8 +295,12 @@ rx_submit(struct eth_dev *dev, struct usb_request *req, gfp_t gfp_flags)
 		size = max_t(size_t, size, dev->port_usb->fixed_out_len);
 	spin_unlock_irqrestore(&dev->lock, flags);
 
+<<<<<<< HEAD
 	DBG(dev, "%s: size: %zd\n", __func__, size);
 	skb = alloc_skb(size, gfp_flags);
+=======
+	skb = __netdev_alloc_skb(dev->net, size + NET_IP_ALIGN, gfp_flags);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (skb == NULL) {
 		DBG(dev, "no rx skb\n");
 		goto enomem;
@@ -608,12 +615,18 @@ static void tx_complete(struct usb_ep *ep, struct usb_request *req)
 		/* FALLTHROUGH */
 	case -ECONNRESET:		/* unlink */
 	case -ESHUTDOWN:		/* disconnect etc */
+		dev_kfree_skb_any(skb);
 		break;
 	case 0:
+<<<<<<< HEAD
 		if (!req->zero)
 			dev->net->stats.tx_bytes += req->actual-1;
 		else
 			dev->net->stats.tx_bytes += req->actual;
+=======
+		dev->net->stats.tx_bytes += skb->len;
+		dev_consume_skb_any(skb);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 	dev->net->stats.tx_packets++;
 
@@ -1138,8 +1151,11 @@ static const struct net_device_ops eth_netdev_ops = {
 	.ndo_open		= eth_open,
 	.ndo_stop		= eth_stop,
 	.ndo_start_xmit		= eth_start_xmit,
+<<<<<<< HEAD
 	.ndo_do_ioctl		= ether_ioctl,
 	.ndo_change_mtu		= ueth_change_mtu,
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	.ndo_set_mac_address 	= eth_mac_addr,
 	.ndo_validate_addr	= eth_validate_addr,
 };
@@ -1361,8 +1377,14 @@ struct eth_dev *gether_setup_name(struct usb_gadget *g,
 
 	net->ethtool_ops = &ops;
 
+<<<<<<< HEAD
 	/* set operation mode to eth by default */
 	set_bit(RMNET_MODE_LLP_ETH, &dev->flags);
+=======
+	/* MTU range: 14 - 15412 */
+	net->min_mtu = ETH_HLEN;
+	net->max_mtu = GETHER_MAX_ETH_FRAME_LEN;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	dev->gadget = g;
 	SET_NETDEV_DEV(net, &g->dev);

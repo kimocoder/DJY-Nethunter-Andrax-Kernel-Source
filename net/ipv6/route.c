@@ -64,7 +64,7 @@
 #include <net/l3mdev.h>
 #include <trace/events/fib6.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 
 #ifdef CONFIG_SYSCTL
 #include <linux/sysctl.h>
@@ -521,7 +521,7 @@ static void rt6_probe_deferred(struct work_struct *w)
 		container_of(w, struct __rt6_probe_work, work);
 
 	addrconf_addr_solict_mult(&work->target, &mcaddr);
-	ndisc_send_ns(work->dev, &work->target, &mcaddr, NULL);
+	ndisc_send_ns(work->dev, &work->target, &mcaddr, NULL, 0);
 	dev_put(work->dev);
 	kfree(work);
 }
@@ -1436,10 +1436,15 @@ void ip6_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, __be32 mtu)
 	int oif = sk->sk_bound_dev_if;
 	struct dst_entry *dst;
 
+<<<<<<< HEAD
 	if (!oif && skb->dev)
 		oif = l3mdev_master_ifindex(skb->dev);
 
 	ip6_update_pmtu(skb, sock_net(sk), mtu, oif, sk->sk_mark, sk->sk_uid);
+=======
+	ip6_update_pmtu(skb, sock_net(sk), mtu,
+			sk->sk_bound_dev_if, sk->sk_mark, sk->sk_uid);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	dst = __sk_dst_get(sk);
 	if (!dst || !dst->obsolete ||
@@ -2010,8 +2015,11 @@ static struct rt6_info *ip6_route_info_create(struct fib6_config *cfg)
 			   It is very good, but in some (rare!) circumstances
 			   (SIT, PtP, NBMA NOARP links) it is handy to allow
 			   some exceptions. --ANK
+			   We allow IPv4-mapped nexthops to support RFC4798-type
+			   addressing
 			 */
-			if (!(gwa_type & IPV6_ADDR_UNICAST))
+			if (!(gwa_type & (IPV6_ADDR_UNICAST |
+					  IPV6_ADDR_MAPPED)))
 				goto out;
 
 			if (cfg->fc_table) {
@@ -2789,7 +2797,10 @@ static const struct nla_policy rtm_ipv6_policy[RTA_MAX+1] = {
 	[RTA_ENCAP]		= { .type = NLA_NESTED },
 	[RTA_EXPIRES]		= { .type = NLA_U32 },
 	[RTA_UID]		= { .type = NLA_U32 },
+<<<<<<< HEAD
 	[RTA_TABLE]		= { .type = NLA_U32 },
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 };
 
 static int rtm_to_fib6_config(struct sk_buff *skb, struct nlmsghdr *nlh,

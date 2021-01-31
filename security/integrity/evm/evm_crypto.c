@@ -150,6 +150,7 @@ static void hmac_add_misc(struct shash_desc *desc, struct inode *inode,
 	} hmac_misc;
 
 	memset(&hmac_misc, 0, sizeof(hmac_misc));
+<<<<<<< HEAD
 	/* Don't include the inode or generation number in portable
 	 * signatures
 	 */
@@ -157,6 +158,10 @@ static void hmac_add_misc(struct shash_desc *desc, struct inode *inode,
 		hmac_misc.ino = inode->i_ino;
 		hmac_misc.generation = inode->i_generation;
 	}
+=======
+	hmac_misc.ino = inode->i_ino;
+	hmac_misc.generation = inode->i_generation;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* The hmac uid and gid must be encoded in the initial user
 	 * namespace (not the filesystems user namespace) as encoding
 	 * them in the filesystems user namespace allows an attack

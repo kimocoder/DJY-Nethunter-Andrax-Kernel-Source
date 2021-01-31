@@ -3333,6 +3333,16 @@ int ieee80211_check_combinations(struct ieee80211_sub_if_data *sdata,
 	if (WARN_ON(iftype >= NUM_NL80211_IFTYPES))
 		return -EINVAL;
 
+	if (sdata->vif.type == NL80211_IFTYPE_AP ||
+	    sdata->vif.type == NL80211_IFTYPE_MESH_POINT) {
+		/*
+		 * always passing this is harmless, since it'll be the
+		 * same value that cfg80211 finds if it finds the same
+		 * interface ... and that's always allowed
+		 */
+		params.new_beacon_int = sdata->vif.bss_conf.beacon_int;
+	}
+
 	/* Always allow software iftypes */
 	if (local->hw.wiphy->software_iftypes & BIT(iftype)) {
 		if (radar_detect)
@@ -3459,3 +3469,10 @@ void ieee80211_txq_get_depth(struct ieee80211_txq *txq,
 		*byte_cnt = txqi->tin.backlog_bytes + frag_bytes;
 }
 EXPORT_SYMBOL(ieee80211_txq_get_depth);
+
+const u8 ieee80211_ac_to_qos_mask[IEEE80211_NUM_ACS] = {
+	IEEE80211_WMM_IE_STA_QOSINFO_AC_VO,
+	IEEE80211_WMM_IE_STA_QOSINFO_AC_VI,
+	IEEE80211_WMM_IE_STA_QOSINFO_AC_BE,
+	IEEE80211_WMM_IE_STA_QOSINFO_AC_BK
+};

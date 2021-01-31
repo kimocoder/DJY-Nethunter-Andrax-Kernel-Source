@@ -34,8 +34,12 @@
 #include <linux/mutex.h>
 #include <linux/anon_inodes.h>
 #include <linux/device.h>
+<<<<<<< HEAD
 #include <linux/freezer.h>
 #include <asm/uaccess.h>
+=======
+#include <linux/uaccess.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #include <asm/io.h>
 #include <asm/mman.h>
 #include <linux/atomic.h>

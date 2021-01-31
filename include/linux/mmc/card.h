@@ -96,6 +96,8 @@ struct mmc_ext_csd {
 	u8			raw_ext_csd_cmdq;	/* 15 */
 	u8			raw_ext_csd_cache_ctrl;	/* 33 */
 	bool			ffu_capable;	/* Firmware upgrade support */
+	bool			cmdq_support;	/* Command Queue supported */
+	unsigned int		cmdq_depth;	/* Command Queue depth */
 #define MMC_FIRMWARE_LEN 8
 	u8			fwrev[MMC_FIRMWARE_LEN];  /* FW version */
 	u8			raw_exception_status;	/* 54 */
@@ -228,6 +230,7 @@ struct sdio_func_tuple;
 
 #define SDIO_MAX_FUNCS		7
 
+<<<<<<< HEAD
 enum mmc_blk_status {
 	MMC_BLK_SUCCESS = 0,
 	MMC_BLK_PARTIAL,
@@ -262,6 +265,8 @@ struct mmc_wr_pack_stats {
 	bool print_in_read;
 };
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /* The number of MMC physical partitions.  These consist of:
  * boot partitions (2), general purpose partitions (4) and
  * RPMB partition (1) in MMC v4.4.

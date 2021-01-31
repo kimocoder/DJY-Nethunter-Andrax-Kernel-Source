@@ -531,6 +531,7 @@ void tmc_etr_disable_hw(struct tmc_drvdata *drvdata)
 	CS_LOCK(drvdata->base);
 }
 
+<<<<<<< HEAD
 static int tmc_etr_alloc_mem(struct tmc_drvdata *drvdata)
 {
 	int ret;
@@ -781,6 +782,12 @@ int tmc_etr_bam_init(struct amba_device *adev,
 static int tmc_enable_etr_sink_sysfs(struct coresight_device *csdev)
 {
 	int ret = 0;
+=======
+static int tmc_enable_etr_sink_sysfs(struct coresight_device *csdev)
+{
+	int ret = 0;
+	bool used = false;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	unsigned long flags;
 	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 
@@ -844,7 +851,12 @@ static int tmc_enable_etr_sink_sysfs(struct coresight_device *csdev)
 		tmc_etr_enable_hw(drvdata);
 	}
 
+<<<<<<< HEAD
 	drvdata->enable = true;
+=======
+	drvdata->mode = CS_MODE_SYSFS;
+	tmc_etr_enable_hw(drvdata);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 out:
 	spin_unlock_irqrestore(&drvdata->spinlock, flags);
 	if (drvdata->out_mode == TMC_ETR_OUT_MODE_MEM)
@@ -914,6 +926,7 @@ static void tmc_disable_etr_sink(struct coresight_device *csdev)
 
 	/* Disable the TMC only if it needs to */
 	if (drvdata->mode != CS_MODE_DISABLED) {
+<<<<<<< HEAD
 		if (drvdata->out_mode == TMC_ETR_OUT_MODE_USB) {
 			__tmc_etr_disable_to_bam(drvdata);
 			spin_unlock_irqrestore(&drvdata->spinlock, flags);
@@ -924,6 +937,10 @@ static void tmc_disable_etr_sink(struct coresight_device *csdev)
 			tmc_etr_disable_hw(drvdata);
 			drvdata->mode = CS_MODE_DISABLED;
 		}
+=======
+		tmc_etr_disable_hw(drvdata);
+		drvdata->mode = CS_MODE_DISABLED;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	spin_unlock_irqrestore(&drvdata->spinlock, flags);
@@ -1208,11 +1225,14 @@ int tmc_read_prepare_etr(struct tmc_drvdata *drvdata)
 		goto out;
 	}
 
+<<<<<<< HEAD
 	if (drvdata->out_mode == TMC_ETR_OUT_MODE_USB) {
 		ret = -EINVAL;
 		goto out;
 	}
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* Don't interfere if operated from Perf */
 	if (drvdata->mode == CS_MODE_PERF) {
 		ret = -EINVAL;

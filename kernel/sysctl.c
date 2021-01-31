@@ -67,7 +67,7 @@
 #include <linux/bpf.h>
 #include <linux/mount.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/processor.h>
 
 #ifdef CONFIG_X86
@@ -484,13 +484,6 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &one,
 	},
-	{
-		.procname	= "sched_shares_window_ns",
-		.data		= &sysctl_sched_shares_window,
-		.maxlen		= sizeof(unsigned int),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
-	},
 #ifdef CONFIG_SCHEDSTATS
 	{
 		.procname	= "sched_schedstats",
@@ -814,7 +807,7 @@ static struct ctl_table kern_table[] = {
 		.data		= &tracepoint_printk,
 		.maxlen		= sizeof(tracepoint_printk),
 		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
+		.proc_handler	= tracepoint_printk_sysctl,
 	},
 #endif
 #ifdef CONFIG_KEXEC_CORE
@@ -1167,13 +1160,6 @@ static struct ctl_table kern_table[] = {
 		.data		= &bootloader_version,
 		.maxlen		= sizeof (int),
 		.mode		= 0444,
-		.proc_handler	= proc_dointvec,
-	},
-	{
-		.procname	= "kstack_depth_to_print",
-		.data		= &kstack_depth_to_print,
-		.maxlen		= sizeof(int),
-		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
 	},
 	{
@@ -2712,9 +2698,11 @@ static void validate_coredump_safety(void)
 #ifdef CONFIG_COREDUMP
 	if (suid_dumpable == SUID_DUMP_ROOT &&
 	    core_pattern[0] != '/' && core_pattern[0] != '|') {
-		printk(KERN_WARNING "Unsafe core_pattern used with "\
-			"suid_dumpable=2. Pipe handler or fully qualified "\
-			"core dump path required.\n");
+		printk(KERN_WARNING
+"Unsafe core_pattern used with fs.suid_dumpable=2.\n"
+"Pipe handler or fully qualified core dump path required.\n"
+"Set kernel.core_pattern before fs.suid_dumpable.\n"
+		);
 	}
 #endif
 }

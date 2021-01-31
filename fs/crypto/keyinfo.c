@@ -11,6 +11,7 @@
 #include <keys/user-type.h>
 #include <linux/hashtable.h>
 #include <linux/scatterlist.h>
+<<<<<<< HEAD
 #include <linux/ratelimit.h>
 #include <crypto/aes.h>
 #include <crypto/algapi.h>
@@ -18,6 +19,9 @@
 #include <crypto/skcipher.h>
 #include "fscrypt_private.h"
 #include "fscrypt_ice.h"
+=======
+#include "fscrypt_private.h"
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 static struct crypto_shash *essiv_hash_tfm;
 
@@ -521,7 +525,11 @@ static void put_crypt_info(struct fscrypt_info *ci)
 	kmem_cache_free(fscrypt_info_cachep, ci);
 }
 
+<<<<<<< HEAD
 int fscrypt_get_encryption_info(struct inode *inode)
+=======
+int fscrypt_get_crypt_info(struct inode *inode)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	struct fscrypt_info *crypt_info;
 	struct fscrypt_context ctx;
@@ -529,9 +537,12 @@ int fscrypt_get_encryption_info(struct inode *inode)
 	u8 *raw_key = NULL;
 	int res;
 
+<<<<<<< HEAD
 	if (inode->i_crypt_info)
 		return 0;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	res = fscrypt_initialize(inode->i_sb->s_cop->flags);
 	if (res)
 		return res;
@@ -626,3 +637,20 @@ void fscrypt_put_encryption_info(struct inode *inode)
 	inode->i_crypt_info = NULL;
 }
 EXPORT_SYMBOL(fscrypt_put_encryption_info);
+<<<<<<< HEAD
+=======
+
+int fscrypt_get_encryption_info(struct inode *inode)
+{
+	struct fscrypt_info *ci = inode->i_crypt_info;
+
+	if (!ci ||
+		(ci->ci_keyring_key &&
+		 (ci->ci_keyring_key->flags & ((1 << KEY_FLAG_INVALIDATED) |
+					       (1 << KEY_FLAG_REVOKED) |
+					       (1 << KEY_FLAG_DEAD)))))
+		return fscrypt_get_crypt_info(inode);
+	return 0;
+}
+EXPORT_SYMBOL(fscrypt_get_encryption_info);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

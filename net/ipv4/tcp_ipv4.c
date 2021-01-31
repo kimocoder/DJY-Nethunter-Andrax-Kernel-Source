@@ -95,12 +95,12 @@ static int tcp_v4_md5_hash_hdr(char *md5_hash, const struct tcp_md5sig_key *key,
 struct inet_hashinfo tcp_hashinfo;
 EXPORT_SYMBOL(tcp_hashinfo);
 
-static  __u32 tcp_v4_init_sequence(const struct sk_buff *skb)
+static u32 tcp_v4_init_sequence(const struct sk_buff *skb, u32 *tsoff)
 {
 	return secure_tcp_sequence_number(ip_hdr(skb)->daddr,
 					  ip_hdr(skb)->saddr,
 					  tcp_hdr(skb)->dest,
-					  tcp_hdr(skb)->source);
+					  tcp_hdr(skb)->source, tsoff);
 }
 
 int tcp_twsk_unique(struct sock *sk, struct sock *sktw, void *twp)
@@ -238,7 +238,8 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 		tp->write_seq = secure_tcp_sequence_number(inet->inet_saddr,
 							   inet->inet_daddr,
 							   inet->inet_sport,
-							   usin->sin_port);
+							   usin->sin_port,
+							   &tp->tsoffset);
 
 	inet->inet_id = prandom_u32();
 
@@ -451,7 +452,7 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
 			if (!sock_owned_by_user(sk)) {
 				tcp_v4_mtu_reduced(sk);
 			} else {
-				if (!test_and_set_bit(TCP_MTU_REDUCED_DEFERRED, &tp->tsq_flags))
+				if (!test_and_set_bit(TCP_MTU_REDUCED_DEFERRED, &sk->sk_tsq_flags))
 					sock_hold(sk);
 			}
 			goto out;
@@ -834,7 +835,7 @@ static void tcp_v4_reqsk_send_ack(const struct sock *sk, struct sk_buff *skb,
 	tcp_v4_send_ack(sk, skb, seq,
 			tcp_rsk(req)->rcv_nxt,
 			req->rsk_rcv_wnd >> inet_rsk(req)->rcv_wscale,
-			tcp_time_stamp,
+			tcp_time_stamp + tcp_rsk(req)->ts_off,
 			req->ts_recent,
 			0,
 			tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&ip_hdr(skb)->saddr,
@@ -1942,8 +1943,13 @@ static void *listening_get_next(struct seq_file *seq, void *cur)
 	if (!sk) {
 get_head:
 		ilb = &tcp_hashinfo.listening_hash[st->bucket];
+<<<<<<< HEAD
 		spin_lock_bh(&ilb->lock);
 		sk = sk_nulls_head(&ilb->nulls_head);
+=======
+		spin_lock(&ilb->lock);
+		sk = sk_head(&ilb->head);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		st->offset = 0;
 		goto get_sk;
 	}
@@ -1959,7 +1965,7 @@ get_sk:
 		if (sk->sk_family == st->family)
 			return sk;
 	}
-	spin_unlock_bh(&ilb->lock);
+	spin_unlock(&ilb->lock);
 	st->offset = 0;
 	if (++st->bucket < INET_LHTABLE_SIZE)
 		goto get_head;
@@ -2167,7 +2173,7 @@ static void tcp_seq_stop(struct seq_file *seq, void *v)
 	switch (st->state) {
 	case TCP_SEQ_STATE_LISTENING:
 		if (v != SEQ_START_TOKEN)
-			spin_unlock_bh(&tcp_hashinfo.listening_hash[st->bucket].lock);
+			spin_unlock(&tcp_hashinfo.listening_hash[st->bucket].lock);
 		break;
 	case TCP_SEQ_STATE_ESTABLISHED:
 		if (v)

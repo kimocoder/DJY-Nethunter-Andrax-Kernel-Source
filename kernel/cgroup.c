@@ -5447,11 +5447,18 @@ static struct cgroup *cgroup_create(struct cgroup *parent)
 	if (!cgroup_on_dfl(cgrp))
 		cgrp->subtree_control = cgroup_control(cgrp);
 
+<<<<<<< HEAD
 	if (cgroup_on_dfl(cgrp)) {
 		ret = psi_cgroup_alloc(cgrp);
 		if (ret)
 			goto out_idr_free;
 	}
+=======
+	if (parent)
+		cgroup_bpf_inherit(cgrp, parent);
+
+	cgroup_propagate_control(cgrp);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	cgroup_propagate_control(cgrp);
 
@@ -6692,6 +6699,7 @@ static __init int cgroup_namespaces_init(void)
 subsys_initcall(cgroup_namespaces_init);
 
 #ifdef CONFIG_CGROUP_BPF
+<<<<<<< HEAD
 int cgroup_bpf_attach(struct cgroup *cgrp, struct bpf_prog *prog,
 		      enum bpf_attach_type type, u32 flags)
 {
@@ -6711,6 +6719,17 @@ int cgroup_bpf_detach(struct cgroup *cgrp, struct bpf_prog *prog,
 	ret = __cgroup_bpf_detach(cgrp, prog, type, flags);
 	mutex_unlock(&cgroup_mutex);
 	return ret;
+=======
+void cgroup_bpf_update(struct cgroup *cgrp,
+		       struct bpf_prog *prog,
+		       enum bpf_attach_type type)
+{
+	struct cgroup *parent = cgroup_parent(cgrp);
+
+	mutex_lock(&cgroup_mutex);
+	__cgroup_bpf_update(cgrp, parent, prog, type);
+	mutex_unlock(&cgroup_mutex);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 #endif /* CONFIG_CGROUP_BPF */
 

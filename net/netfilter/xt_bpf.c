@@ -27,12 +27,18 @@ static int __bpf_mt_check_bytecode(struct sock_filter *insns, __u16 len,
 {
 	struct sock_fprog_kern program;
 
+<<<<<<< HEAD
 	if (len > XT_BPF_MAX_NUM_INSTR)
 		return -EINVAL;
 
 	program.len = len;
 	program.filter = insns;
 
+=======
+	program.len = len;
+	program.filter = insns;
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (bpf_prog_create(ret, &program)) {
 		pr_info("bpf: check failed: parse error\n");
 		return -EINVAL;
@@ -53,6 +59,7 @@ static int __bpf_mt_check_fd(int fd, struct bpf_prog **ret)
 	return 0;
 }
 
+<<<<<<< HEAD
 static int __bpf_mt_check_path(const char *path, struct bpf_prog **ret)
 {
 	if (strnlen(path, XT_BPF_PATH_MAX) == XT_BPF_PATH_MAX)
@@ -63,6 +70,8 @@ static int __bpf_mt_check_path(const char *path, struct bpf_prog **ret)
 
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static int bpf_mt_check(const struct xt_mtchk_param *par)
 {
 	struct xt_bpf_info *info = par->matchinfo;
@@ -80,10 +89,16 @@ static int bpf_mt_check_v1(const struct xt_mtchk_param *par)
 		return __bpf_mt_check_bytecode(info->bpf_program,
 					       info->bpf_program_num_elem,
 					       &info->filter);
+<<<<<<< HEAD
 	else if (info->mode == XT_BPF_MODE_FD_ELF)
 		return __bpf_mt_check_fd(info->fd, &info->filter);
 	else if (info->mode == XT_BPF_MODE_PATH_PINNED)
 		return __bpf_mt_check_path(info->path, &info->filter);
+=======
+	else if (info->mode == XT_BPF_MODE_FD_PINNED ||
+		 info->mode == XT_BPF_MODE_FD_ELF)
+		return __bpf_mt_check_fd(info->fd, &info->filter);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	else
 		return -EINVAL;
 }

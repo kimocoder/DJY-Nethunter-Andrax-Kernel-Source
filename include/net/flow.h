@@ -42,7 +42,10 @@ struct flowi_common {
 #define FLOWI_FLAG_SKIP_NH_OIF		0x04
 	__u32	flowic_secid;
 	struct flowi_tunnel flowic_tun_key;
+<<<<<<< HEAD
 	struct flowi_xfrm xfrm;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	kuid_t  flowic_uid;
 };
 
@@ -82,7 +85,10 @@ struct flowi4 {
 #define flowi4_secid		__fl_common.flowic_secid
 #define flowi4_tun_key		__fl_common.flowic_tun_key
 #define flowi4_uid		__fl_common.flowic_uid
+<<<<<<< HEAD
 #define flowi4_xfrm		__fl_common.xfrm
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* (saddr,daddr) must be grouped, same order as in IP header */
 	__be32			saddr;
@@ -114,7 +120,10 @@ static inline void flowi4_init_output(struct flowi4 *fl4, int oif,
 	fl4->flowi4_flags = flags;
 	fl4->flowi4_secid = 0;
 	fl4->flowi4_tun_key.tun_id = 0;
+<<<<<<< HEAD
 	fl4->flowi4_xfrm.if_id = 0;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	fl4->flowi4_uid = uid;
 	fl4->daddr = daddr;
 	fl4->saddr = saddr;
@@ -144,7 +153,10 @@ struct flowi6 {
 #define flowi6_secid		__fl_common.flowic_secid
 #define flowi6_tun_key		__fl_common.flowic_tun_key
 #define flowi6_uid		__fl_common.flowic_uid
+<<<<<<< HEAD
 #define flowi6_xfrm		__fl_common.xfrm
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	struct in6_addr		daddr;
 	struct in6_addr		saddr;
 	/* Note: flowi6_tos is encoded in flowlabel, too. */
@@ -191,7 +203,10 @@ struct flowi {
 #define flowi_secid	u.__fl_common.flowic_secid
 #define flowi_tun_key	u.__fl_common.flowic_tun_key
 #define flowi_uid	u.__fl_common.flowic_uid
+<<<<<<< HEAD
 #define flowi_xfrm	u.__fl_common.xfrm
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 } __attribute__((__aligned__(BITS_PER_LONG/8)));
 
 static inline struct flowi *flowi4_to_flowi(struct flowi4 *fl4)
@@ -255,6 +270,7 @@ struct flow_cache_object *flow_cache_lookup(struct net *net,
 					    void *ctx);
 int flow_cache_init(struct net *net);
 void flow_cache_fini(struct net *net);
+void flow_cache_hp_init(void);
 
 void flow_cache_flush(struct net *net);
 void flow_cache_flush_deferred(struct net *net);

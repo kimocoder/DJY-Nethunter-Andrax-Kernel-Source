@@ -26,9 +26,13 @@
 #include <linux/dma-mapping.h>
 #include <linux/mm.h>
 #include <linux/debugfs.h>
+<<<<<<< HEAD
 #include <linux/workqueue.h>
 #include <linux/wait.h>
 
+=======
+#include <linux/wait.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
@@ -40,6 +44,7 @@
 #define DWC3_MSG_MAX	500
 
 /* Global constants */
+#define DWC3_PULL_UP_TIMEOUT	500	/* ms */
 #define DWC3_ZLP_BUF_SIZE	1024	/* size of a superspeed bulk */
 #define DWC3_EP0_BOUNCE_SIZE	512
 #define DWC3_ENDPOINTS_NUM	32
@@ -214,6 +219,7 @@
 #define DWC3_GCTL_GBLHIBERNATIONEN	(1 << 1)
 #define DWC3_GCTL_DSBLCLKGTNG		(1 << 0)
 
+<<<<<<< HEAD
 /* Global User Control Register */
 #define DWC3_GUCTL_REFCLKPER		(0x3FF << 22)
 
@@ -226,6 +232,11 @@
 /* Global User Control 2 Register */
 #define DWC3_GUCTL2_ENABLE_EP_CACHE_EVICT	(1 << 12)
 
+=======
+/* Global User Control 1 Register */
+#define DWC3_GUCTL1_DEV_L1_EXIT_BY_HW	(1 << 24)
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /* Global USB2 PHY Configuration Register */
 #define DWC3_GUSB2PHYCFG_PHYSOFTRST	(1 << 31)
 #define DWC3_GUSB2PHYCFG_ENBLSLPM	(1 << 8)
@@ -510,9 +521,12 @@
 #define DWC3_DEV_IMOD_INTERVAL_SHIFT	0
 #define DWC3_DEV_IMOD_INTERVAL_MASK	(0xffff << 0)
 
+<<<<<<< HEAD
 #define DWC_CTRL_COUNT	10
 #define NUM_LOG_PAGES	12
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /* Structures */
 
 struct dwc3_trb;
@@ -533,6 +547,7 @@ struct dwc3_gadget_ep_cmd_params {
 /**
  * struct dwc3_event_buffer - Software event buffer representation
  * @buf: _THE_ buffer
+ * @cache: The buffer cache used in the threaded interrupt
  * @length: size of this buffer
  * @lpos: event offset
  * @count: cache of last read event count register
@@ -542,6 +557,7 @@ struct dwc3_gadget_ep_cmd_params {
  */
 struct dwc3_event_buffer {
 	void			*buf;
+	void			*cache;
 	unsigned		length;
 	unsigned int		lpos;
 	unsigned int		count;
@@ -596,6 +612,7 @@ struct dwc3_ep_events {
  * @endpoint: usb endpoint
  * @pending_list: list of pending requests for this endpoint
  * @started_list: list of started requests on this endpoint
+ * @wait_end_transfer: wait_queue_head_t for waiting on End Transfer complete
  * @lock: spinlock for endpoint request queue traversal
  * @regs: pointer to first endpoint register
  * @trb_pool: array of transaction buffers
@@ -628,13 +645,18 @@ struct dwc3_ep {
 	struct list_head	pending_list;
 	struct list_head	started_list;
 
+	wait_queue_head_t	wait_end_transfer;
+
 	spinlock_t		lock;
 	void __iomem		*regs;
 
 	struct dwc3_trb		*trb_pool;
 	dma_addr_t		trb_pool_dma;
+<<<<<<< HEAD
 	u32			num_trbs;
 	const struct usb_ss_ep_comp_descriptor *comp_desc;
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	struct dwc3		*dwc;
 
 	u32			saved_state;
@@ -645,6 +667,10 @@ struct dwc3_ep {
 #define DWC3_EP_BUSY		(1 << 4)
 #define DWC3_EP_PENDING_REQUEST	(1 << 5)
 #define DWC3_EP_MISSED_ISOC	(1 << 6)
+<<<<<<< HEAD
+=======
+#define DWC3_EP_END_TRANSFER_PENDING	(1 << 7)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #define DWC3_EP_TRANSFER_STARTED (1 << 8)
 
 	/* This last one is specific to EP0 */
@@ -815,7 +841,7 @@ struct dwc3_hwparams {
  * @dep: struct dwc3_ep owning this request
  * @sg: pointer to first incomplete sg
  * @num_pending_sgs: counter to pending sgs
- * @first_trb_index: index to first trb used by this request
+ * @remaining: amount of data remaining
  * @epnum: endpoint number to which this request refers
  * @trb: pointer to struct dwc3_trb
  * @trb_dma: DMA address of @trb
@@ -830,7 +856,7 @@ struct dwc3_request {
 	struct scatterlist	*sg;
 
 	unsigned		num_pending_sgs;
-	u8			first_trb_index;
+	unsigned		remaining;
 	u8			epnum;
 	struct dwc3_trb		*trb;
 	dma_addr_t		trb_dma;
@@ -881,6 +907,7 @@ struct dwc3_scratchpad_array {
  * @ep0_usb_req: dummy req used while handling STD USB requests
  * @ep0_bounce_addr: dma address of ep0_bounce
  * @scratch_addr: dma address of scratchbuf
+ * @ep0_in_setup: one control transfer is completed and enter setup phase
  * @lock: for synchronizing
  * @dev: pointer to our struct device
  * @xhci: pointer to our xHCI child
@@ -919,7 +946,6 @@ struct dwc3_scratchpad_array {
  * @ep0state: state of endpoint zero
  * @link_state: link state
  * @speed: device speed (super, high, full, low)
- * @mem: points to start of memory which is used for this struct.
  * @hwparams: copy of hwparams registers
  * @root: debugfs root folder pointer
  * @regset: debugfs pointer to regdump file
@@ -970,6 +996,7 @@ struct dwc3_scratchpad_array {
  * 	1	- -3.5dB de-emphasis
  * 	2	- No de-emphasis
  * 	3	- Reserved
+<<<<<<< HEAD
  * @is_drd: device supports dual-role or not
  * @err_evt_seen: previous event in queue was erratic error
  * @usb3_u1u2_disable: if true, disable U1U2 low power modes in Superspeed mode
@@ -994,6 +1021,10 @@ struct dwc3_scratchpad_array {
  * @core_id: usb core id to differentiate different controller
  * @normal_eps_in_gsi_mode: if true, two normal EPS (1 In, 1 Out) can be used in
  *			    GSI mode
+=======
+ * @imod_interval: set the interrupt moderation interval in 250ns
+ *                 increments or 0 to disable.
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
  */
 struct dwc3 {
 	struct usb_ctrlrequest	*ctrl_req;
@@ -1007,6 +1038,7 @@ struct dwc3 {
 	dma_addr_t		ep0_bounce_addr;
 	dma_addr_t		scratch_addr;
 	struct dwc3_request	ep0_usb_req;
+	struct completion	ep0_in_setup;
 
 	/* device lock */
 	spinlock_t		lock;
@@ -1101,8 +1133,6 @@ struct dwc3 {
 	u8			num_out_eps;
 	u8			num_in_eps;
 
-	void			*mem;
-
 	struct dwc3_hwparams	hwparams;
 	struct dentry		*root;
 	struct debugfs_regset32	*regset;
@@ -1150,6 +1180,7 @@ struct dwc3 {
 
 	unsigned		tx_de_emphasis_quirk:1;
 	unsigned		tx_de_emphasis:2;
+<<<<<<< HEAD
 	unsigned		is_drd:1;
 	/* Indicate if the gadget was powered by the otg driver */
 	unsigned		vbus_active:1;
@@ -1199,6 +1230,10 @@ struct dwc3 {
 	int			core_id;
 	int			retries_on_error;
 	bool			normal_eps_in_gsi_mode;
+=======
+
+	u16			imod_interval;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1260,12 +1295,16 @@ struct dwc3_event_depevt {
 /* Control-only Status */
 #define DEPEVT_STATUS_CONTROL_DATA	1
 #define DEPEVT_STATUS_CONTROL_STATUS	2
+#define DEPEVT_STATUS_CONTROL_PHASE(n)	((n) & 3)
 
 /* In response to Start Transfer */
 #define DEPEVT_TRANSFER_NO_RESOURCE	1
 #define DEPEVT_TRANSFER_BUS_EXPIRY	2
 
 	u32	parameters:16;
+
+/* For Command Complete Events */
+#define DEPEVT_PARAMETER_CMD(n)	(((n) & (0xf << 8)) >> 8)
 } __packed;
 
 /**
@@ -1341,6 +1380,12 @@ union dwc3_event {
 void dwc3_set_mode(struct dwc3 *dwc, u32 mode);
 u32 dwc3_core_fifo_space(struct dwc3_ep *dep, u8 type);
 int dwc3_gadget_resize_tx_fifos(struct dwc3 *dwc, struct dwc3_ep *dep);
+
+/* check whether we are on the DWC_usb3 core */
+static inline bool dwc3_is_usb3(struct dwc3 *dwc)
+{
+	return !(dwc->revision & DWC3_REVISION_IS_DWC31);
+}
 
 /* check whether we are on the DWC_usb3 core */
 static inline bool dwc3_is_usb3(struct dwc3 *dwc)

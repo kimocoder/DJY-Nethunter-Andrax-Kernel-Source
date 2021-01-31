@@ -423,6 +423,10 @@ struct usb_endpoint_descriptor {
 #define USB_ENDPOINT_XFER_INT		3
 #define USB_ENDPOINT_MAX_ADJUSTABLE	0x80
 
+<<<<<<< HEAD
+=======
+#define USB_ENDPOINT_MAXP_MASK	0x07ff
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #define USB_EP_MAXP_MULT_SHIFT	11
 #define USB_EP_MAXP_MULT_MASK	(3 << USB_EP_MAXP_MULT_SHIFT)
 #define USB_EP_MAXP_MULT(m) \
@@ -628,11 +632,25 @@ static inline int usb_endpoint_is_isoc_out(
  * usb_endpoint_maxp - get endpoint's max packet size
  * @epd: endpoint to be checked
  *
- * Returns @epd's max packet
+ * Returns @epd's max packet bits [10:0]
  */
 static inline int usb_endpoint_maxp(const struct usb_endpoint_descriptor *epd)
 {
-	return __le16_to_cpu(epd->wMaxPacketSize);
+	return __le16_to_cpu(epd->wMaxPacketSize) & USB_ENDPOINT_MAXP_MASK;
+}
+
+/**
+ * usb_endpoint_maxp_mult - get endpoint's transactional opportunities
+ * @epd: endpoint to be checked
+ *
+ * Return @epd's wMaxPacketSize[12:11] + 1
+ */
+static inline int
+usb_endpoint_maxp_mult(const struct usb_endpoint_descriptor *epd)
+{
+	int maxp = __le16_to_cpu(epd->wMaxPacketSize);
+
+	return USB_EP_MAXP_MULT(maxp) + 1;
 }
 
 /**

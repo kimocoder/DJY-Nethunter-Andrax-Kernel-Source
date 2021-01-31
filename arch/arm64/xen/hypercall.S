@@ -49,7 +49,11 @@
 
 #include <linux/linkage.h>
 #include <asm/assembler.h>
+<<<<<<< HEAD
 #include <asm/uaccess.h>
+=======
+#include <linux/uaccess.h>
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #include <xen/interface/xen.h>
 
 
@@ -100,12 +104,20 @@ ENTRY(privcmd_call)
 	 * need the explicit uaccess_enable/disable if the TTBR0 PAN emulation
 	 * is enabled (it implies that hardware UAO and PAN disabled).
 	 */
+<<<<<<< HEAD
 	uaccess_ttbr0_enable x6, x7, x8
+=======
+	uaccess_ttbr0_enable x6, x7
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	hvc XEN_IMM
 
 	/*
 	 * Disable userspace access from kernel once the hyp call completed.
 	 */
+<<<<<<< HEAD
 	uaccess_ttbr0_disable x6, x7
+=======
+	uaccess_ttbr0_disable x6
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	ret
 ENDPROC(privcmd_call);

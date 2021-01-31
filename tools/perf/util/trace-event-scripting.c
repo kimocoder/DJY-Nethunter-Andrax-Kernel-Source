@@ -25,6 +25,7 @@
 #include <errno.h>
 
 #include "../perf.h"
+#include "debug.h"
 #include "util.h"
 #include "trace-event.h"
 
@@ -86,6 +87,7 @@ struct scripting_ops python_scripting_unsupported_ops = {
 
 static void register_python_scripting(struct scripting_ops *scripting_ops)
 {
+<<<<<<< HEAD
 	int err;
 	err = script_spec_register("Python", scripting_ops);
 	if (err)
@@ -97,6 +99,17 @@ static void register_python_scripting(struct scripting_ops *scripting_ops)
 
 	if (scripting_context == NULL)
 		scripting_context = malloc(sizeof(*scripting_context));
+=======
+	if (scripting_context == NULL)
+		scripting_context = malloc(sizeof(*scripting_context));
+
+       if (scripting_context == NULL ||
+	   script_spec_register("Python", scripting_ops) ||
+	   script_spec_register("py", scripting_ops)) {
+		pr_err("Error registering Python script extension: disabling it\n");
+		zfree(&scripting_context);
+	}
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 #ifdef NO_LIBPYTHON
@@ -151,6 +164,7 @@ struct scripting_ops perl_scripting_unsupported_ops = {
 
 static void register_perl_scripting(struct scripting_ops *scripting_ops)
 {
+<<<<<<< HEAD
 	int err;
 	err = script_spec_register("Perl", scripting_ops);
 	if (err)
@@ -162,6 +176,17 @@ static void register_perl_scripting(struct scripting_ops *scripting_ops)
 
 	if (scripting_context == NULL)
 		scripting_context = malloc(sizeof(*scripting_context));
+=======
+	if (scripting_context == NULL)
+		scripting_context = malloc(sizeof(*scripting_context));
+
+       if (scripting_context == NULL ||
+	   script_spec_register("Perl", scripting_ops) ||
+	   script_spec_register("pl", scripting_ops)) {
+		pr_err("Error registering Perl script extension: disabling it\n");
+		zfree(&scripting_context);
+	}
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 #ifdef NO_LIBPERL

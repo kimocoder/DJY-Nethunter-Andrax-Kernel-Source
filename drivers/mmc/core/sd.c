@@ -1040,7 +1040,6 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 	u32 cid[4];
 	u32 rocr = 0;
 
-	BUG_ON(!host);
 	WARN_ON(!host->claimed);
 
 	err = mmc_sd_get_cid(host, ocr, cid, &rocr);
@@ -1161,10 +1160,13 @@ free_card:
  */
 static void mmc_sd_remove(struct mmc_host *host)
 {
+<<<<<<< HEAD
 	BUG_ON(!host);
 	BUG_ON(!host->card);
 
 	mmc_exit_clk_scaling(host);
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	mmc_remove_card(host->card);
 
 	mmc_claim_host(host);
@@ -1193,6 +1195,7 @@ static void mmc_sd_detect(struct mmc_host *host)
 	int retries = 5;
 #endif
 
+<<<<<<< HEAD
 	BUG_ON(!host);
 	BUG_ON(!host->card);
 
@@ -1217,6 +1220,9 @@ static void mmc_sd_detect(struct mmc_host *host)
 		mmc_card_clr_suspended(host->card);
 		goto out;
 	}
+=======
+	mmc_get_card(host->card);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/*
 	 * Just check if our card has been removed.
@@ -1257,6 +1263,7 @@ static int _mmc_sd_suspend(struct mmc_host *host)
 {
 	int err = 0;
 
+<<<<<<< HEAD
 	BUG_ON(!host);
 	BUG_ON(!host->card);
 
@@ -1267,6 +1274,8 @@ static int _mmc_sd_suspend(struct mmc_host *host)
 		return err;
 	}
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	mmc_claim_host(host);
 
 	if (mmc_card_suspended(host->card))
@@ -1316,9 +1325,6 @@ static int _mmc_sd_resume(struct mmc_host *host)
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
 	int retries;
 #endif
-
-	BUG_ON(!host);
-	BUG_ON(!host->card);
 
 	mmc_claim_host(host);
 
@@ -1470,7 +1476,6 @@ int mmc_attach_sd(struct mmc_host *host)
 	int retries;
 #endif
 
-	BUG_ON(!host);
 	WARN_ON(!host->claimed);
 
 	err = mmc_send_app_op_cond(host, 0, &ocr);

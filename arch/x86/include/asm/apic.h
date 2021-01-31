@@ -11,8 +11,11 @@
 #include <asm/fixmap.h>
 #include <asm/mpspec.h>
 #include <asm/msr.h>
+<<<<<<< HEAD
 #include <asm/idle.h>
 #include <asm/hardirq.h>
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #define ARCH_APICTIMER_STOPS_ON_C3	1
 
@@ -197,7 +200,7 @@ static inline void native_apic_msr_write(u32 reg, u32 v)
 
 static inline void native_apic_msr_eoi_write(u32 reg, u32 v)
 {
-	wrmsr(APIC_BASE_MSR + (APIC_EOI >> 4), APIC_EOI_ACK, 0);
+	wrmsr_notrace(APIC_BASE_MSR + (APIC_EOI >> 4), APIC_EOI_ACK, 0);
 }
 
 static inline u32 native_apic_msr_read(u32 reg)
@@ -333,6 +336,7 @@ struct apic {
 	 * on write for EOI.
 	 */
 	void (*eoi_write)(u32 reg, u32 v);
+	void (*native_eoi_write)(u32 reg, u32 v);
 	u64 (*icr_read)(void);
 	void (*icr_write)(u32 low, u32 high);
 	void (*wait_icr_idle)(void);
@@ -647,8 +651,11 @@ extern void irq_exit(void);
 static inline void entering_irq(void)
 {
 	irq_enter();
+<<<<<<< HEAD
 	exit_idle();
 	kvm_set_cpu_l1tf_flush_l1d();
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static inline void entering_ack_irq(void)

@@ -110,6 +110,12 @@ static int ip6_frag_queue(struct frag_queue *fq, struct sk_buff *skb,
 			  struct frag_hdr *fhdr, int nhoff,
 			  u32 *prob_offset)
 {
+<<<<<<< HEAD
+=======
+	struct sk_buff *prev, *next;
+	struct net_device *dev;
+	int offset, end, fragsize;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	struct net *net = dev_net(skb_dst(skb)->dev);
 	int offset, end, fragsize;
 	struct sk_buff *prev_tail;
@@ -289,12 +295,23 @@ static int ip6_frag_reasm(struct frag_queue *fq, struct sk_buff *skb,
 
 	inet_frag_reasm_finish(&fq->q, skb, reasm_data);
 
+<<<<<<< HEAD
 	skb->dev = dev;
 	ipv6_hdr(skb)->payload_len = htons(payload_len);
 	ipv6_change_dsfield(ipv6_hdr(skb), 0xff, ecn);
 	IP6CB(skb)->nhoff = nhoff;
 	IP6CB(skb)->flags |= IP6SKB_FRAGMENTED;
 	IP6CB(skb)->frag_max_size = fq->q.max_size;
+=======
+	head->next = NULL;
+	head->dev = dev;
+	head->tstamp = fq->q.stamp;
+	ipv6_hdr(head)->payload_len = htons(payload_len);
+	ipv6_change_dsfield(ipv6_hdr(head), 0xff, ecn);
+	IP6CB(head)->nhoff = nhoff;
+	IP6CB(head)->flags |= IP6SKB_FRAGMENTED;
+	IP6CB(head)->frag_max_size = fq->q.max_size;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* Yes, and fold redundant checksum back. 8) */
 	skb_postpush_rcsum(skb, skb_network_header(skb),

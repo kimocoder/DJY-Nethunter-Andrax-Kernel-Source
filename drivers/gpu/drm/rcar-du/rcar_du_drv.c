@@ -110,6 +110,27 @@ static const struct rcar_du_device_info rcar_du_r8a7791_info = {
 	.num_lvds = 1,
 };
 
+static const struct rcar_du_device_info rcar_du_r8a7792_info = {
+	.gen = 2,
+	.features = RCAR_DU_FEATURE_CRTC_IRQ_CLOCK
+		  | RCAR_DU_FEATURE_EXT_CTRL_REGS,
+	.num_crtcs = 2,
+	.routes = {
+		/* R8A7792 has two RGB outputs. */
+		[RCAR_DU_OUTPUT_DPAD0] = {
+			.possible_crtcs = BIT(0),
+			.encoder_type = DRM_MODE_ENCODER_NONE,
+			.port = 0,
+		},
+		[RCAR_DU_OUTPUT_DPAD1] = {
+			.possible_crtcs = BIT(1),
+			.encoder_type = DRM_MODE_ENCODER_NONE,
+			.port = 1,
+		},
+	},
+	.num_lvds = 0,
+};
+
 static const struct rcar_du_device_info rcar_du_r8a7794_info = {
 	.gen = 2,
 	.features = RCAR_DU_FEATURE_CRTC_IRQ_CLOCK
@@ -157,13 +178,39 @@ static const struct rcar_du_device_info rcar_du_r8a7795_info = {
 	.num_lvds = 1,
 };
 
+static const struct rcar_du_device_info rcar_du_r8a7796_info = {
+	.gen = 3,
+	.features = RCAR_DU_FEATURE_CRTC_IRQ_CLOCK
+		  | RCAR_DU_FEATURE_EXT_CTRL_REGS
+		  | RCAR_DU_FEATURE_VSP1_SOURCE,
+	.num_crtcs = 3,
+	.routes = {
+		/* R8A7796 has one RGB output, one LVDS output and one
+		 * (currently unsupported) HDMI output.
+		 */
+		[RCAR_DU_OUTPUT_DPAD0] = {
+			.possible_crtcs = BIT(2),
+			.encoder_type = DRM_MODE_ENCODER_NONE,
+			.port = 0,
+		},
+		[RCAR_DU_OUTPUT_LVDS0] = {
+			.possible_crtcs = BIT(0),
+			.encoder_type = DRM_MODE_ENCODER_LVDS,
+			.port = 2,
+		},
+	},
+	.num_lvds = 1,
+};
+
 static const struct of_device_id rcar_du_of_table[] = {
 	{ .compatible = "renesas,du-r8a7779", .data = &rcar_du_r8a7779_info },
 	{ .compatible = "renesas,du-r8a7790", .data = &rcar_du_r8a7790_info },
 	{ .compatible = "renesas,du-r8a7791", .data = &rcar_du_r8a7791_info },
+	{ .compatible = "renesas,du-r8a7792", .data = &rcar_du_r8a7792_info },
 	{ .compatible = "renesas,du-r8a7793", .data = &rcar_du_r8a7791_info },
 	{ .compatible = "renesas,du-r8a7794", .data = &rcar_du_r8a7794_info },
 	{ .compatible = "renesas,du-r8a7795", .data = &rcar_du_r8a7795_info },
+	{ .compatible = "renesas,du-r8a7796", .data = &rcar_du_r8a7796_info },
 	{ }
 };
 
@@ -201,9 +248,7 @@ static const struct file_operations rcar_du_fops = {
 	.open		= drm_open,
 	.release	= drm_release,
 	.unlocked_ioctl	= drm_ioctl,
-#ifdef CONFIG_COMPAT
 	.compat_ioctl	= drm_compat_ioctl,
-#endif
 	.poll		= drm_poll,
 	.read		= drm_read,
 	.llseek		= no_llseek,
@@ -293,17 +338,19 @@ static int rcar_du_remove(struct platform_device *pdev)
 
 static int rcar_du_probe(struct platform_device *pdev)
 {
-	struct device_node *np = pdev->dev.of_node;
 	struct rcar_du_device *rcdu;
 	struct drm_device *ddev;
 	struct resource *mem;
 	int ret;
 
+<<<<<<< HEAD
 	if (np == NULL) {
 		dev_err(&pdev->dev, "no device tree node\n");
 		return -ENODEV;
 	}
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* Allocate and initialize the R-Car device structure. */
 	rcdu = devm_kzalloc(&pdev->dev, sizeof(*rcdu), GFP_KERNEL);
 	if (rcdu == NULL)

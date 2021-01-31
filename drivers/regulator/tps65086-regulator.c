@@ -161,14 +161,22 @@ static struct tps65086_regulator regulators[] = {
 	TPS65086_SWITCH("VTT", "vtt", VTT, TPS65086_SWVTT_EN, BIT(4)),
 };
 
+<<<<<<< HEAD
 static int tps65086_of_parse_cb(struct device_node *node,
+=======
+static int tps65086_of_parse_cb(struct device_node *dev,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 				const struct regulator_desc *desc,
 				struct regulator_config *config)
 {
 	int ret;
 
 	/* Check for 25mV step mode */
+<<<<<<< HEAD
 	if (of_property_read_bool(node, "ti,regulator-step-size-25mv")) {
+=======
+	if (of_property_read_bool(config->of_node, "ti,regulator-step-size-25mv")) {
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		switch (desc->id) {
 		case BUCK1:
 		case BUCK2:

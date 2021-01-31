@@ -156,8 +156,6 @@ static void fbcon_putcs(struct vc_data *vc, const unsigned short *s,
 			int count, int ypos, int xpos);
 static void fbcon_clear_margins(struct vc_data *vc, int bottom_only);
 static void fbcon_cursor(struct vc_data *vc, int mode);
-static int fbcon_scroll(struct vc_data *vc, int t, int b, int dir,
-			int count);
 static void fbcon_bmove(struct vc_data *vc, int sy, int sx, int dy, int dx,
 			int height, int width);
 static int fbcon_switch(struct vc_data *vc);
@@ -1617,15 +1615,45 @@ static void fbcon_redraw(struct vc_data *vc, struct display *p,
 	}
 }
 
+<<<<<<< HEAD
 static int fbcon_scroll(struct vc_data *vc, int t, int b, int dir,
 			int count)
+=======
+static inline void fbcon_softback_note(struct vc_data *vc, int t,
+				       int count)
+{
+	unsigned short *p;
+
+	if (vc->vc_num != fg_console)
+		return;
+	p = (unsigned short *) (vc->vc_origin + t * vc->vc_size_row);
+
+	while (count) {
+		scr_memcpyw((u16 *) softback_in, p, vc->vc_size_row);
+		count--;
+		p = advance_row(p, 1);
+		softback_in += vc->vc_size_row;
+		if (softback_in == softback_end)
+			softback_in = softback_buf;
+		if (softback_in == softback_top) {
+			softback_top += vc->vc_size_row;
+			if (softback_top == softback_end)
+				softback_top = softback_buf;
+		}
+	}
+	softback_curr = softback_in;
+}
+
+static bool fbcon_scroll(struct vc_data *vc, unsigned int t, unsigned int b,
+		enum con_scroll dir, unsigned int count)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	struct fb_info *info = registered_fb[con2fb_map[vc->vc_num]];
 	struct display *p = &fb_display[vc->vc_num];
 	int scroll_partial = info->flags & FBINFO_PARTIAL_PAN_OK;
 
 	if (fbcon_is_inactive(vc, info))
-		return -EINVAL;
+		return true;
 
 	fbcon_cursor(vc, CM_ERASE);
 
@@ -1651,7 +1679,7 @@ static int fbcon_scroll(struct vc_data *vc, int t, int b, int dir,
 							(b - count)),
 				    vc->vc_video_erase_char,
 				    vc->vc_size_row * count);
-			return 1;
+			return true;
 			break;
 
 		case SCROLL_WRAP_MOVE:
@@ -1723,7 +1751,7 @@ static int fbcon_scroll(struct vc_data *vc, int t, int b, int dir,
 							(b - count)),
 				    vc->vc_video_erase_char,
 				    vc->vc_size_row * count);
-			return 1;
+			return true;
 		}
 		break;
 
@@ -1742,7 +1770,7 @@ static int fbcon_scroll(struct vc_data *vc, int t, int b, int dir,
 							t),
 				    vc->vc_video_erase_char,
 				    vc->vc_size_row * count);
-			return 1;
+			return true;
 			break;
 
 		case SCROLL_WRAP_MOVE:
@@ -1812,10 +1840,10 @@ static int fbcon_scroll(struct vc_data *vc, int t, int b, int dir,
 							t),
 				    vc->vc_video_erase_char,
 				    vc->vc_size_row * count);
-			return 1;
+			return true;
 		}
 	}
-	return 0;
+	return false;
 }
 
 

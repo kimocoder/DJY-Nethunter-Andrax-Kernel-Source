@@ -142,8 +142,7 @@ struct mmc_host_ops {
 	 */
 	void	(*post_req)(struct mmc_host *host, struct mmc_request *req,
 			    int err);
-	void	(*pre_req)(struct mmc_host *host, struct mmc_request *req,
-			   bool is_first_req);
+	void	(*pre_req)(struct mmc_host *host, struct mmc_request *req);
 	void	(*request)(struct mmc_host *host, struct mmc_request *req);
 
 	/*
@@ -255,7 +254,7 @@ struct mmc_async_req {
 	 * Check error status of completed mmc request.
 	 * Returns 0 if success otherwise non zero.
 	 */
-	int (*err_check) (struct mmc_card *, struct mmc_async_req *);
+	enum mmc_blk_status (*err_check)(struct mmc_card *, struct mmc_async_req *);
 };
 
 /**
@@ -309,14 +308,12 @@ struct mmc_cmdq_context_info {
  * @is_new_req		wake up reason was new request
  * @is_waiting_last_req	mmc context waiting for single running request
  * @wait		wait queue
- * @lock		lock to protect data fields
  */
 struct mmc_context_info {
 	bool			is_done_rcv;
 	bool			is_new_req;
 	bool			is_waiting_last_req;
 	wait_queue_head_t	wait;
-	spinlock_t		lock;
 };
 
 struct regulator;
@@ -798,6 +795,7 @@ static inline int mmc_host_uhs(struct mmc_host *host)
 		 MMC_CAP_UHS_DDR50);
 }
 
+<<<<<<< HEAD
 static inline void mmc_host_clear_sdr104(struct mmc_host *host)
 {
 	host->caps &= ~MMC_CAP_UHS_SDR104;
@@ -863,6 +861,8 @@ static inline unsigned int mmc_host_clk_rate(struct mmc_host *host)
 }
 #endif
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static inline int mmc_card_hs(struct mmc_card *card)
 {
 	return card->host->ios.timing == MMC_TIMING_SD_HS ||
@@ -909,6 +909,11 @@ static inline void mmc_retune_recheck(struct mmc_host *host)
 {
 	if (host->hold_retune <= 1)
 		host->retune_now = 1;
+}
+
+static inline bool mmc_can_retune(struct mmc_host *host)
+{
+	return host->can_retune == 1;
 }
 
 void mmc_retune_pause(struct mmc_host *host);

@@ -532,12 +532,25 @@ static int get_v4l2_buffer32(struct v4l2_buffer __user *kp,
 	if (V4L2_TYPE_IS_MULTIPLANAR(type)) {
 		u32 num_planes = length;
 
+<<<<<<< HEAD
 		if (num_planes == 0) {
 			/*
 			 * num_planes == 0 is legal, e.g. when userspace doesn't
 			 * need planes array on DQBUF
 			 */
 			return put_user(NULL, &kp->m.planes);
+=======
+	if (V4L2_TYPE_IS_MULTIPLANAR(kp->type)) {
+		unsigned int num_planes;
+
+		if (kp->length == 0) {
+			kp->m.planes = NULL;
+			/* num_planes == 0 is legal, e.g. when userspace doesn't
+			 * need planes array on DQBUF*/
+			return 0;
+		} else if (kp->length > VIDEO_MAX_PLANES) {
+			return -EINVAL;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		}
 		if (num_planes > VIDEO_MAX_PLANES)
 			return -EINVAL;
@@ -547,6 +560,7 @@ static int get_v4l2_buffer32(struct v4l2_buffer __user *kp,
 
 		uplane32 = compat_ptr(p);
 		if (!access_ok(VERIFY_READ, uplane32,
+<<<<<<< HEAD
 			       num_planes * sizeof(*uplane32)))
 			return -EFAULT;
 
@@ -564,6 +578,19 @@ static int get_v4l2_buffer32(struct v4l2_buffer __user *kp,
 
 		while (num_planes--) {
 			ret = get_v4l2_plane32(uplane, uplane32, memory);
+=======
+				kp->length * sizeof(struct v4l2_plane32)))
+			return -EFAULT;
+
+		/* We don't really care if userspace decides to kill itself
+		 * by passing a very big num_planes value */
+		uplane = compat_alloc_user_space(kp->length *
+						 sizeof(struct v4l2_plane));
+		kp->m.planes = (__force struct v4l2_plane *)uplane;
+
+		for (num_planes = 0; num_planes < kp->length; num_planes++) {
+			ret = get_v4l2_plane32(uplane, uplane32, kp->memory);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			if (ret)
 				return ret;
 			uplane++;
@@ -819,6 +846,7 @@ static int get_v4l2_ext_controls32(struct file *file,
 {
 	struct v4l2_ext_control32 __user *ucontrols;
 	struct v4l2_ext_control __user *kcontrols;
+<<<<<<< HEAD
 	u32 count;
 	u32 n;
 	compat_caddr_t p;
@@ -848,6 +876,34 @@ static int get_v4l2_ext_controls32(struct file *file,
 		return -EFAULT;
 
 	for (n = 0; n < count; n++) {
+=======
+	unsigned int n;
+	compat_caddr_t p;
+
+	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_ext_controls32)) ||
+		get_user(kp->which, &up->which) ||
+		get_user(kp->count, &up->count) ||
+		get_user(kp->error_idx, &up->error_idx) ||
+		copy_from_user(kp->reserved, up->reserved,
+			       sizeof(kp->reserved)))
+			return -EFAULT;
+	if (kp->count == 0) {
+		kp->controls = NULL;
+		return 0;
+	} else if (kp->count > V4L2_CID_MAX_CTRLS) {
+		return -EINVAL;
+	}
+	if (get_user(p, &up->controls))
+		return -EFAULT;
+	ucontrols = compat_ptr(p);
+	if (!access_ok(VERIFY_READ, ucontrols,
+			kp->count * sizeof(struct v4l2_ext_control32)))
+		return -EFAULT;
+	kcontrols = compat_alloc_user_space(kp->count *
+					    sizeof(struct v4l2_ext_control));
+	kp->controls = (__force struct v4l2_ext_control *)kcontrols;
+	for (n = 0; n < kp->count; n++) {
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		u32 id;
 
 		if (copy_in_user(kcontrols, ucontrols, sizeof(*ucontrols)))

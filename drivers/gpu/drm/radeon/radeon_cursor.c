@@ -205,8 +205,13 @@ static int radeon_cursor_move_locked(struct drm_crtc *crtc, int x, int y)
 	}
 
 	if (x <= (crtc->x - w) || y <= (crtc->y - radeon_crtc->cursor_height) ||
+<<<<<<< HEAD
 	    x >= (crtc->x + crtc->mode.hdisplay) ||
 	    y >= (crtc->y + crtc->mode.vdisplay))
+=======
+	    x >= (crtc->x + crtc->mode.crtc_hdisplay) ||
+	    y >= (crtc->y + crtc->mode.crtc_vdisplay))
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		goto out_of_bounds;
 
 	x += xorigin;

@@ -177,12 +177,20 @@ int f2fs_convert_inline_page(struct dnode_of_data *dn, struct page *page)
 	set_page_writeback(page);
 	ClearPageError(page);
 	fio.old_blkaddr = dn->data_blkaddr;
+<<<<<<< HEAD
 	set_inode_flag(dn->inode, FI_HOT_DATA);
 	f2fs_outplace_write_data(dn, &fio);
 	f2fs_wait_on_page_writeback(page, DATA, true, true);
 	if (dirty) {
 		inode_dec_dirty_pages(dn->inode);
 		f2fs_remove_dirty_inode(dn->inode);
+=======
+	write_data_page(dn, &fio);
+	f2fs_wait_on_page_writeback(page, DATA, true);
+	if (dirty) {
+		inode_dec_dirty_pages(dn->inode);
+		remove_dirty_inode(dn->inode);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	/* this converted inline_data should be recovered. */
@@ -682,10 +690,14 @@ int f2fs_read_inline_dir(struct file *file, struct dir_context *ctx,
 	struct inode *inode = file_inode(file);
 	struct page *ipage = NULL;
 	struct f2fs_dentry_ptr d;
+<<<<<<< HEAD
 	void *inline_dentry = NULL;
 	int err;
 
 	make_dentry_ptr_inline(inode, &d, inline_dentry);
+=======
+	int err;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	if (ctx->pos == d.max)
 		return 0;
@@ -702,6 +714,7 @@ int f2fs_read_inline_dir(struct file *file, struct dir_context *ctx,
 
 	inline_dentry = inline_data_addr(inode, ipage);
 
+<<<<<<< HEAD
 	make_dentry_ptr_inline(inode, &d, inline_dentry);
 
 	err = f2fs_fill_dentries(ctx, &d, 0, fstr);
@@ -709,6 +722,13 @@ int f2fs_read_inline_dir(struct file *file, struct dir_context *ctx,
 		ctx->pos = d.max;
 
 	f2fs_put_page(ipage, 0);
+=======
+	err = f2fs_fill_dentries(ctx, &d, 0, fstr);
+	if (!err)
+		ctx->pos = NR_INLINE_DENTRY;
+
+	f2fs_put_page(ipage, 1);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	return err < 0 ? err : 0;
 }
 

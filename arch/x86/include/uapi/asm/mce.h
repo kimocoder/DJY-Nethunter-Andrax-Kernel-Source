@@ -29,7 +29,10 @@ struct mce {
 	__u64 synd;	/* MCA_SYND MSR: only valid on SMCA systems */
 	__u64 ipid;	/* MCA_IPID MSR: only valid on SMCA systems */
 	__u64 ppin;	/* Protected Processor Inventory Number */
+<<<<<<< HEAD
 	__u32 microcode;/* Microcode revision */
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 };
 
 #define MCE_GET_RECORD_LEN   _IOR('M', 1, int)

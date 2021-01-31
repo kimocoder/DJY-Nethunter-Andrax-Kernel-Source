@@ -226,6 +226,10 @@ struct fsxattr {
 #define BLKSECDISCARD _IO(0x12,125)
 #define BLKROTATIONAL _IO(0x12,126)
 #define BLKZEROOUT _IO(0x12,127)
+/*
+ * A jump here: 130-131 are reserved for zoned block devices
+ * (see uapi/linux/blkzoned.h)
+ */
 
 #define BMAP_IOCTL 1		/* obsolete - kept for compatibility */
 #define FIBMAP	   _IO(0x00,1)	/* bmap access */
@@ -262,8 +266,12 @@ struct fsxattr {
 #define FS_POLICY_FLAGS_PAD_16		0x02
 #define FS_POLICY_FLAGS_PAD_32		0x03
 #define FS_POLICY_FLAGS_PAD_MASK	0x03
+<<<<<<< HEAD
 #define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
 #define FS_POLICY_FLAGS_VALID		0x07
+=======
+#define FS_POLICY_FLAGS_VALID		0x03
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* Encryption algorithms */
 #define FS_ENCRYPTION_MODE_INVALID		0
@@ -271,12 +279,15 @@ struct fsxattr {
 #define FS_ENCRYPTION_MODE_AES_256_GCM		2
 #define FS_ENCRYPTION_MODE_AES_256_CBC		3
 #define FS_ENCRYPTION_MODE_AES_256_CTS		4
+<<<<<<< HEAD
 #define FS_ENCRYPTION_MODE_AES_128_CBC		5
 #define FS_ENCRYPTION_MODE_AES_128_CTS		6
 #define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
 #define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
 #define FS_ENCRYPTION_MODE_ADIANTUM		9
 #define FS_ENCRYPTION_MODE_PRIVATE		127
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 struct fscrypt_policy {
 	__u8 version;

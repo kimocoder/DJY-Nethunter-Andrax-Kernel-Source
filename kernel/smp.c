@@ -3,6 +3,9 @@
  *
  * (C) Jens Axboe <jens.axboe@oracle.com> 2008
  */
+
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/irq_work.h>
 #include <linux/rcupdate.h>
 #include <linux/rculist.h>
@@ -560,6 +563,7 @@ void __init setup_nr_cpu_ids(void)
 	nr_cpu_ids = find_last_bit(cpumask_bits(cpu_possible_mask),NR_CPUS) + 1;
 }
 
+<<<<<<< HEAD
 void __weak smp_announce(void)
 {
 	printk(KERN_INFO "Brought up %d CPUs\n", num_online_cpus());
@@ -579,13 +583,18 @@ static inline void free_boot_cpu_mask(void)
 		free_bootmem_cpumask_var(boot_cpu_mask);
 }
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /* Called by boot processor to activate the rest. */
 void __init smp_init(void)
 {
+	int num_nodes, num_cpus;
 	unsigned int cpu;
 
 	idle_threads_init();
 	cpuhp_threads_init();
+
+	pr_info("Bringing up secondary CPUs ...\n");
 
 	/* FIXME: This should be done in userspace --RR */
 	for_each_present_cpu(cpu) {
@@ -595,12 +604,20 @@ void __init smp_init(void)
 			cpu_up(cpu);
 	}
 
+<<<<<<< HEAD
 	free_boot_cpu_mask();
 
 	/* Final decision about SMT support */
 	cpu_smt_check_topology();
+=======
+	num_nodes = num_online_nodes();
+	num_cpus  = num_online_cpus();
+	pr_info("Brought up %d node%s, %d CPU%s\n",
+		num_nodes, (num_nodes > 1 ? "s" : ""),
+		num_cpus,  (num_cpus  > 1 ? "s" : ""));
+
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	/* Any cleanup work */
-	smp_announce();
 	smp_cpus_done(setup_max_cpus);
 }
 

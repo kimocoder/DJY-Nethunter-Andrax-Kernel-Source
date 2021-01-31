@@ -102,7 +102,11 @@ do_gc:
 		stat_inc_bggc_count(sbi);
 
 		/* if return value is not zero, no victim was selected */
+<<<<<<< HEAD
 		if (f2fs_gc(sbi, test_opt(sbi, FORCE_FG_GC), true, NULL_SEGNO))
+=======
+		if (f2fs_gc(sbi, test_opt(sbi, FORCE_FG_GC), true))
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			wait_ms = gc_th->no_gc_sleep_time;
 
 		trace_f2fs_background_gc(sbi->sb, wait_ms,
@@ -630,6 +634,7 @@ static bool is_alive(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
 	return true;
 }
 
+<<<<<<< HEAD
 static int ra_data_block(struct inode *inode, pgoff_t index)
 {
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
@@ -719,6 +724,10 @@ put_page:
  */
 static int move_data_block(struct inode *inode, block_t bidx,
 				int gc_type, unsigned int segno, int off)
+=======
+static void move_encrypted_block(struct inode *inode, block_t bidx,
+							unsigned int segno, int off)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	struct f2fs_io_info fio = {
 		.sbi = F2FS_I_SB(inode),
@@ -761,6 +770,9 @@ static int move_data_block(struct inode *inode, block_t bidx,
 		err = -EAGAIN;
 		goto out;
 	}
+
+	if (!check_valid_map(F2FS_I_SB(inode), segno, off))
+		goto out;
 
 	set_new_dnode(&dn, inode, NULL, NULL, 0);
 	err = f2fs_get_dnode_of_data(&dn, bidx, LOOKUP_NODE);
@@ -881,7 +893,11 @@ out:
 	return err;
 }
 
+<<<<<<< HEAD
 static int move_data_page(struct inode *inode, block_t bidx, int gc_type,
+=======
+static void move_data_page(struct inode *inode, block_t bidx, int gc_type,
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 							unsigned int segno, int off)
 {
 	struct page *page;
@@ -909,6 +925,9 @@ static int move_data_page(struct inode *inode, block_t bidx, int gc_type,
 		goto out;
 	}
 
+	if (!check_valid_map(F2FS_I_SB(inode), segno, off))
+		goto out;
+
 	if (gc_type == BG_GC) {
 		if (PageWriteback(page)) {
 			err = -EAGAIN;
@@ -924,7 +943,10 @@ static int move_data_page(struct inode *inode, block_t bidx, int gc_type,
 			.temp = COLD,
 			.op = REQ_OP_WRITE,
 			.op_flags = REQ_SYNC,
+<<<<<<< HEAD
 			.old_blkaddr = NULL_ADDR,
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 			.page = page,
 			.encrypted_page = NULL,
 			.need_lock = LOCK_REQ,
@@ -936,9 +958,16 @@ retry:
 		f2fs_wait_on_page_writeback(page, DATA, true, true);
 
 		set_page_dirty(page);
+<<<<<<< HEAD
 		if (clear_page_dirty_for_io(page)) {
 			inode_dec_dirty_pages(inode);
 			f2fs_remove_dirty_inode(inode);
+=======
+		f2fs_wait_on_page_writeback(page, DATA, true);
+		if (clear_page_dirty_for_io(page)) {
+			inode_dec_dirty_pages(inode);
+			remove_dirty_inode(inode);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 		}
 
 		set_cold_data(page);
@@ -1082,6 +1111,7 @@ next_step:
 
 			start_bidx = f2fs_start_bidx_of_node(nofs, inode)
 								+ ofs_in_node;
+<<<<<<< HEAD
 			if (f2fs_post_read_required(inode))
 				err = move_data_block(inode, start_bidx,
 							gc_type, segno, off);
@@ -1092,6 +1122,12 @@ next_step:
 			if (!err && (gc_type == FG_GC ||
 					f2fs_post_read_required(inode)))
 				submitted++;
+=======
+			if (f2fs_encrypted_inode(inode) && S_ISREG(inode->i_mode))
+				move_encrypted_block(inode, start_bidx, segno, off);
+			else
+				move_data_page(inode, start_bidx, gc_type, segno, off);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 			if (locked) {
 				up_write(&fi->i_gc_rwsem[WRITE]);
@@ -1227,8 +1263,12 @@ skip:
 	return seg_freed;
 }
 
+<<<<<<< HEAD
 int f2fs_gc(struct f2fs_sb_info *sbi, bool sync,
 			bool background, unsigned int segno)
+=======
+int f2fs_gc(struct f2fs_sb_info *sbi, bool sync, bool background)
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	int gc_type = sync ? FG_GC : BG_GC;
 	int sec_freed = 0, seg_freed = 0, total_freed = 0;
@@ -1277,8 +1317,14 @@ gc_more:
 			if (ret)
 				goto stop;
 		}
+<<<<<<< HEAD
 		if (has_not_enough_free_secs(sbi, 0, 0))
 			gc_type = FG_GC;
+=======
+	} else if (gc_type == BG_GC && !background) {
+		/* f2fs_balance_fs doesn't need to do BG_GC in critical path. */
+		goto stop;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	}
 
 	/* f2fs_balance_fs doesn't need to do BG_GC in critical path. */

@@ -13,6 +13,10 @@ struct lkdtm_list {
 	struct list_head node;
 };
 
+struct lkdtm_list {
+	struct list_head node;
+};
+
 /*
  * Make sure our attempts to over run the kernel stack doesn't trigger
  * a compiler warning when CONFIG_FRAME_WARN is set. Then make sure we
@@ -92,6 +96,10 @@ noinline void lkdtm_CORRUPT_STACK(void)
 	char data[8];
 	__lkdtm_CORRUPT_STACK(&data);
 
+<<<<<<< HEAD
+=======
+	memset((void *)data, 'a', 64);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	pr_info("Corrupted stack with '%16s'...\n", data);
 }
 
@@ -221,6 +229,7 @@ void lkdtm_CORRUPT_LIST_DEL(void)
 	else
 		pr_err("list_del() corruption not detected!\n");
 }
+<<<<<<< HEAD
 
 void lkdtm_CORRUPT_USER_DS(void)
 {
@@ -230,3 +239,5 @@ void lkdtm_CORRUPT_USER_DS(void)
 	/* Make sure we do not keep running with a KERNEL_DS! */
 	force_sig(SIGKILL, current);
 }
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

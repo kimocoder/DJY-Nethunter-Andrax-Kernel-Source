@@ -1481,8 +1481,6 @@ static int get_serial_info(struct usb_serial_port *port,
 	struct ftdi_private *priv = usb_get_serial_port_data(port);
 	struct serial_struct tmp;
 
-	if (!retinfo)
-		return -EFAULT;
 	memset(&tmp, 0, sizeof(tmp));
 	tmp.flags = priv->flags;
 	tmp.baud_base = priv->baud_base;
@@ -1563,9 +1561,6 @@ static int get_lsr_info(struct usb_serial_port *port,
 {
 	struct ftdi_private *priv = usb_get_serial_port_data(port);
 	unsigned int result = 0;
-
-	if (!retinfo)
-		return -EFAULT;
 
 	if (priv->transmit_empty)
 		result = TIOCSER_TEMT;

@@ -18,11 +18,15 @@
 
 static DEFINE_PER_CPU(bool, hard_watchdog_warn);
 static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+<<<<<<< HEAD
 #ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
 static cpumask_t __read_mostly watchdog_cpus;
 #else
 static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
 #endif
+=======
+static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 /* boot commands */
 /*
@@ -30,10 +34,14 @@ static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
  */
 unsigned int __read_mostly hardlockup_panic =
 			CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE;
+<<<<<<< HEAD
 
 #ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
 static unsigned long hardlockup_allcpu_dumped;
 #endif
+=======
+static unsigned long hardlockup_allcpu_dumped;
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /*
  * We may not want to enable hard lockup detection by default in all cases,
  * for example when running the kernel as a guest on a hypervisor. In these
@@ -75,6 +83,7 @@ void touch_nmi_watchdog(void)
 }
 EXPORT_SYMBOL(touch_nmi_watchdog);
 
+<<<<<<< HEAD
 #ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
 static unsigned int watchdog_next_cpu(unsigned int cpu)
 {
@@ -177,6 +186,8 @@ void watchdog_nmi_disable(unsigned int cpu)
 	cpumask_clear_cpu(cpu, &watchdog_cpus);
 }
 #else
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 static struct perf_event_attr wd_hw_attr = {
 	.type		= PERF_TYPE_HARDWARE,
 	.config		= PERF_COUNT_HW_CPU_CYCLES,
@@ -193,9 +204,12 @@ static void watchdog_overflow_callback(struct perf_event *event,
 	/* Ensure the watchdog never gets throttled */
 	event->hw.interrupts = 0;
 
+<<<<<<< HEAD
 	if (atomic_read(&watchdog_park_in_progress) != 0)
 		return;
 
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	if (__this_cpu_read(watchdog_nmi_touch) == true) {
 		__this_cpu_write(watchdog_nmi_touch, false);
 		return;
@@ -337,4 +351,7 @@ void watchdog_nmi_disable(unsigned int cpu)
 		cpu0_err = 0;
 	}
 }
+<<<<<<< HEAD
 #endif
+=======
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427

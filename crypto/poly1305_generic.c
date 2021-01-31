@@ -50,11 +50,27 @@ EXPORT_SYMBOL_GPL(crypto_poly1305_init);
 void poly1305_core_setkey(struct poly1305_key *key, const u8 *raw_key)
 {
 	/* r &= 0xffffffc0ffffffc0ffffffc0fffffff */
+<<<<<<< HEAD
 	key->r[0] = (get_unaligned_le32(raw_key +  0) >> 0) & 0x3ffffff;
 	key->r[1] = (get_unaligned_le32(raw_key +  3) >> 2) & 0x3ffff03;
 	key->r[2] = (get_unaligned_le32(raw_key +  6) >> 4) & 0x3ffc0ff;
 	key->r[3] = (get_unaligned_le32(raw_key +  9) >> 6) & 0x3f03fff;
 	key->r[4] = (get_unaligned_le32(raw_key + 12) >> 8) & 0x00fffff;
+=======
+	dctx->r[0] = (get_unaligned_le32(key +  0) >> 0) & 0x3ffffff;
+	dctx->r[1] = (get_unaligned_le32(key +  3) >> 2) & 0x3ffff03;
+	dctx->r[2] = (get_unaligned_le32(key +  6) >> 4) & 0x3ffc0ff;
+	dctx->r[3] = (get_unaligned_le32(key +  9) >> 6) & 0x3f03fff;
+	dctx->r[4] = (get_unaligned_le32(key + 12) >> 8) & 0x00fffff;
+}
+
+static void poly1305_setskey(struct poly1305_desc_ctx *dctx, const u8 *key)
+{
+	dctx->s[0] = get_unaligned_le32(key +  0);
+	dctx->s[1] = get_unaligned_le32(key +  4);
+	dctx->s[2] = get_unaligned_le32(key +  8);
+	dctx->s[3] = get_unaligned_le32(key + 12);
+>>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 EXPORT_SYMBOL_GPL(poly1305_core_setkey);
 
