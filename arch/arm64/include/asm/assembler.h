@@ -51,21 +51,7 @@
 	msr	daif, \flags
 	.endm
 
-<<<<<<< HEAD
-/*
- * Save/disable and restore interrupts.
- */
-	.macro	save_and_disable_irqs, olddaif
-	mrs	\olddaif, daif
-	disable_irq
-	.endm
 
-	.macro	restore_irqs, olddaif
-	msr	daif, \olddaif
-	.endm
-
-=======
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 /*
  * Enable and disable debug exceptions.
  */

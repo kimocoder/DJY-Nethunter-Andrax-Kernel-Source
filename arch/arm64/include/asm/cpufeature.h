@@ -109,11 +109,7 @@ static inline bool cpu_have_feature(unsigned int num)
 }
 
 /* System capability check for constant caps */
-<<<<<<< HEAD
-static inline bool __cpus_have_const_cap(int num)
-=======
 static inline bool cpus_have_const_cap(int num)
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	if (num >= ARM64_NCAPS)
 		return false;
@@ -125,17 +121,6 @@ static inline bool cpus_have_cap(unsigned int num)
 	if (num >= ARM64_NCAPS)
 		return false;
 	return test_bit(num, cpu_hwcaps);
-<<<<<<< HEAD
-}
-
-static inline bool cpus_have_const_cap(int num)
-{
-	if (static_branch_likely(&arm64_const_caps_ready))
-		return __cpus_have_const_cap(num);
-	else
-		return cpus_have_cap(num);
-=======
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static inline void cpus_set_cap(unsigned int num)
@@ -231,36 +216,6 @@ static inline bool system_supports_mixed_endian_el0(void)
 	return id_aa64mmfr0_mixed_endian_el0(read_system_reg(SYS_ID_AA64MMFR0_EL1));
 }
 
-<<<<<<< HEAD
-static inline bool system_uses_ttbr0_pan(void)
-{
-	return IS_ENABLED(CONFIG_ARM64_SW_TTBR0_PAN) &&
-		!cpus_have_cap(ARM64_HAS_PAN);
-}
-
-#define ARM64_SSBD_UNKNOWN		-1
-#define ARM64_SSBD_FORCE_DISABLE	0
-#define ARM64_SSBD_KERNEL		1
-#define ARM64_SSBD_FORCE_ENABLE		2
-#define ARM64_SSBD_MITIGATED		3
-
-static inline int arm64_get_ssbd_state(void)
-{
-#ifdef CONFIG_ARM64_SSBD
-	extern int ssbd_state;
-	return ssbd_state;
-#else
-	return ARM64_SSBD_UNKNOWN;
-#endif
-}
-
-#ifdef CONFIG_ARM64_SSBD
-void arm64_set_ssbd_mitigation(bool state);
-#else
-static inline void arm64_set_ssbd_mitigation(bool state) {}
-#endif
-
-=======
 static inline bool system_supports_fpsimd(void)
 {
 	return !cpus_have_const_cap(ARM64_HAS_NO_FPSIMD);
@@ -272,7 +227,6 @@ static inline bool system_uses_ttbr0_pan(void)
 		!cpus_have_cap(ARM64_HAS_PAN);
 }
 
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #endif /* __ASSEMBLY__ */
 
 #endif

@@ -188,18 +188,11 @@ typedef compat_elf_greg_t		compat_elf_gregset_t[COMPAT_ELF_NGREG];
 					 ((x)->e_flags & EF_ARM_EABI_MASK))
 
 #define compat_start_thread		compat_start_thread
-<<<<<<< HEAD
-#define COMPAT_SET_PERSONALITY(ex)	set_thread_flag(TIF_32BIT);
-#ifdef CONFIG_VDSO32
-#define COMPAT_ARCH_DLINFO		_SET_AUX_ENT_VDSO
-#else
-=======
 #define COMPAT_SET_PERSONALITY(ex)					\
 ({									\
 	set_bit(TIF_32BIT, &current->mm->context.flags);		\
 	set_thread_flag(TIF_32BIT);					\
  })
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #define COMPAT_ARCH_DLINFO
 #endif
 extern int aarch32_setup_vectors_page(struct linux_binprm *bprm,

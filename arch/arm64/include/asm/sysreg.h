@@ -280,19 +280,6 @@
 "	.equ	.L__reg_num_x\\num, \\num\n"			\
 "	.endr\n"						\
 "	.equ	.L__reg_num_xzr, 31\n"
-<<<<<<< HEAD
-
-#define DEFINE_MRS_S						\
-	__DEFINE_MRS_MSR_S_REGNUM				\
-"	.macro	mrs_s, rt, sreg\n"				\
-"	.inst 0xd5200000|(\\sreg)|(.L__reg_num_\\rt)\n"	\
-"	.endm\n"
-
-#define DEFINE_MSR_S						\
-	__DEFINE_MRS_MSR_S_REGNUM				\
-"	.macro	msr_s, sreg, rt\n"				\
-"	.inst 0xd5000000|(\\sreg)|(.L__reg_num_\\rt)\n"		\
-=======
 "\n"
 "	.macro	mrs_s, rt, sreg\n"
 	__emit_inst(0xd5200000|(\\sreg)|(.L__reg_num_\\rt))
@@ -300,7 +287,6 @@
 "\n"
 "	.macro	msr_s, sreg, rt\n"
 	__emit_inst(0xd5000000|(\\sreg)|(.L__reg_num_\\rt))
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 "	.endm\n"
 
 #define UNDEFINE_MRS_S						\

@@ -17,10 +17,6 @@
 #define __ASM_PERCPU_H
 
 #include <asm/stack_pointer.h>
-<<<<<<< HEAD
-#include <asm/alternative.h>
-=======
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 static inline void set_my_cpu_offset(unsigned long off)
 {

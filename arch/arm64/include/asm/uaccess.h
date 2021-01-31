@@ -20,10 +20,6 @@
 
 #include <asm/alternative.h>
 #include <asm/kernel-pgtable.h>
-<<<<<<< HEAD
-#include <asm/mmu.h>
-=======
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 #include <asm/sysreg.h>
 
 #ifndef __ASSEMBLY__

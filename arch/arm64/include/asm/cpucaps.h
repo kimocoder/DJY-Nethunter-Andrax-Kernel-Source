@@ -34,17 +34,8 @@
 #define ARM64_HAS_32BIT_EL0			13
 #define ARM64_HYP_OFFSET_LOW			14
 #define ARM64_MISMATCHED_CACHE_LINE_SIZE	15
-<<<<<<< HEAD
-#define ARM64_UNMAP_KERNEL_AT_EL0		16
-#define ARM64_HARDEN_BRANCH_PREDICTOR		17
-#define ARM64_SSBD				18
-#define ARM64_MISMATCHED_CACHE_TYPE		19
-
-#define ARM64_NCAPS				20
-=======
 #define ARM64_HAS_NO_FPSIMD			16
 
 #define ARM64_NCAPS				17
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #endif /* __ASM_CPUCAPS_H */

@@ -249,20 +249,7 @@ static inline void __gic_writeq_nonatomic(u64 val, volatile void __iomem *addr)
 	writel_relaxed((u32)(val >> 32), addr + 4);
 }
 
-<<<<<<< HEAD
-static inline u64 gic_read_irouter(const volatile void __iomem *addr)
-{
-	u64 val;
-
-	val = readl_relaxed(addr);
-	val |= (u64)readl_relaxed(addr + 4) << 32;
-	return val;
-}
-
-static inline u64 gic_read_typer(const volatile void __iomem *addr)
-=======
 static inline u64 __gic_readq_nonatomic(const volatile void __iomem *addr)
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 {
 	u64 val;
 

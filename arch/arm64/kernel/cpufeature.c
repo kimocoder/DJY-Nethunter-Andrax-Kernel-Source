@@ -757,114 +757,12 @@ static bool hyp_offset_low(const struct arm64_cpu_capabilities *entry,
 	return idmap_addr > GENMASK(VA_BITS - 2, 0) && !is_kernel_in_hyp_mode();
 }
 
-<<<<<<< HEAD
-#ifdef CONFIG_UNMAP_KERNEL_AT_EL0
-static int __kpti_forced; /* 0: not forced, >0: forced on, <0: forced off */
-
-static bool unmap_kernel_at_el0(const struct arm64_cpu_capabilities *entry,
-				int __unused)
-{
-	char const *str = "command line option";
-	u64 pfr0 = read_system_reg(SYS_ID_AA64PFR0_EL1);
-
-	/*
-	 * For reasons that aren't entirely clear, enabling KPTI on Cavium
-	 * ThunderX leads to apparent I-cache corruption of kernel text, which
-	 * ends as well as you might imagine. Don't even try.
-	 */
-	if (cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_27456)) {
-		str = "ARM64_WORKAROUND_CAVIUM_27456";
-		__kpti_forced = -1;
-	}
-
-	/* Forced? */
-	if (__kpti_forced) {
-		pr_info_once("kernel page table isolation forced %s by %s\n",
-			     __kpti_forced > 0 ? "ON" : "OFF", str);
-		return __kpti_forced > 0;
-	}
-
-	/* Useful for KASLR robustness */
-	if (IS_ENABLED(CONFIG_RANDOMIZE_BASE))
-		return true;
-
-	/* Don't force KPTI for CPUs that are not vulnerable */
-	switch (read_cpuid_id() & MIDR_CPU_MODEL_MASK) {
-	case MIDR_CAVIUM_THUNDERX2:
-	case MIDR_BRCM_VULCAN:
-	case MIDR_CORTEX_A53:
-	case MIDR_CORTEX_A55:
-	case MIDR_CORTEX_A57:
-	case MIDR_CORTEX_A72:
-	case MIDR_CORTEX_A73:
-		return false;
-	}
-
-	/* Defer to CPU feature registers */
-	return !cpuid_feature_extract_unsigned_field(pfr0,
-						     ID_AA64PFR0_CSV3_SHIFT);
-}
-
-static int __nocfi kpti_install_ng_mappings(void *__unused)
-{
-	typedef void (kpti_remap_fn)(int, int, phys_addr_t);
-	extern kpti_remap_fn idmap_kpti_install_ng_mappings;
-	kpti_remap_fn *remap_fn;
-
-	static bool kpti_applied = false;
-	int cpu = smp_processor_id();
-
-	if (kpti_applied)
-		return 0;
-
-	remap_fn = (void *)__pa_symbol(idmap_kpti_install_ng_mappings);
-
-	cpu_install_idmap();
-	remap_fn(cpu, num_online_cpus(), __pa_symbol(swapper_pg_dir));
-	cpu_uninstall_idmap();
-
-	if (!cpu)
-		kpti_applied = true;
-
-	return 0;
-}
-
-static int __init parse_kpti(char *str)
-{
-	bool enabled;
-	int ret = strtobool(str, &enabled);
-
-	if (ret)
-		return ret;
-
-	__kpti_forced = enabled ? 1 : -1;
-	return 0;
-}
-early_param("kpti", parse_kpti);
-#endif	/* CONFIG_UNMAP_KERNEL_AT_EL0 */
-
-static int cpu_copy_el2regs(void *__unused)
-{
-	/*
-	 * Copy register values that aren't redirected by hardware.
-	 *
-	 * Before code patching, we only set tpidr_el1, all CPUs need to copy
-	 * this value to tpidr_el2 before we patch the code. Once we've done
-	 * that, freshly-onlined CPUs will set tpidr_el2, so we don't need to
-	 * do anything here.
-	 */
-	if (!alternatives_applied)
-		write_sysreg(read_sysreg(tpidr_el1), tpidr_el2);
-
-	return 0;
-=======
 static bool has_no_fpsimd(const struct arm64_cpu_capabilities *entry, int __unused)
 {
 	u64 pfr0 = read_system_reg(SYS_ID_AA64PFR0_EL1);
 
 	return cpuid_feature_extract_signed_field(pfr0,
 					ID_AA64PFR0_FP_SHIFT) < 0;
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 }
 
 static const struct arm64_cpu_capabilities arm64_features[] = {
@@ -951,17 +849,6 @@ static const struct arm64_cpu_capabilities arm64_features[] = {
 		.def_scope = SCOPE_SYSTEM,
 		.matches = hyp_offset_low,
 	},
-<<<<<<< HEAD
-#ifdef CONFIG_UNMAP_KERNEL_AT_EL0
-	{
-		.desc = "Kernel page table isolation (KPTI)",
-		.capability = ARM64_UNMAP_KERNEL_AT_EL0,
-		.def_scope = SCOPE_SYSTEM,
-		.matches = unmap_kernel_at_el0,
-		.enable = kpti_install_ng_mappings,
-	},
-#endif
-=======
 	{
 		/* FP/SIMD is not implemented */
 		.capability = ARM64_HAS_NO_FPSIMD,
@@ -969,7 +856,6 @@ static const struct arm64_cpu_capabilities arm64_features[] = {
 		.min_field_value = 0,
 		.matches = has_no_fpsimd,
 	},
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	{},
 };
 

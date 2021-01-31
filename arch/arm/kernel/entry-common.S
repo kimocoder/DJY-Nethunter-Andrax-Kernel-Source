@@ -12,15 +12,11 @@
 #include <asm/unistd.h>
 #include <asm/ftrace.h>
 #include <asm/unwind.h>
-<<<<<<< HEAD
-#include <asm/memory.h>
-=======
 #ifdef CONFIG_AEABI
 #include <asm/unistd-oabi.h>
 #endif
 
 	.equ	NR_syscalls, __NR_syscalls
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 #ifdef CONFIG_NEED_RET_TO_USER
 #include <mach/entry-macro.S>

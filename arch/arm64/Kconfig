@@ -130,10 +130,6 @@ config ARM64
 	select SPARSE_IRQ
 	select SYSCTL_EXCEPTION_TRACE
 	select THREAD_INFO_IN_TASK
-<<<<<<< HEAD
-	select ARCH_SUPPORTS_SPECULATIVE_PAGE_FAULT
-=======
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 	help
 	  ARM 64-bit (AArch64) Linux support.
 

@@ -55,19 +55,9 @@ static int change_memory_common(unsigned long addr, int numpages,
 	if (!size)
 		return 0;
 
-<<<<<<< HEAD
-	if (!IS_ENABLED(CONFIG_FORCE_PAGES)) {
-		if (start < MODULES_VADDR || start >= MODULES_END)
-			return -EINVAL;
-
-		if (end < MODULES_VADDR || start >= MODULES_END)
-			return -EINVAL;
-	}
-=======
 	if (!in_range(start, size, MODULES_VADDR, MODULES_END) &&
 	    !in_range(start, size, VMALLOC_START, VMALLOC_END))
 		return -EINVAL;
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	data.set_mask = set_mask;
 	data.clear_mask = clear_mask;

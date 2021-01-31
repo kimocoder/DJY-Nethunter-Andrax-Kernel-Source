@@ -221,14 +221,7 @@ static int aesbs_xts_encrypt(struct skcipher_request *req)
 	struct skcipher_walk walk;
 	int err;
 
-<<<<<<< HEAD
-	blkcipher_walk_init(&walk, dst, src, nbytes);
-	err = blkcipher_walk_virt_block(desc, &walk, 8 * AES_BLOCK_SIZE);
-	if (err)
-		return err;
-=======
 	err = skcipher_walk_virt(&walk, req, false);
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* generate the initial tweak */
 	AES_encrypt(walk.iv, walk.iv, &ctx->twkey);
@@ -250,14 +243,7 @@ static int aesbs_xts_decrypt(struct skcipher_request *req)
 	struct skcipher_walk walk;
 	int err;
 
-<<<<<<< HEAD
-	blkcipher_walk_init(&walk, dst, src, nbytes);
-	err = blkcipher_walk_virt_block(desc, &walk, 8 * AES_BLOCK_SIZE);
-	if (err)
-		return err;
-=======
 	err = skcipher_walk_virt(&walk, req, false);
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 	/* generate the initial tweak */
 	AES_encrypt(walk.iv, walk.iv, &ctx->twkey);
@@ -318,75 +304,12 @@ static struct skcipher_alg aesbs_algs[] = { {
 		.cra_alignmask		= 7,
 		.cra_module		= THIS_MODULE,
 	},
-<<<<<<< HEAD
-}, {
-	.cra_name		= "cbc(aes)",
-	.cra_driver_name	= "cbc-aes-neonbs",
-	.cra_priority		= 250,
-	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER|CRYPTO_ALG_ASYNC,
-	.cra_blocksize		= AES_BLOCK_SIZE,
-	.cra_ctxsize		= sizeof(struct async_helper_ctx),
-	.cra_alignmask		= 7,
-	.cra_type		= &crypto_ablkcipher_type,
-	.cra_module		= THIS_MODULE,
-	.cra_init		= ablk_init,
-	.cra_exit		= ablk_exit,
-	.cra_ablkcipher = {
-		.min_keysize	= AES_MIN_KEY_SIZE,
-		.max_keysize	= AES_MAX_KEY_SIZE,
-		.ivsize		= AES_BLOCK_SIZE,
-		.setkey		= ablk_set_key,
-		.encrypt	= __ablk_encrypt,
-		.decrypt	= ablk_decrypt,
-	}
-}, {
-	.cra_name		= "ctr(aes)",
-	.cra_driver_name	= "ctr-aes-neonbs",
-	.cra_priority		= 250,
-	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER|CRYPTO_ALG_ASYNC,
-	.cra_blocksize		= 1,
-	.cra_ctxsize		= sizeof(struct async_helper_ctx),
-	.cra_alignmask		= 7,
-	.cra_type		= &crypto_ablkcipher_type,
-	.cra_module		= THIS_MODULE,
-	.cra_init		= ablk_init,
-	.cra_exit		= ablk_exit,
-	.cra_ablkcipher = {
-		.min_keysize	= AES_MIN_KEY_SIZE,
-		.max_keysize	= AES_MAX_KEY_SIZE,
-		.ivsize		= AES_BLOCK_SIZE,
-		.setkey		= ablk_set_key,
-		.encrypt	= ablk_encrypt,
-		.decrypt	= ablk_decrypt,
-	}
-}, {
-	.cra_name		= "xts(aes)",
-	.cra_driver_name	= "xts-aes-neonbs",
-	.cra_priority		= 250,
-	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER|CRYPTO_ALG_ASYNC,
-	.cra_blocksize		= AES_BLOCK_SIZE,
-	.cra_ctxsize		= sizeof(struct async_helper_ctx),
-	.cra_alignmask		= 7,
-	.cra_type		= &crypto_ablkcipher_type,
-	.cra_module		= THIS_MODULE,
-	.cra_init		= ablk_init,
-	.cra_exit		= ablk_exit,
-	.cra_ablkcipher = {
-		.min_keysize	= 2 * AES_MIN_KEY_SIZE,
-		.max_keysize	= 2 * AES_MAX_KEY_SIZE,
-		.ivsize		= AES_BLOCK_SIZE,
-		.setkey		= ablk_set_key,
-		.encrypt	= ablk_encrypt,
-		.decrypt	= ablk_decrypt,
-	}
-=======
 	.min_keysize	= 2 * AES_MIN_KEY_SIZE,
 	.max_keysize	= 2 * AES_MAX_KEY_SIZE,
 	.ivsize		= AES_BLOCK_SIZE,
 	.setkey		= aesbs_xts_set_key,
 	.encrypt	= aesbs_xts_encrypt,
 	.decrypt	= aesbs_xts_decrypt,
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 } };
 
 struct simd_skcipher_alg *aesbs_simd_algs[ARRAY_SIZE(aesbs_algs)];

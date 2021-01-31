@@ -40,13 +40,8 @@ sha1-arm-ce-y	:= sha1-ce-core.o sha1-ce-glue.o
 sha2-arm-ce-y	:= sha2-ce-core.o sha2-ce-glue.o
 aes-arm-ce-y	:= aes-ce-core.o aes-ce-glue.o
 ghash-arm-ce-y	:= ghash-ce-core.o ghash-ce-glue.o
-<<<<<<< HEAD
-chacha-neon-y := chacha-neon-core.o chacha-neon-glue.o
-nhpoly1305-neon-y := nh-neon-core.o nhpoly1305-neon-glue.o
-=======
 crct10dif-arm-ce-y	:= crct10dif-ce-core.o crct10dif-ce-glue.o
 crc32-arm-ce-y:= crc32-ce-core.o crc32-ce-glue.o
->>>>>>> 2b3b80e8b9daba3e8e12f23f1acde4bd0ec88427
 
 quiet_cmd_perl = PERL    $@
       cmd_perl = $(PERL) $(<) > $(@)
