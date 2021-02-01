@@ -807,12 +807,11 @@ void __noreturn do_exit(long code)
 		panic("Recursive fault!\n");
 #else
 		pr_alert("Fixing recursive fault but reboot is needed!\n");
-		futex_exit_done(tsk);
-
+		futex_exit_recursive(tsk);
+#endif
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule();
 	}
-#endif
 	exit_signals(tsk);  /* sets PF_EXITING */
 
 	sched_exit(tsk);
