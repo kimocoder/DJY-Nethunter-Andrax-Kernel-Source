@@ -34,6 +34,7 @@ void *msm_11ad_dev_init(struct device *dev, struct wil_platform_ops *ops,
 /* call on insmod */
 int msm_11ad_modinit(void);
 
-int msm_11ad_modexit(void);
+/* call on rmmod */
+void msm_11ad_modexit(void);
 
 #endif /* __MSM_11AD_H__ */
