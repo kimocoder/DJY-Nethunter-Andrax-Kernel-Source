@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * tda18271c2dd: Driver for the TDA18271C2 tuner
  *
@@ -25,14 +24,16 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
-// #include <linux/moduleparam.h>
+/*
+*  #include <linux/moduleparam.h>
+*/
 #include <linux/init.h>
 #include <linux/delay.h>
 #include <linux/firmware.h>
 #include <linux/i2c.h>
 #include <asm/div64.h>
 
-#include <media/dvb_core/dvb_frontend.h>
+#include "dvb_frontend.h"
 #include "tda18271c2dd.h"
 
 /* Max transfer size done by I2C transfer functions */
@@ -111,7 +112,7 @@ struct tda_state {
 	s32   m_RF_B2[7];
 	u32   m_RF3[7];
 
-	u8    m_TMValue_RFCal;    /* Calibration temperature */
+	u8    m_TMValue_RFCal;    /* Calibration temperatur */
 
 	bool  m_bFMInput;         /* true to use Pin 8 for FM Radio */
 
@@ -217,55 +218,58 @@ static void reset(struct tda_state *state)
 	state->m_bFMInput = (ulFMInput == 2);
 }
 
-static bool SearchMap1(const struct SMap map[], u32 frequency, u8 *param)
+static bool SearchMap1(struct SMap Map[],
+		       u32 Frequency, u8 *pParam)
 {
 	int i = 0;
 
-	while ((map[i].m_Frequency != 0) && (frequency > map[i].m_Frequency))
+	while ((Map[i].m_Frequency != 0) && (Frequency > Map[i].m_Frequency))
 		i += 1;
-	if (map[i].m_Frequency == 0)
+	if (Map[i].m_Frequency == 0)
 		return false;
-	*param = map[i].m_Param;
+	*pParam = Map[i].m_Param;
 	return true;
 }
 
-static bool SearchMap2(const struct SMapI map[], u32 frequency, s32 *param)
+static bool SearchMap2(struct SMapI Map[],
+		       u32 Frequency, s32 *pParam)
 {
 	int i = 0;
 
-	while ((map[i].m_Frequency != 0) &&
-	       (frequency > map[i].m_Frequency))
+	while ((Map[i].m_Frequency != 0) &&
+	       (Frequency > Map[i].m_Frequency))
 		i += 1;
-	if (map[i].m_Frequency == 0)
+	if (Map[i].m_Frequency == 0)
 		return false;
-	*param = map[i].m_Param;
+	*pParam = Map[i].m_Param;
 	return true;
 }
 
-static bool SearchMap3(const struct SMap2 map[], u32 frequency, u8 *param1,
-		       u8 *param2)
+static bool SearchMap3(struct SMap2 Map[], u32 Frequency,
+		       u8 *pParam1, u8 *pParam2)
 {
 	int i = 0;
 
-	while ((map[i].m_Frequency != 0) &&
-	       (frequency > map[i].m_Frequency))
+	while ((Map[i].m_Frequency != 0) &&
+	       (Frequency > Map[i].m_Frequency))
 		i += 1;
-	if (map[i].m_Frequency == 0)
+	if (Map[i].m_Frequency == 0)
 		return false;
-	*param1 = map[i].m_Param1;
-	*param2 = map[i].m_Param2;
+	*pParam1 = Map[i].m_Param1;
+	*pParam2 = Map[i].m_Param2;
 	return true;
 }
 
-static bool SearchMap4(const struct SRFBandMap map[], u32 frequency, u8 *rfband)
+static bool SearchMap4(struct SRFBandMap Map[],
+		       u32 Frequency, u8 *pRFBand)
 {
 	int i = 0;
 
-	while (i < 7 && (frequency > map[i].m_RF_max))
+	while (i < 7 && (Frequency > Map[i].m_RF_max))
 		i += 1;
 	if (i == 7)
 		return false;
-	*rfband = i;
+	*pRFBand = i;
 	return true;
 }
 
@@ -403,7 +407,7 @@ static int CalibrateRF(struct tda_state *state,
 			break;
 
 		/* Switching off LT (as datasheet says) causes calibration on C1 to fail */
-		/* (Readout of Cprog is always 255) */
+		/* (Readout of Cprog is allways 255) */
 		if (state->m_Regs[ID] != 0x83)    /* C1: ID == 83, C2: ID == 84 */
 			state->m_Regs[EP3] |= 0x40; /* SM_LT = 1 */
 
@@ -647,7 +651,7 @@ static int PowerScan(struct tda_state *state,
 		if (status < 0)
 			break;
 		CID_Gain = Regs[EB10] & 0x3F;
-		state->m_Regs[ID] = Regs[ID];  /* Chip version, (needed for C1 workaround in CalibrateRF) */
+		state->m_Regs[ID] = Regs[ID];  /* Chip version, (needed for C1 workarround in CalibrateRF) */
 
 		*pRF_Out = RF_in;
 
@@ -1123,10 +1127,11 @@ static int init(struct dvb_frontend *fe)
 	return 0;
 }
 
-static void release(struct dvb_frontend *fe)
+static int release(struct dvb_frontend *fe)
 {
 	kfree(fe->tuner_priv);
 	fe->tuner_priv = NULL;
+	return 0;
 }
 
 
@@ -1156,7 +1161,6 @@ static int set_params(struct dvb_frontend *fe)
 		default:
 			return -EINVAL;
 		}
-		break;
 	case SYS_DVBC_ANNEX_A:
 	case SYS_DVBC_ANNEX_C:
 		if (bw <= 6000000)
@@ -1217,9 +1221,9 @@ static int get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
 static const struct dvb_tuner_ops tuner_ops = {
 	.info = {
 		.name = "NXP TDA18271C2D",
-		.frequency_min_hz  =  47125 * kHz,
-		.frequency_max_hz  =    865 * MHz,
-		.frequency_step_hz =  62500
+		.frequency_min  =  47125000,
+		.frequency_max  = 865000000,
+		.frequency_step =     62500
 	},
 	.init              = init,
 	.sleep             = sleep,
