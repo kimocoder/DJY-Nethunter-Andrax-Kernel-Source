@@ -2,12 +2,12 @@
   "kernel": {
     "name": "OnePlus 6/6T NetHunter Kernel",
     "version": "v2.0.0",
-    "link": "https://github.com/acuicultor/Radioactive_kernel_op6/releases/download/V10.8.0/RadioactiveKernel_V10.8.0_CUSTOM_OnePlus6-6T.zip",
-    "changelog_url": "",
+    "link": "https://github.com/kimocoder/android_kernel_oneplus_oneplus6/blob/nethunter-10.0/kali-nethunter-kernel/oneplus_kernel.zip?raw=true",
+    "changelog_url": "https://raw.githubusercontent.com/kimocoder/android_kernel_oneplus_oneplus6/nethunter-10.0/app/changelog.txt",
     "date": "2021-02-03",
-    "sha1": "e0ce681ad53d8b729a34f687de4f14de98241f59"
+    "sha1": "1085c666ae438d05bb104f40bbf91930b77d19a8"
   },
   "support": {
-    "link": "https://www.gitlab.com/kalilinux"
+    "link": "https://www.gitlab.com/kalilinux/nethunter"
   }
 }
