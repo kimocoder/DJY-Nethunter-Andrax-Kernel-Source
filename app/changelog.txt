@@ -1,5 +1,6 @@
 Project name: OnePlus 6/6T NetHunter Kernel
-  * Added Quantenna WiFi adapters support
+  * Added latest WCN36xx driver (from wireless-next)
+  * Added Quantenna WiFi adapters (from wireless-next)
   * Cleaned some compiler warnings
   * Cherry picked: Add mutex for protecting msm_otg_reset
   * Updated the "exfat" filesystem 
