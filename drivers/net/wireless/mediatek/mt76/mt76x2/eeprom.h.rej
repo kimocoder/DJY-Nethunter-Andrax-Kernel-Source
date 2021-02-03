@@ -1,0 +1,11 @@
+--- drivers/net/wireless/mediatek/mt76/mt76x2_eeprom.h
++++ drivers/net/wireless/mediatek/mt76/mt76x2/eeprom.h
+@@ -17,7 +17,7 @@
+ #ifndef __MT76x2_EEPROM_H
+ #define __MT76x2_EEPROM_H
+ 
+-#include "mt76x02_eeprom.h"
++#include "../mt76x02_eeprom.h"
+ 
+ enum mt76x2_cal_channel_group {
+ 	MT_CH_5G_JAPAN,

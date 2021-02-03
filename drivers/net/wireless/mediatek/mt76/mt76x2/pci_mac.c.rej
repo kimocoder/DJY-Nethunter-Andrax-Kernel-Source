@@ -1,0 +1,17 @@
+--- drivers/net/wireless/mediatek/mt76/mt76x2_mac.c
++++ drivers/net/wireless/mediatek/mt76/mt76x2/pci_mac.c
+@@ -16,10 +16,10 @@
+ 
+ #include <linux/delay.h>
+ #include "mt76x2.h"
+-#include "mt76x2_mcu.h"
+-#include "mt76x2_eeprom.h"
+-#include "mt76x2_trace.h"
+-#include "mt76x02_util.h"
++#include "mcu.h"
++#include "eeprom.h"
++#include "trace.h"
++#include "../mt76x02_util.h"
+ 
+ void mt76x2_mac_set_bssid(struct mt76x2_dev *dev, u8 idx, const u8 *addr)
+ {

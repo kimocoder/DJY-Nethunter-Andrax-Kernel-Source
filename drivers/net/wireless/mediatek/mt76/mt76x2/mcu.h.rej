@@ -1,0 +1,11 @@
+--- drivers/net/wireless/mediatek/mt76/mt76x2_mcu.h
++++ drivers/net/wireless/mediatek/mt76/mt76x2/mcu.h
+@@ -17,7 +17,7 @@
+ #ifndef __MT76x2_MCU_H
+ #define __MT76x2_MCU_H
+ 
+-#include "mt76x02_mcu.h"
++#include "../mt76x02_mcu.h"
+ 
+ /* Register definitions */
+ #define MT_MCU_CPU_CTL			0x0704
