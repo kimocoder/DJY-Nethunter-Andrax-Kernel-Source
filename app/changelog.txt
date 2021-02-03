@@ -4,7 +4,5 @@ Project name: OnePlus 6/6T NetHunter Kernel
   * Cherry picked: Add mutex for protecting msm_otg_reset
   * Updated the "exfat" filesystem 
   * Fixed minor issues with the UFS filesystem
-    ------------------------------------------------------
   * Merged linux-stable 4.9.254 
-    ------------------------------------------------------
   * Imported latest QCACLD-3 (WiFi SoC) drivers
