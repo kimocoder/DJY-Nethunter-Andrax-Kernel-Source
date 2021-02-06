@@ -35,7 +35,6 @@
 #include "mac_trace.h"
 #include "wlan_policy_mgr_api.h"
 
-#ifdef WLAN_DEBUG
 static const char *lfr_get_config_item_string(uint8_t reason)
 {
 	switch (reason) {
@@ -49,7 +48,6 @@ static const char *lfr_get_config_item_string(uint8_t reason)
 		return "unknown";
 	}
 }
-#endif
 
 static void csr_neighbor_roam_reset_channel_info(tpCsrNeighborRoamChannelInfo
 						 rChInfo);
@@ -1066,9 +1064,14 @@ static void csr_neighbor_roam_info_ctx_init(
 		} else
 #endif
 		{
-			csr_roam_offload_scan(pMac, session_id,
-				ROAM_SCAN_OFFLOAD_START,
-				REASON_CTX_INIT);
+			if (!ngbr_roam_info->b_roam_scan_offload_started)
+				csr_roam_offload_scan(pMac, session_id,
+					ROAM_SCAN_OFFLOAD_START,
+					REASON_CTX_INIT);
+			else
+				csr_roam_offload_scan(pMac, session_id,
+					ROAM_SCAN_OFFLOAD_UPDATE_CFG,
+					REASON_CONNECT);
 
 			if (roam_profile &&
 				roam_profile->supplicant_disabled_roaming) {

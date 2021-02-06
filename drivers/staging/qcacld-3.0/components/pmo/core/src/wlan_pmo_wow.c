@@ -212,30 +212,26 @@ void pmo_core_disable_wakeup_event(struct wlan_objmgr_psoc *psoc,
 	struct wlan_objmgr_vdev *vdev;
 	uint32_t bitmap[PMO_WOW_MAX_EVENT_BM_LEN] = {0};
 
-	pmo_enter();
 	if (!psoc) {
 		pmo_err("psoc is null");
-		goto out;
+		return;
 	}
 
 	vdev = pmo_psoc_get_vdev(psoc, vdev_id);
 	if (!vdev) {
 		pmo_err("vdev is NULL");
-		goto out;
+		return;
 	}
 
 	status = pmo_vdev_get_ref(vdev);
 	if (QDF_IS_STATUS_ERROR(status))
-		goto out;
+		return;
 
 	pmo_set_wow_event_bitmap(wow_event, PMO_WOW_MAX_EVENT_BM_LEN, bitmap);
 
 	pmo_tgt_disable_wow_wakeup_event(vdev, bitmap);
 
 	pmo_vdev_put_ref(vdev);
-
-out:
-	pmo_exit();
 }
 
 /**
@@ -468,20 +464,16 @@ uint8_t pmo_get_num_wow_filters(struct wlan_objmgr_psoc *psoc)
 {
 	struct pmo_psoc_priv_obj *psoc_ctx;
 	bool apf = false;
-	bool arp_ns = false;
 	bool pkt_filter = false;
 
 	pmo_psoc_with_ctx(psoc, psoc_ctx) {
 		apf = pmo_intersect_apf(psoc_ctx);
-		arp_ns = pmo_intersect_arp_ns_offload(psoc_ctx);
 		pkt_filter = pmo_intersect_packet_filter(psoc_ctx);
 	}
 
 	if (!apf && !pkt_filter)
 		return PMO_WOW_FILTERS_MAX;
 
-	if (arp_ns)
-		return PMO_WOW_FILTERS_ARP_NS;
 
 	return PMO_WOW_FILTERS_PKT_OR_APF;
 }

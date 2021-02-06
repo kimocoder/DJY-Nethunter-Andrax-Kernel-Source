@@ -813,6 +813,12 @@ config QPNP_MISC
 	  and the driver provides an API to check if this interrupt
 	  is available on the current PMIC chip.
 
+config FORCE_FAST_CHARGE
+	bool "Force faster charge rate for USB"
+	default y
+	help
+	  This allows users to override default charge rate for USB
+
 #add by xcb
 config BOOTLOADER_LOG
 	tristate "show bootloader log"
@@ -820,6 +826,7 @@ config BOOTLOADER_LOG
 	default y
 	help
 	  show bootloader log in kernel
+
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"

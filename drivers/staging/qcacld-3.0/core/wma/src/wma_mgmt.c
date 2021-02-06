@@ -1911,8 +1911,14 @@ static QDF_STATUS wma_setup_install_key_cmd(tp_wma_handle wma_handle,
 			key_params->vdev_id);
 		return QDF_STATUS_E_INVAL;
 	}
+
 	if (key_params->vdev_id >= wma_handle->max_bssid) {
 		WMA_LOGE(FL("Invalid vdev_id: %d"), key_params->vdev_id);
+		return QDF_STATUS_E_INVAL;
+	}
+
+	if (!wma_is_vdev_up(key_params->vdev_id)) {
+		WMA_LOGE(FL("vdev : %d not up"), key_params->vdev_id);
 		return QDF_STATUS_E_INVAL;
 	}
 
@@ -3181,9 +3187,11 @@ static int wma_process_mgmt_tx_completion(tp_wma_handle wma_handle,
 		WMA_LOGE("%s: wma handle is NULL", __func__);
 		return -EINVAL;
 	}
-
+	
+#ifdef WLAN_DEBUG
 	wma_debug("status: %s wmi_desc_id: %d",
 		  wma_get_status_str(status), desc_id);
+#endif
 
 	pdev = wma_handle->pdev;
 	if (pdev == NULL) {

@@ -535,7 +535,7 @@ static const struct kernel_param_ops dimmer_param_ops = {
 
 static const struct kernel_param_ops dimmer_auto_param_ops = {
 	.set = param_dimmer_auto_set,
-	.get = param_get_bool,
+	.get = param_get_ushort,
 };
 
 static const struct kernel_param_ops rgb_param_ops = {

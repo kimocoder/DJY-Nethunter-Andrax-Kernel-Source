@@ -29,6 +29,7 @@
 #include "wlan_objmgr_vdev_obj.h"
 #include "wlan_nan_api.h"
 #include "wlan_osif_request_manager.h"
+#include "wlan_reg_services_api.h"
 
 struct wlan_objmgr_psoc;
 struct wlan_objmgr_vdev;
@@ -309,6 +310,38 @@ inline QDF_STATUS ucfg_nan_get_callbacks(struct wlan_objmgr_psoc *psoc,
 	return QDF_STATUS_SUCCESS;
 }
 
+QDF_STATUS ucfg_nan_get_active_ndp_cnt(struct wlan_objmgr_psoc *psoc,
+				       uint8_t *cnt)
+{
+	struct nan_psoc_priv_obj *psoc_obj = nan_get_psoc_priv_obj(psoc);
+
+	if (!psoc_obj) {
+		nan_err("nan psoc priv object is NULL");
+		return QDF_STATUS_E_NULL_VALUE;
+	}
+	qdf_spin_lock_bh(&psoc_obj->lock);
+	*cnt = psoc_obj->ndp_active_sessions;
+	qdf_spin_unlock_bh(&psoc_obj->lock);
+
+	return QDF_STATUS_SUCCESS;
+}
+
+QDF_STATUS ucfg_nan_set_active_ndp_cnt(struct wlan_objmgr_psoc *psoc,
+				       uint8_t cnt)
+{
+	struct nan_psoc_priv_obj *psoc_obj = nan_get_psoc_priv_obj(psoc);
+
+	if (!psoc_obj) {
+		nan_err("nan psoc priv object is NULL");
+		return QDF_STATUS_E_NULL_VALUE;
+	}
+	qdf_spin_lock_bh(&psoc_obj->lock);
+	psoc_obj->ndp_active_sessions = cnt;
+	qdf_spin_unlock_bh(&psoc_obj->lock);
+
+	return QDF_STATUS_SUCCESS;
+}
+
 QDF_STATUS ucfg_nan_req_processor(struct wlan_objmgr_vdev *vdev,
 				  void *in_req, uint32_t req_type)
 {
@@ -381,7 +414,7 @@ QDF_STATUS ucfg_nan_req_processor(struct wlan_objmgr_vdev *vdev,
 		nan_debug("Wait for NDP END indication");
 		err = osif_request_wait_for_response(request);
 		if (err)
-			nan_err("NAN request timed out: %d", err);
+			nan_debug("NAN request timed out: %d", err);
 		osif_request_put(request);
 		psoc_obj->request_context = NULL;
 	}
@@ -431,6 +464,8 @@ int ucfg_nan_register_hdd_callbacks(struct wlan_objmgr_psoc *psoc,
 	psoc_obj->cb_obj.get_peer_idx = cb_obj->get_peer_idx;
 	psoc_obj->cb_obj.new_peer_ind = cb_obj->new_peer_ind;
 	psoc_obj->cb_obj.peer_departed_ind = cb_obj->peer_departed_ind;
+	psoc_obj->cb_obj.wlan_hdd_indicate_active_ndp_cnt =
+				cb_obj->wlan_hdd_indicate_active_ndp_cnt;
 
 	return 0;
 }
@@ -450,4 +485,14 @@ int ucfg_nan_register_lim_callbacks(struct wlan_objmgr_psoc *psoc,
 	psoc_obj->cb_obj.delete_peers_by_addr = cb_obj->delete_peers_by_addr;
 
 	return 0;
+}
+
+bool ucfg_is_nan_allowed_on_chan(struct wlan_objmgr_pdev *pdev, uint32_t chan)
+{
+	/* Check for SRD channels only */
+	if (!wlan_reg_is_etsi13_srd_chan(pdev, chan))
+		return true;
+
+	return wlan_reg_is_etsi13_srd_chan_allowed_master_mode(pdev,
+							QDF_NAN_DISC_MODE);
 }

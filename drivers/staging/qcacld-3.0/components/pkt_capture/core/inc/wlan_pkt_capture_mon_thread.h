@@ -28,6 +28,7 @@
 #define PKT_CAPTURE_RX_POST_EVENT 0x01
 #define PKT_CAPTURE_RX_SUSPEND_EVENT 0x02
 #define PKT_CAPTURE_RX_SHUTDOWN_EVENT 0x04
+#define PKT_CAPTURE_REGISTER_EVENT 0x08
 
 /*
  * Maximum number of packets to be allocated for
@@ -81,6 +82,7 @@ struct pkt_capture_mon_pkt {
  * @suspend_mon_event: Completion to suspend packet capture MON thread
  * @resume_mon_event: Completion to resume packet capture MON thread
  * @mon_shutdown: Completion for packet capture MON thread shutdown
+ * @mon_register_event: Completion for packet capture register
  * @mon_wait_queue: Waitq for packet capture MON thread
  * @mon_event_flag: Mon event flag
  * @mon_thread_queue: MON buffer queue
@@ -97,6 +99,7 @@ struct pkt_capture_mon_context {
 	struct completion suspend_mon_event;
 	struct completion resume_mon_event;
 	struct completion mon_shutdown;
+	struct completion mon_register_event;
 	wait_queue_head_t mon_wait_queue;
 	unsigned long mon_event_flag;
 	struct list_head mon_thread_queue;
@@ -110,6 +113,20 @@ struct pkt_capture_mon_context {
 	struct list_head mon_pkt_freeq;
 	bool is_mon_thread_suspended;
 };
+
+/**
+ * struct radiotap_header - base radiotap header
+ * @it_version: radiotap version, always 0
+ * @it_pad: padding (or alignment)
+ * @it_len: overall radiotap header length
+ * @it_present: (first) present word
+ */
+struct radiotap_header {
+	uint8_t it_version;
+	uint8_t it_pad;
+	__le16 it_len;
+	__le32 it_present;
+} __packed;
 
 /**
  * pkt_capture_suspend_mon_thread() - suspend packet capture mon thread

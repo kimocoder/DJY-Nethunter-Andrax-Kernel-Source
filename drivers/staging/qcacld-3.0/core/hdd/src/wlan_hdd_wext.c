@@ -3172,9 +3172,7 @@ int hdd_wlan_dump_stats(struct hdd_adapter *adapter, int value)
 		wlan_hdd_display_tx_rx_histogram(hdd_ctx);
 		break;
 	case CDP_HDD_NETIF_OPER_HISTORY:
-		wlan_hdd_display_netif_queue_history
-					(hdd_ctx,
-					 QDF_STATS_VERBOSITY_LEVEL_HIGH);
+		wlan_hdd_display_adapter_netif_queue_history(adapter);
 		break;
 	case CDP_HIF_STATS:
 		hdd_display_hif_stats();
@@ -3247,9 +3245,11 @@ static QDF_STATUS hdd_wlan_get_ibss_peer_info(struct hdd_adapter *adapter,
 
 			qdf_mem_copy(mac_addr, pPeerInfo->peerInfoParams[0].
 					mac_addr, sizeof(mac_addr));
+#ifdef WLAN_DEBUG
 			hdd_debug("PEER ADDR : %pM TxRate: %d Mbps  RSSI: %d",
 				mac_addr, (int)tx_rate,
 				(int)pPeerInfo->peerInfoParams[0].rssi);
+#endif
 		}
 	} else {
 		hdd_warn("Warning: sme_request_ibss_peer_info Request failed");
@@ -3682,7 +3682,7 @@ int wlan_hdd_update_phymode(struct net_device *net, mac_handle_t mac_handle,
 #endif
 	bool band_24 = false, band_5g = false;
 	bool ch_bond24 = false, ch_bond5g = false;
-	tSmeConfigParams *sme_config;
+	tSmeConfigParams *sme_config = NULL;
 	uint32_t chwidth = WNI_CFG_CHANNEL_BONDING_MODE_DISABLE;
 	uint32_t vhtchanwidth;
 	eCsrPhyMode phymode = -EIO, old_phymode;
