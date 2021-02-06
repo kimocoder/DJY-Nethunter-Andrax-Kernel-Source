@@ -32,13 +32,7 @@ source "drivers/staging/comedi/Kconfig"
 
 source "drivers/staging/olpc_dcon/Kconfig"
 
-source "drivers/staging/rtl8192u/Kconfig"
-
-source "drivers/staging/rtl8192e/Kconfig"
-
 source "drivers/staging/rtl8712/Kconfig"
-
-source "drivers/staging/rtl8188eu/Kconfig"
 
 source "drivers/staging/rts5208/Kconfig"
 

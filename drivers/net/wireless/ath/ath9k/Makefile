@@ -1,3 +1,5 @@
+EXTRA_CFLAGS += -Wno-constant-conversion
+
 ath9k-y +=	beacon.o \
 		gpio.o \
 		init.o \
