@@ -45,6 +45,7 @@ enum {
 static int msm_smem_debug_mask = MSM_SMEM_INFO;
 module_param_named(debug_mask, msm_smem_debug_mask,
 			int, S_IRUGO | S_IWUSR | S_IWGRP);
+#ifdef CONFIG_IPC_LOGGING
 static void *smem_ipc_log_ctx;
 #define NUM_LOG_PAGES 4
 
@@ -66,7 +67,7 @@ static void *smem_ipc_log_ctx;
 		if (msm_smem_debug_mask & MSM_SMEM_INFO) \
 			IPC_LOG(x);                      \
 	} while (0)
-
+#endif
 #define SMEM_SPINLOCK_SMEM_ALLOC       "S:3"
 
 static void *smem_ram_base;
