@@ -1,4 +1,7 @@
 Project name: OnePlus 6/6T NetHunter Kernel
+  * Merged linux-stable 4.9.255
+  * Added new 8188eu drivers (with rtl8xxxu)
+  * Tweaked the defconfig
   * Added latest WCN36xx driver (from wireless-next)
   * Added Quantenna WiFi adapters (from wireless-next)
   * Cleaned some compiler warnings
