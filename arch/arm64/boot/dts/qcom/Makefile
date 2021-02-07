@@ -149,6 +149,8 @@ else
 dtb-$(CONFIG_ARCH_SDM845) += sdm845-sim.dtb \
 	sdm845-rumi.dtb \
 	sdm845-mtp.dtb \
+	sdm845-oneplus-enchilada.dtb \
+	sdm845-oneplus-fajita.dtb \
 	sdm845-cdp.dtb \
 	sdm845-v2-rumi.dtb \
 	sdm845-v2-mtp.dtb \

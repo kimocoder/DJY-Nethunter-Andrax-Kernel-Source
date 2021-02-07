@@ -2390,7 +2390,7 @@ struct net_device *rtw_alloc_etherdev_with_old_priv(int sizeof_priv, void *old_p
 
 
 	pnetdev->mtu = WLAN_MAX_ETHFRM_LEN;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0))
 	pnetdev->min_mtu = WLAN_MIN_ETHFRM_LEN;
 	pnetdev->max_mtu = WLAN_DATA_MAXLEN;
 #endif
@@ -2417,7 +2417,7 @@ struct net_device *rtw_alloc_etherdev(int sizeof_priv)
 		goto RETURN;
 
 	pnetdev->mtu = WLAN_MAX_ETHFRM_LEN;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0))
 	pnetdev->min_mtu = WLAN_MIN_ETHFRM_LEN;
 	pnetdev->max_mtu = WLAN_DATA_MAXLEN;
 #endif

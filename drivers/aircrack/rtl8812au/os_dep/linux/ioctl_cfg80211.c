@@ -4757,7 +4757,7 @@ static int rtw_cfg80211_add_monitor_if(_adapter *padapter, char *name, struct ne
 	}
 
 	mon_ndev->mtu = WLAN_DATA_MAXLEN;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0))
 	mon_ndev->min_mtu = WLAN_MIN_ETHFRM_LEN;
 	mon_ndev->max_mtu = WLAN_DATA_MAXLEN;
 #endif
