@@ -21,12 +21,11 @@ ifeq ($(CONFIG_RELOCATABLE), y)
 LDFLAGS_vmlinux		+= -Bsymbolic -z notext -z norelro \
 			$(call ld-option, --no-apply-dynamic-relocs)
 
-# Pass -shared for bfd and -pie for lld to minimize Image size on both
-ifeq ($(ld-name),bfd)
-LDFLAGS_vmlinux		+= -shared
-endif
+# Pass -pie for lld to minimize image size
 ifeq ($(ld-name),lld)
 LDFLAGS_vmlinux		+= -pie
+else
+LDFLAGS_vmlinux		+= -shared
 endif
 endif
 
@@ -45,7 +44,6 @@ else
 # Pass --no-fix-cortex-a53-843419 to ensure the erratum fix is disabled
 LDFLAGS	+= --no-fix-cortex-a53-843419
   endif
-KBUILD_CFLAGS += -mno-fix-cortex-a53-843419
 endif
 
 KBUILD_DEFCONFIG := defconfig
@@ -59,9 +57,18 @@ $(warning LSE atomics not supported by binutils)
   endif
 endif
 
+ifeq ($(cc-name),clang)
+# This is a workaround for https://bugs.llvm.org/show_bug.cgi?id=30792.
+# TODO: revert when this is fixed in LLVM.
+KBUILD_CFLAGS	+= -mno-implicit-float
+else
+KBUILD_CFLAGS	+= -mgeneral-regs-only
+endif
+
 ifeq ($(CONFIG_COMPAT_VDSO), y)
   CROSS_COMPILE_ARM32 ?= $(CONFIG_CROSS_COMPILE_ARM32:"%"=%)
-   # Check that the user has provided a valid prefix for the 32-bit toolchain.
+
+  # Check that the user has provided a valid prefix for the 32-bit toolchain.
   # To prevent selecting the system $(cc-name) by default, the prefix is not
   # allowed to be empty, unlike CROSS_COMPILE. In the unlikely event that the
   # system $(cc-name) is actually the 32-bit ARM compiler to be used, the
@@ -78,7 +85,7 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
     export CLANG_TARGET_ARM32 := --target=$(notdir $(CLANG_TRIPLE_ARM32:%-=%))
     export GCC_TOOLCHAIN32_DIR := $(dir $(shell which $(CROSS_COMPILE_ARM32)ld))
     export GCC_TOOLCHAIN32 := $(realpath $(GCC_TOOLCHAIN32_DIR)/..)
-    export CLANG_PREFIX32 := --prefix=$(GCC_TOOLCHAIN32_DIR)
+    export CLANG_PREFIX32 := --prefix=$(GCC_TOOLCHAIN32_DIR)$(notdir $(CROSS_COMPILE_ARM32))
     export CLANG_GCC32_TC := --gcc-toolchain=$(GCC_TOOLCHAIN32)
     export CONFIG_VDSO32 := y
     vdso32 := -DCONFIG_VDSO32=1
@@ -92,7 +99,6 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
 endif
 
 KBUILD_CFLAGS	+= -mgeneral-regs-only $(lseinstr) $(vdso32)
-
 KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
 ifeq ($(CONFIG_ARM64_ERRATUM_843419),y)
 KBUILD_CFLAGS	+= $(call cc-option, -mpc-relative-literal-loads)
@@ -100,25 +106,28 @@ endif
 KBUILD_CFLAGS	+= -fno-pic
 KBUILD_AFLAGS	+= $(lseinstr) $(vdso32)
 
+KBUILD_CFLAGS	+= $(call cc-option,-mabi=lp64)
+KBUILD_AFLAGS	+= $(call cc-option,-mabi=lp64)
+
+ifeq ($(cc-name),clang)
+KBUILD_CFLAGS	+= -DCONFIG_ARCH_SUPPORTS_INT128
+else
+KBUILD_CFLAGS	+= $(call cc-ifversion, -ge, 0500, -DCONFIG_ARCH_SUPPORTS_INT128)
+endif
+
+KBUILD_CFLAGS	+= $(call cc-ifversion, -ge, 0500, -DCONFIG_ARCH_SUPPORTS_INT128)
+
 ifeq ($(CONFIG_CPU_BIG_ENDIAN), y)
 KBUILD_CPPFLAGS	+= -mbig-endian
 AS		+= -EB
 LD		+= -EB
-ifeq ($(ld-name),gold)
-LDFLAGS		+= -maarch64_elf64_be_vec
-else
 LDFLAGS		+= -maarch64elfb
-endif
 UTS_MACHINE	:= aarch64_be
 else
 KBUILD_CPPFLAGS	+= -mlittle-endian
 AS		+= -EL
 LD		+= -EL
-ifeq ($(ld-name),gold)
-LDFLAGS		+= -maarch64_elf64_le_vec
-else
 LDFLAGS		+= -maarch64elf
-endif
 UTS_MACHINE	:= aarch64
 endif
 

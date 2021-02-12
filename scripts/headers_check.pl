@@ -18,6 +18,7 @@
 #
 # 3) Check for leaked CONFIG_ symbols
 
+use warnings;
 use strict;
 use File::Basename;
 

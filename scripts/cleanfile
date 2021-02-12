@@ -4,6 +4,7 @@
 # WARNING: this can be a highly destructive operation.  Use with caution.
 #
 
+use warnings;
 use bytes;
 use File::Basename;
 

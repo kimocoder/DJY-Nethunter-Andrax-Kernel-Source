@@ -445,7 +445,7 @@ void sde_connector_schedule_status_work(struct drm_connector *connector,
 				c_conn->esd_status_interval :
 					STATUS_CHECK_INTERVAL_MS;
 			/* Schedule ESD status check */
-			queue_delayed_work(system_power_efficient_wq, &c_conn->status_work,
+			schedule_delayed_work(&c_conn->status_work,
 				msecs_to_jiffies(interval));
 			c_conn->esd_status_check = true;
 		} else {
@@ -716,7 +716,7 @@ static int _sde_connector_update_hbm(struct sde_connector *c_conn)
 				rc = dsi_panel_tx_cmd_set_op(dsi_display->panel, DSI_CMD_AOD_OFF_HBM_ON_SETTING);
 				aod_real_flag = true;
 			} else {
-				pr_debug("DSI_CMD_SET_HBM_ON_5\n");
+				pr_err("DSI_CMD_SET_HBM_ON_5\n");
 				rc = dsi_panel_tx_cmd_set_op(dsi_display->panel,
 						DSI_CMD_SET_HBM_ON_5);
 			}
@@ -745,7 +745,7 @@ static int _sde_connector_update_hbm(struct sde_connector *c_conn)
 				}
 			} else {
 				HBM_flag = false;
-				pr_debug("DSI_CMD_SET_HBM_OFF\n");
+				pr_info("DSI_CMD_SET_HBM_OFF\n");
 				rc = dsi_panel_tx_cmd_set_op(dsi_display->panel,
 						DSI_CMD_SET_HBM_OFF);
 				//oneplus_dim_status = 0;
@@ -932,28 +932,6 @@ int sde_connector_clk_ctrl(struct drm_connector *connector, bool enable)
 				DSI_ALL_CLKS, state);
 
 	return rc;
-}
-
-bool sde_connector_mode_needs_full_range(struct drm_connector *connector)
-{
-	struct sde_connector *c_conn;
-
-	if (!connector) {
-		SDE_ERROR("invalid argument\n");
-		return false;
-	}
-
-	c_conn = to_sde_connector(connector);
-
-	if (!c_conn->display) {
-		SDE_ERROR("invalid argument\n");
-		return false;
-	}
-
-	if (!c_conn->ops.mode_needs_full_range)
-		return false;
-
-	return c_conn->ops.mode_needs_full_range(c_conn->display);
 }
 
 static void sde_connector_destroy(struct drm_connector *connector)
@@ -1772,9 +1750,6 @@ static ssize_t _sde_debugfs_conn_cmd_tx_sts_read(struct file *file,
 		return 0;
 	}
 
-	if (blen > count)
-		blen = count;
-
 	if (copy_to_user(buf, buffer, blen)) {
 		SDE_ERROR("copy to user buffer failed\n");
 		return -EFAULT;
@@ -2131,7 +2106,7 @@ static void sde_connector_check_status_work(struct work_struct *work)
 		/* If debugfs property is not set then take default value */
 		interval = conn->esd_status_interval ?
 			conn->esd_status_interval : STATUS_CHECK_INTERVAL_MS;
-		queue_delayed_work(system_power_efficient_wq, &conn->status_work,
+		schedule_delayed_work(&conn->status_work,
 			msecs_to_jiffies(interval));
 		return;
 	}

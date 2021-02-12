@@ -309,6 +309,9 @@ config HAVE_PERF_USER_STACK_DUMP
 config HAVE_ARCH_JUMP_LABEL
 	bool
 
+config HAVE_ARCH_JUMP_LABEL_RELATIVE
+	bool
+
 config HAVE_RCU_TABLE_FREE
 	bool
 
@@ -486,11 +489,11 @@ config CC_STACKPROTECTOR_STRONG
 endchoice
 
 config THIN_ARCHIVES
-	bool
+	def_bool y
 	help
 	  Select this if the architecture wants to use thin archives
 	  instead of ld -r to create the built-in.o files.
-	  
+
 choice
 	prompt "Kernel linker"
 	default LD_BFD if !LTO_CLANG
@@ -511,31 +514,16 @@ config LD_BFD
 
 config LD_GOLD
 	bool "gold"
-	depends on LTO_CLANG
 	help
 	  Use the alternative ld.gold linker from binutils.
 
 config LD_LLD
 	bool "lld"
+	select TOOLS_SUPPORT_RELR
 	help
 	  Use the alternative lld linker from LLVM.
 
 endchoice
-
-config LD_DEAD_CODE_DATA_ELIMINATION
-	bool
-	help
-	  Select this if the architecture wants to do dead code and
-	  data elimination with the linker by compiling with
-	  -ffunction-sections -fdata-sections and linking with
-	  --gc-sections.
-
-	  This requires that the arch annotates or otherwise protects
-	  its external entry points from being discarded. Linker scripts
-	  must also merge .text.*, .data.*, and .bss.* correctly into
-	  output sections. Care must be taken not to pull in unrelated
-	  sections (e.g., '.text.init'). Typically '.' in section names
-	  is used to distinguish them from label names / C identifiers.
 
 config LTO
 	def_bool n
@@ -547,6 +535,13 @@ config ARCH_SUPPORTS_LTO_CLANG
 	  - compiling with clang,
 	  - compiling inline assembly with clang's integrated assembler,
 	  - and linking with either lld or GNU gold w/ LLVMgold.
+
+config THINLTO
+	bool "Use clang ThinLTO (EXPERIMENTAL)"
+	depends on LTO_CLANG
+	default y
+	help
+	  Use ThinLTO to speed up Link Time Optimization.
 
 choice
 	prompt "Link-Time Optimization (LTO) (EXPERIMENTAL)"
@@ -579,16 +574,6 @@ config LTO_CLANG
 
 endchoice
 
-config LTO_CLANG_THIN
-	bool "Use clang ThinLTO in lieu of monolithic (EXPERIMENTAL)"
-	depends on LTO_CLANG
-	help
-	  This option enables ThinLTO, an alternative to monolithic LTO which is
-	  less resource-intensive resulting in significantly faster compilation
-	  while preserving many of the performance benefits associated with
-	  traditional LTO. This can be particularly useful for development and
-	  incremental builds.
-
 config CFI
 	bool
 
@@ -613,17 +598,20 @@ config CFI_CLANG_SHADOW
 	bool "Use CFI shadow to speed up cross-module checks"
 	default y
 	depends on CFI_CLANG
+	depends on MODULES
 	help
 	  If you select this option, the kernel builds a fast look-up table of
 	  CFI check functions in loaded modules to reduce overhead.
 
-config LLVM_POLLY
-	bool "Enable LLVM's polyhedral loop optimizer (Polly)"
+config POLLY_CLANG
+	bool "Enable clang Polly optimizations"
 	help
-	  This option enables LLVM's polyhedral loop optimizer known as Polly.
+	  This option enables Clang's polyhedral loop optimizer known as Polly.
 	  Polly is able to optimize various loops throughout the kernel for
-	  maximum cache locality. This requires an LLVM toolchain explicitly
-	  compiled with Polly support.
+	  maximum cache locality. This requires a Clang toolchain compiled
+	  with support for Polly.
+
+	  For more information, see Polly's website: https://polly.llvm.org/
 
 config HAVE_ARCH_WITHIN_STACK_FRAMES
 	bool
@@ -904,5 +892,19 @@ config VMAP_STACK
 	  This is presently incompatible with KASAN because KASAN expects
 	  the stack to map directly to the KASAN shadow map using a formula
 	  that is incorrect if the stack is in vmalloc space.
+
+# Select if the architecture has support for applying RELR relocations.
+config ARCH_HAS_RELR
+	bool
+
+config RELR
+	bool "Use RELR relocation packing"
+	depends on ARCH_HAS_RELR && TOOLS_SUPPORT_RELR
+	default y
+	help
+	  Store the kernel's dynamic relocations in the RELR relocation packing
+	  format. Requires a compatible linker (LLD supports this feature), as
+	  well as compatible NM and OBJCOPY utilities (llvm-nm and llvm-objcopy
+	  are compatible).
 
 source "kernel/gcov/Kconfig"

@@ -1564,6 +1564,7 @@ void sap_dump_acs_channel(struct sap_acs_cfg *acs_cfg);
 /*
  * wlansap_set_band_csa() -  sap channel switch for band change
  * wlansap_get_chan_band_restrict() -  get new chan for band change
+>>>>>>> 4683048... qcacld-3.0: 5G SAP failed to channel switch for sta connecting
  * @sap_ctx: sap context pointer
  *
  * Sap/p2p go channel switch from 5G to 2G by CSA when 5G band disabled to

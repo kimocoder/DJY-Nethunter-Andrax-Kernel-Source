@@ -263,7 +263,7 @@ static int suspend_test(int level)
 {
 #ifdef CONFIG_PM_DEBUG
 	if (pm_test_level == level) {
-		pr_debug("suspend debug: Waiting for %d second(s).\n",
+		pr_info("suspend debug: Waiting for %d second(s).\n",
 				pm_test_delay);
 		mdelay(pm_test_delay * 1000);
 		return 1;
@@ -380,6 +380,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 
 	error = disable_nonboot_cpus();
 	if (error || suspend_test(TEST_CPUS)) {
+		log_suspend_abort_reason("Disabling non-boot cpus failed");
 		goto Enable_cpus;
 	}
 
@@ -576,10 +577,8 @@ int pm_suspend(suspend_state_t state)
 
 	pm_suspend_marker("entry");
 	gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 0);
-	pr_err("%s: PM_SUSPEND_PREPARE smp2p_change_state", __func__);
 	error = enter_state(state);
 	gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 1);
-	pr_err("%s: PM_POST_SUSPEND smp2p_change_state", __func__);
 
 	if (error) {
 		suspend_stats.fail++;

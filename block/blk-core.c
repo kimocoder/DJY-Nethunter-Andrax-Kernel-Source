@@ -2216,7 +2216,17 @@ blk_qc_t submit_bio(struct bio *bio)
 				count);
 		}
 	}
-
+/*dylanchang, 2019/4/30, add foreground task io opt*/
+#ifdef CONFIG_MEMPLUS
+	if (current_is_swapind())
+		bio->bi_opf |= REQ_FG;
+	else if (high_prio_for_task(current))
+		bio->bi_opf |= REQ_FG;
+#else
+	if (high_prio_for_task(current))
+		bio->bi_opf |= REQ_FG;
+#endif
+	return generic_make_request(bio);
 
 	/*
 	 * If we're reading data that is part of the userspace
@@ -2233,19 +2243,6 @@ blk_qc_t submit_bio(struct bio *bio)
 		psi_memstall_leave(&pflags);
 
 	return ret;
-
-/*dylanchang, 2019/4/30, add foreground task io opt*/
-#ifdef CONFIG_MEMPLUS
-	if (current_is_swapind())
-		bio->bi_opf |= REQ_FG;
-	else if (high_prio_for_task(current))
-		bio->bi_opf |= REQ_FG;
-#else
-	if (high_prio_for_task(current))
-		bio->bi_opf |= REQ_FG;
-#endif
-	return generic_make_request(bio);
-
 }
 EXPORT_SYMBOL(submit_bio);
 
@@ -3705,7 +3702,8 @@ int __init blk_dev_init(void)
 
 	/* used for unplugging and affects IO latency/throughput - HIGHPRI */
 	kblockd_workqueue = alloc_workqueue("kblockd",
-					    WQ_MEM_RECLAIM | WQ_HIGHPRI, 0);
+					    WQ_MEM_RECLAIM | WQ_HIGHPRI |
+					    WQ_POWER_EFFICIENT, 0);
 	if (!kblockd_workqueue)
 		panic("Failed to create kblockd\n");
 

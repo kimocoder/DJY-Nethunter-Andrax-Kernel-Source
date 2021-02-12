@@ -444,7 +444,7 @@ targets += $(extra-y) $(MAKECMDGOALS) $(always)
 # Linker scripts preprocessor (.lds.S -> .lds)
 # ---------------------------------------------------------------------------
 quiet_cmd_cpp_lds_S = LDS     $@
-      cmd_cpp_lds_S = $(CPP) $(cpp_flags) -P -U$(ARCH) \
+      cmd_cpp_lds_S = $(CPP) $(cpp_flags) -P -C -U$(ARCH) \
 	                     -D__ASSEMBLY__ -DLINKER_SCRIPT -o $@ $<
 
 $(obj)/%.lds: $(src)/%.lds.S FORCE
@@ -475,13 +475,12 @@ ifdef builtin-target
 ifdef CONFIG_LTO_CLANG
   ifdef CONFIG_MODVERSIONS
     # combine symversions for later processing
-    update_lto_symversions =				\
-	rm -f $@.symversions; 				\
-	for i in $(filter-out FORCE,$^); do		\
-		if [ -f $$i.symversions ]; then		\
-			cat $$i.symversions 		\
-				>> $@.symversions;	\
-		fi;					\
+    update_lto_symversions =						\
+	rm -f $@.symversions; 						\
+	for i in $(foreach n,						\
+			$(filter-out FORCE,$^),				\
+			$(if $(wildcard $(n).symversions),$(n))); do	\
+		cat $$i.symversions >> $@.symversions;			\
 	done;
   endif
   # rebuild the symbol table with llvm-ar to include IR files

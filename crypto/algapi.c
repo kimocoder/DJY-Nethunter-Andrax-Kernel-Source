@@ -10,6 +10,7 @@
  *
  */
 
+#include <crypto/algapi.h>
 #include <linux/err.h>
 #include <linux/errno.h>
 #include <linux/fips.h>
@@ -56,8 +57,22 @@ static int crypto_check_alg(struct crypto_alg *alg)
 	if (alg->cra_alignmask & (alg->cra_alignmask + 1))
 		return -EINVAL;
 
-	if (alg->cra_blocksize > PAGE_SIZE / 8)
+	/* General maximums for all algs. */
+	if (alg->cra_alignmask > MAX_ALGAPI_ALIGNMASK)
 		return -EINVAL;
+
+	if (alg->cra_blocksize > MAX_ALGAPI_BLOCKSIZE)
+		return -EINVAL;
+
+	/* Lower maximums for specific alg types. */
+	if (!alg->cra_type && (alg->cra_flags & CRYPTO_ALG_TYPE_MASK) ==
+			       CRYPTO_ALG_TYPE_CIPHER) {
+		if (alg->cra_alignmask > MAX_CIPHER_ALIGNMASK)
+			return -EINVAL;
+
+		if (alg->cra_blocksize > MAX_CIPHER_BLOCKSIZE)
+			return -EINVAL;
+	}
 
 	if (alg->cra_priority < 0)
 		return -EINVAL;
@@ -967,7 +982,8 @@ void crypto_inc(u8 *a, unsigned int size)
 	u32 c;
 
 	for (; size >= 4; size -= 4) {
-		c = be32_to_cpu(*--b) + 1;
+		c = be32_to_cpu(*b) + 1;
+		--b;
 		*b = cpu_to_be32(c);
 		if (c)
 			return;
