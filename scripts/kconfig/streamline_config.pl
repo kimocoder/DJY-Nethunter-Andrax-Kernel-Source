@@ -42,6 +42,7 @@
 #    mv config_strip .config
 #    make oldconfig
 #
+use warnings;
 use strict;
 use Getopt::Long;
 

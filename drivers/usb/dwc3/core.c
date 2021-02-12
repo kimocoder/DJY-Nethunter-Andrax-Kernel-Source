@@ -1283,8 +1283,6 @@ static int dwc3_probe(struct platform_device *pdev)
 					"snps,usb3-u1u2-disable");
 	dwc->usb2_l1_disable = device_property_read_bool(dev,
 					"snps,usb2-l1-disable");
-	dwc->normal_eps_in_gsi_mode = device_property_read_bool(dev,
-					"normal-eps-in-gsi-mode");
 /*yangfb@bsp,20180228,enable usb3.1*/
 	dwc->enable_super_speed = device_property_read_bool(dev,
 					"op,enable_super_speed");
@@ -1372,20 +1370,10 @@ static int dwc3_probe(struct platform_device *pdev)
 		goto err_core_init;
 	}
 
-err5:
-	dwc3_event_buffers_cleanup(dwc);
-
-	usb_phy_shutdown(dwc->usb2_phy);
-	usb_phy_shutdown(dwc->usb3_phy);
-	phy_exit(dwc->usb2_generic_phy);
-	phy_exit(dwc->usb3_generic_phy);
-
-	usb_phy_set_suspend(dwc->usb2_phy, 1);
-	usb_phy_set_suspend(dwc->usb3_phy, 1);
-	phy_power_off(dwc->usb2_generic_phy);
-	phy_power_off(dwc->usb3_generic_phy);
-
-	dwc3_ulpi_exit(dwc);
+	dwc->dwc_ipc_log_ctxt = ipc_log_context_create(NUM_LOG_PAGES,
+					dev_name(dwc->dev), 0);
+	if (!dwc->dwc_ipc_log_ctxt)
+		dev_err(dwc->dev, "Error getting ipc_log_ctxt\n");
 
 	dwc3_instance[count] = dwc;
 	dwc->index = count;
@@ -1429,9 +1417,11 @@ static int dwc3_remove(struct platform_device *pdev)
 	dwc3_core_exit(dwc);
 	dwc3_ulpi_exit(dwc);
 
+	destroy_workqueue(dwc->dwc_wq);
+
+	pm_runtime_put_sync(&pdev->dev);
+	pm_runtime_allow(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
-	pm_runtime_put_noidle(&pdev->dev);
-	pm_runtime_set_suspended(&pdev->dev);
 
 	dwc3_free_event_buffers(dwc);
 	dwc3_free_scratch_buffers(dwc);

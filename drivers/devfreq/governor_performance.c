@@ -14,8 +14,7 @@
 #include "governor.h"
 
 static int devfreq_performance_func(struct devfreq *df,
-				    unsigned long *freq,
-				u32 *flag)
+				    unsigned long *freq)
 {
 	/*
 	 * target callback should be able to get floor value as
@@ -33,7 +32,7 @@ static int devfreq_performance_handler(struct devfreq *devfreq,
 {
 	int ret = 0;
 
-	if (event == DEVFREQ_GOV_START || event == DEVFREQ_GOV_RESUME) {
+	if (event == DEVFREQ_GOV_START) {
 		mutex_lock(&devfreq->lock);
 		ret = update_devfreq(devfreq);
 		mutex_unlock(&devfreq->lock);

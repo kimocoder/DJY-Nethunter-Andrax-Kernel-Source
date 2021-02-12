@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -291,6 +291,7 @@ static void start_fault_timer(struct adreno_device *adreno_dev)
 static void _retire_timestamp(struct kgsl_drawobj *drawobj)
 {
 	struct kgsl_context *context = drawobj->context;
+	struct adreno_context *drawctxt = ADRENO_CONTEXT(context);
 	struct kgsl_device *device = context->device;
 
 	/*
@@ -551,6 +552,7 @@ static int sendcmd(struct adreno_device *adreno_dev,
 	struct kgsl_drawobj *drawobj = DRAWOBJ(cmdobj);
 	struct adreno_gpudev *gpudev = ADRENO_GPU_DEVICE(adreno_dev);
 	struct adreno_dispatcher *dispatcher = &adreno_dev->dispatcher;
+	struct adreno_context *drawctxt = ADRENO_CONTEXT(drawobj->context);
 	struct adreno_dispatcher_drawqueue *dispatch_q =
 				ADRENO_DRAWOBJ_DISPATCH_DRAWQUEUE(drawobj);
 	struct adreno_submit_time time;
@@ -1181,12 +1183,6 @@ static inline int _verify_cmdobj(struct kgsl_device_private *dev_priv,
 					&ADRENO_CONTEXT(context)->base, ib)
 					== false)
 					return -EINVAL;
-			/*
-			 * Clear the wake on touch bit to indicate an IB has
-			 * been submitted since the last time we set it.
-			 * But only clear it when we have rendering commands.
-			 */
-			device->flags &= ~KGSL_FLAG_WAKE_ON_TOUCH;
 		}
 
 		/* A3XX does not have support for drawobj profiling */
@@ -1215,7 +1211,16 @@ static inline int _wait_for_room_in_context_queue(
 		spin_lock(&drawctxt->lock);
 		trace_adreno_drawctxt_wake(drawctxt);
 
-		if (ret <= 0)
+		/*
+		 * Account for the possibility that the context got invalidated
+		 * while we were sleeping
+		 */
+
+		if (ret > 0) {
+			ret = _check_context_state(&drawctxt->base);
+			if (ret)
+				return ret;
+		} else
 			return (ret == 0) ? -ETIMEDOUT : (int) ret;
 	}
 
@@ -1230,15 +1235,7 @@ static unsigned int _check_context_state_to_queue_cmds(
 	if (ret)
 		return ret;
 
-	ret = _wait_for_room_in_context_queue(drawctxt);
-	if (ret)
-		return ret;
-
-	/*
-	 * Account for the possiblity that the context got invalidated
-	 * while we were sleeping
-	 */
-	return _check_context_state(&drawctxt->base);
+	return _wait_for_room_in_context_queue(drawctxt);
 }
 
 static void _queue_drawobj(struct adreno_context *drawctxt,
@@ -1700,7 +1697,7 @@ static inline const char *_kgsl_context_comm(struct kgsl_context *context)
 #define pr_fault(_d, _c, fmt, args...) \
 		dev_err((_d)->dev, "%s[%d]: " fmt, \
 		_kgsl_context_comm((_c)->context), \
-		(_c)->context->proc_priv->pid, ##args)
+		pid_nr((_c)->context->proc_priv->pid), ##args)
 
 
 static void adreno_fault_header(struct kgsl_device *device,
@@ -2335,6 +2332,7 @@ static void cmdobj_profile_ticks(struct adreno_device *adreno_dev,
 static void retire_cmdobj(struct adreno_device *adreno_dev,
 		struct kgsl_drawobj_cmd *cmdobj)
 {
+	struct adreno_dispatcher *dispatcher = &adreno_dev->dispatcher;
 	struct kgsl_drawobj *drawobj = DRAWOBJ(cmdobj);
 	struct adreno_context *drawctxt = ADRENO_CONTEXT(drawobj->context);
 	uint64_t start = 0, end = 0;

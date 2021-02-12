@@ -471,7 +471,6 @@ static int xhci_plat_pm_restore(struct device *dev)
 
 	return ret;
 }
-	int ret;
 
 static int xhci_plat_runtime_suspend(struct device *dev)
 {

@@ -390,7 +390,7 @@ void tcp_openreq_init_rwin(struct request_sock *req,
 		req->rsk_window_clamp = full_space;
 
 	/* tcp_full_space because it is guaranteed to be the first packet */
-	tcp_select_initial_window(full_space,
+	tcp_select_initial_window(sock_net(sk_listener), full_space,
 		mss - (ireq->tstamp_ok ? TCPOLEN_TSTAMP_ALIGNED : 0),
 		&req->rsk_rcv_wnd,
 		&req->rsk_window_clamp,
@@ -471,9 +471,9 @@ struct sock *tcp_create_openreq_child(const struct sock *sk,
 
 		newtp->srtt_us = 0;
 		newtp->mdev_us = jiffies_to_usecs(TCP_TIMEOUT_INIT);
-		minmax_reset(&newtp->rtt_min, tcp_time_stamp, ~0U);
+		minmax_reset(&newtp->rtt_min, tcp_jiffies32, ~0U);
 		newicsk->icsk_rto = TCP_TIMEOUT_INIT;
-		newicsk->icsk_ack.lrcvtime = tcp_time_stamp;
+		newicsk->icsk_ack.lrcvtime = tcp_jiffies32;
 
 		newtp->packets_out = 0;
 		newtp->retrans_out = 0;

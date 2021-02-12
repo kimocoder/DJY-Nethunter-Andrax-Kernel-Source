@@ -156,6 +156,7 @@ struct gf_dev {
 	struct fasync_struct *async;
 #endif
 #if defined(CONFIG_FB)
+	struct work_struct fb_work;
 	struct notifier_block notifier;
 #elif defined(CONFIG_MSM_RDM_NOTIFY)
 	struct notifier_block msm_drm_notif;
@@ -167,7 +168,6 @@ struct gf_dev {
 	struct pinctrl_state   *gpio_state_disable;
 	signed enable_gpio;
 	int screen_state;
-	int proximity_state; /* 0:far 1:near */
 };
 int gf_pinctrl_init(struct gf_dev* gf_dev);
 int gf_parse_dts(struct gf_dev* gf_dev);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -347,7 +347,7 @@ static irqreturn_t qpnp_tm_isr(int irq, void *data)
 {
 	struct qpnp_tm_chip *chip = data;
 
-	queue_delayed_work(system_power_efficient_wq, &chip->irq_work,
+	schedule_delayed_work(&chip->irq_work,
 			msecs_to_jiffies(STATUS_REGISTER_DELAY_MS) + 1);
 
 	return IRQ_HANDLED;
@@ -402,6 +402,12 @@ static int qpnp_tm_probe(struct platform_device *pdev)
 	u32 default_temperature;
 	int rc = 0;
 	u8 raw_type[2], type, subtype;
+
+	if (!pdev || !(&pdev->dev) || !pdev->dev.of_node) {
+		dev_err(&pdev->dev, "%s: device tree node not found\n",
+			__func__);
+		return -EINVAL;
+	}
 
 	node = pdev->dev.of_node;
 

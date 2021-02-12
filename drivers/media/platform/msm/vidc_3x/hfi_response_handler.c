@@ -287,12 +287,6 @@ static int hfi_process_evt_release_buffer_ref(u32 device_id,
 				"hal_process_session_init_done: bad_pkt_size\n");
 		return -E2BIG;
 	}
-	if (pkt->size < sizeof(struct hfi_msg_event_notify_packet) - sizeof(u32)
-		+ sizeof(struct hfi_msg_release_buffer_ref_event_packet)) {
-		dprintk(VIDC_ERR,
-			"hfi_msg_release_buffer_ref_event: bad_pkt_size\n");
-		return -E2BIG;
-	}
 
 	data = (struct hfi_msg_release_buffer_ref_event_packet *)
 				pkt->rg_ext_event_data;
@@ -1382,7 +1376,13 @@ static int hfi_process_session_prop_info(u32 device_id,
 		cmd_done.status = VIDC_ERR_NONE;
 		cmd_done.data.property.buf_req = buff_req;
 		cmd_done.size = sizeof(buff_req);
-		break;
+
+		*info = (struct msm_vidc_cb_info) {
+			.response_type =  HAL_SESSION_PROPERTY_INFO,
+			.response.cmd = cmd_done,
+		};
+
+		return 0;
 	case HFI_PROPERTY_PARAM_PROFILE_LEVEL_CURRENT:
 		hfi_process_sess_get_prop_profile_level(pkt, &profile_level);
 		cmd_done.device_id = device_id;
@@ -1394,7 +1394,12 @@ static int hfi_process_session_prop_info(u32 device_id,
 				.level = profile_level.level,
 			};
 		cmd_done.size = sizeof(struct hal_profile_level);
-		break;
+
+		*info = (struct msm_vidc_cb_info) {
+			.response_type =  HAL_SESSION_PROPERTY_INFO,
+			.response.cmd = cmd_done,
+		};
+		return 0;
 	case HFI_PROPERTY_CONFIG_VDEC_ENTROPY:
 		hfi_process_sess_get_prop_dec_entropy(pkt, &entropy);
 		cmd_done.device_id = device_id;
@@ -1402,19 +1407,18 @@ static int hfi_process_session_prop_info(u32 device_id,
 		cmd_done.status = VIDC_ERR_NONE;
 		cmd_done.data.property.h264_entropy = entropy;
 		cmd_done.size = sizeof(enum hal_h264_entropy);
-		break;
+
+		*info = (struct msm_vidc_cb_info) {
+			.response_type =  HAL_SESSION_PROPERTY_INFO,
+			.response.cmd = cmd_done,
+		};
+		return 0;
 	default:
 		dprintk(VIDC_DBG,
 				"hal_process_session_prop_info: unknown_prop_id: %x\n",
 				pkt->rg_property_data[0]);
 		return -ENOTSUPP;
 	}
-	*info = (struct msm_vidc_cb_info) {
-			.response_type =  HAL_SESSION_PROPERTY_INFO,
-			.response.cmd = cmd_done,
-	};
-	return 0;
-
 }
 
 static int hfi_process_session_init_done(u32 device_id,
@@ -1536,13 +1540,15 @@ static int hfi_process_session_etb_done(u32 device_id,
 	struct hfi_msg_session_empty_buffer_done_packet *pkt = _pkt;
 	struct msm_vidc_cb_data_done data_done = {0};
 	struct hfi_picture_type *hfi_picture_type = NULL;
-	u32 is_sync_frame;
 
 	dprintk(VIDC_DBG, "RECEIVED: SESSION_ETB_DONE[%#x]\n", pkt->session_id);
 
 	if (!pkt || pkt->size <
-		sizeof(struct hfi_msg_session_empty_buffer_done_packet))
-		goto bad_packet_size;
+		sizeof(struct hfi_msg_session_empty_buffer_done_packet)) {
+		dprintk(VIDC_ERR,
+				"hal_process_session_etb_done: bad_pkt_size\n");
+		return -E2BIG;
+	}
 
 	data_done.device_id = device_id;
 	data_done.session_id = (void *)(uintptr_t)pkt->session_id;
@@ -1557,13 +1563,8 @@ static int hfi_process_session_etb_done(u32 device_id,
 		(ion_phys_addr_t)pkt->extra_data_buffer;
 	data_done.input_done.status =
 		hfi_map_err_status(pkt->error_type);
-	is_sync_frame = pkt->rgData[0];
-	if (is_sync_frame == 1) {
-		if (pkt->size <
-			sizeof(struct hfi_msg_session_empty_buffer_done_packet)
-			+ sizeof(struct hfi_picture_type))
-			goto bad_packet_size;
-		hfi_picture_type = (struct hfi_picture_type *)&pkt->rgData[1];
+	hfi_picture_type = (struct hfi_picture_type *)&pkt->rgData[0];
+	if (hfi_picture_type->is_sync_frame) {
 		if (hfi_picture_type->picture_type)
 			data_done.input_done.flags =
 				hfi_picture_type->picture_type;
@@ -1582,10 +1583,6 @@ static int hfi_process_session_etb_done(u32 device_id,
 	};
 
 	return 0;
-bad_packet_size:
-	dprintk(VIDC_ERR, "%s: bad_pkt_size: %d\n",
-		__func__, pkt ? pkt->size : 0);
-	return -E2BIG;
 }
 
 static int hfi_process_session_ftb_done(
@@ -1825,8 +1822,13 @@ static int hfi_process_session_rel_buf_done(u32 device_id,
 	cmd_done.size = sizeof(struct msm_vidc_cb_cmd_done);
 	cmd_done.session_id = (void *)(uintptr_t)pkt->session_id;
 	cmd_done.status = hfi_map_err_status(pkt->error_type);
-	cmd_done.data.buffer_info.buffer_addr = *pkt->rg_buffer_info;
-	cmd_done.size = sizeof(struct hal_buffer_info);
+	if (pkt->rg_buffer_info) {
+		cmd_done.data.buffer_info =
+			*(struct hal_buffer_info *)pkt->rg_buffer_info;
+		cmd_done.size = sizeof(struct hal_buffer_info);
+	} else {
+		dprintk(VIDC_ERR, "invalid payload in rel_buff_done\n");
+	}
 
 	*info = (struct msm_vidc_cb_info) {
 		.response_type =  HAL_SESSION_RELEASE_BUFFER_DONE,

@@ -21,7 +21,6 @@
 #include <linux/writeback.h>
 #include <linux/frontswap.h>
 #include <linux/blkdev.h>
-#include <linux/psi.h>
 #include <linux/uio.h>
 #include <asm/pgtable.h>
 
@@ -338,19 +337,10 @@ int swap_readpage(struct page *page)
 	struct bio *bio;
 	int ret = 0;
 	struct swap_info_struct *sis = page_swap_info(page);
-	unsigned long pflags;
 
 	VM_BUG_ON_PAGE(!PageSwapCache(page), page);
 	VM_BUG_ON_PAGE(!PageLocked(page), page);
 	VM_BUG_ON_PAGE(PageUptodate(page), page);
-
-	/*
-	 * Count submission time as memory stall. When the device is congested,
-	 * or the submitting cgroup IO-throttled, submission can be a
-	 * significant part of overall IO time.
-	 */
-	psi_memstall_enter(&pflags);
-
 	if (frontswap_load(page) == 0) {
 		SetPageUptodate(page);
 		unlock_page(page);
@@ -364,7 +354,7 @@ int swap_readpage(struct page *page)
 		ret = mapping->a_ops->readpage(swap_file, page);
 		if (!ret)
 			count_vm_event(PSWPIN);
-		goto out;
+		return ret;
 	}
 
 	ret = bdev_read_page(sis->bdev, swap_page_sector(page), page);
@@ -375,7 +365,7 @@ int swap_readpage(struct page *page)
 		}
 
 		count_vm_event(PSWPIN);
-		goto out;
+		return 0;
 	}
 
 	ret = 0;
@@ -389,7 +379,6 @@ int swap_readpage(struct page *page)
 	count_vm_event(PSWPIN);
 	submit_bio(bio);
 out:
-	psi_memstall_leave(&pflags);
 	return ret;
 }
 

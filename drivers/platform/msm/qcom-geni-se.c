@@ -142,7 +142,7 @@ static int geni_se_iommu_map_and_attach(struct geni_se_device *geni_se_dev);
  */
 unsigned int geni_read_reg_nolog(void __iomem *base, int offset)
 {
-	return readl_relaxed_no_log(base + offset);
+	return readl_relaxed(base + offset);
 }
 EXPORT_SYMBOL(geni_read_reg_nolog);
 
@@ -154,7 +154,7 @@ EXPORT_SYMBOL(geni_read_reg_nolog);
  */
 void geni_write_reg_nolog(unsigned int value, void __iomem *base, int offset)
 {
-	return writel_relaxed_no_log(value, (base + offset));
+	return writel_relaxed(value, (base + offset));
 }
 EXPORT_SYMBOL(geni_write_reg_nolog);
 
@@ -1806,12 +1806,10 @@ static int geni_se_probe(struct platform_device *pdev)
 		INIT_LIST_HEAD(&geni_se_dev->ib_list_head_noc);
 	}
 	mutex_init(&geni_se_dev->geni_dev_lock);
-#ifdef CONFIG_IPC_LOGGING
 	geni_se_dev->log_ctx = ipc_log_context_create(NUM_LOG_PAGES,
 						dev_name(geni_se_dev->dev), 0);
 	if (!geni_se_dev->log_ctx)
 		dev_err(dev, "%s Failed to allocate log context\n", __func__);
-#endif
 	dev_set_drvdata(dev, geni_se_dev);
 
 	ret = of_platform_populate(dev->of_node, geni_se_dt_match, NULL, dev);

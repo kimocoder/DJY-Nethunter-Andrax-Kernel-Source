@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -142,7 +142,7 @@ static void __dump_packet(u8 *packet, enum vidc_msg_prio log_level)
 	 * row must contain enough for 0xdeadbaad * 8 to be converted into
 	 * "de ad ba ab " * 8 + '\0'
 	 */
-	char row[3 * row_size];
+	char row[3 * 32];
 
 	for (c = 0; c * row_size < packet_size; ++c) {
 		int bytes_to_read = ((c + 1) * row_size > packet_size) ?
@@ -2893,22 +2893,23 @@ static int __halt_axi(struct venus_hfi_device *device)
 	return rc;
 }
 
-static void print_sfr_message(struct venus_hfi_device *device)
+static void __process_sys_error(struct venus_hfi_device *device)
 {
 	struct hfi_sfr_struct *vsfr = NULL;
-	u32 vsfr_size = 0;
-	void *p = NULL;
 
 	if (__halt_axi(device))
 		dprintk(VIDC_WARN, "Failed to halt AXI after SYS_ERROR\n");
 
 	vsfr = (struct hfi_sfr_struct *)device->sfr.align_virtual_addr;
 	if (vsfr) {
-		vsfr_size = vsfr->bufSize - sizeof(u32);
-		p = memchr(vsfr->rg_data, '\0', vsfr_size);
-		/* SFR isn't guaranteed to be NULL terminated */
+		void *p = memchr(vsfr->rg_data, '\0', vsfr->bufSize);
+		/*
+		 * SFR isn't guaranteed to be NULL terminated
+		 * since SYS_ERROR indicates that Venus is in the
+		 * process of crashing.
+		 */
 		if (p == NULL)
-			vsfr->rg_data[vsfr_size - 1] = '\0';
+			vsfr->rg_data[vsfr->bufSize - 1] = '\0';
 
 		dprintk(VIDC_ERR, "SFR Message from FW: %s\n",
 				vsfr->rg_data);
@@ -3050,6 +3051,8 @@ static int __response_handler(struct venus_hfi_device *device)
 	}
 
 	if (device->intr_status & VIDC_WRAPPER_INTR_CLEAR_A2HWD_BMSK) {
+		struct hfi_sfr_struct *vsfr = (struct hfi_sfr_struct *)
+			device->sfr.align_virtual_addr;
 		struct msm_vidc_cb_info info = {
 			.response_type = HAL_SYS_WATCHDOG_TIMEOUT,
 			.response.cmd = {
@@ -3057,7 +3060,9 @@ static int __response_handler(struct venus_hfi_device *device)
 			}
 		};
 
-		print_sfr_message(device);
+		if (vsfr)
+			dprintk(VIDC_ERR, "SFR Message from FW: %s\n",
+					vsfr->rg_data);
 
 		dprintk(VIDC_ERR, "Received watchdog timeout\n");
 		packets[packet_count++] = info;
@@ -3083,7 +3088,7 @@ static int __response_handler(struct venus_hfi_device *device)
 		/* Process the packet types that we're interested in */
 		switch (info->response_type) {
 		case HAL_SYS_ERROR:
-			print_sfr_message(device);
+			__process_sys_error(device);
 			break;
 		case HAL_SYS_RELEASE_RESOURCE_DONE:
 			dprintk(VIDC_DBG, "Received SYS_RELEASE_RESOURCE\n");

@@ -91,13 +91,14 @@ struct cfq_ttime {
  * move this into the elevator for the rq sorting as well.
  */
 struct cfq_rb_root {
-	struct rb_root rb;
-	struct rb_node *left;
+	struct rb_root_cached rb;
+	struct rb_node *rb_rightmost;
 	unsigned count;
 	u64 min_vdisktime;
 	struct cfq_ttime ttime;
 };
-#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, \
+#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT_CACHED, \
+			.rb_rightmost = NULL,			     \
 			.ttime = {.last_end_request = ktime_get_ns(),},}
 
 /*
@@ -207,9 +208,9 @@ struct cfqg_stats {
 	/* total time with empty current active q with other requests queued */
 	struct blkg_stat		empty_time;
 	/* fields after this shouldn't be cleared on stat reset */
-	uint64_t			start_group_wait_time;
-	uint64_t			start_idle_time;
-	uint64_t			start_empty_time;
+	u64				start_group_wait_time;
+	u64				start_idle_time;
+	u64				start_empty_time;
 	uint16_t			flags;
 #endif	/* CONFIG_DEBUG_BLK_CGROUP */
 #endif	/* CONFIG_CFQ_GROUP_IOSCHED */
@@ -490,13 +491,13 @@ CFQG_FLAG_FNS(empty)
 /* This should be called with the queue_lock held. */
 static void cfqg_stats_update_group_wait_time(struct cfqg_stats *stats)
 {
-	unsigned long long now;
+	u64 now;
 
 	if (!cfqg_stats_waiting(stats))
 		return;
 
-	now = sched_clock();
-	if (time_after64(now, stats->start_group_wait_time))
+	now = ktime_get_ns();
+	if (now > stats->start_group_wait_time)
 		blkg_stat_add(&stats->group_wait_time,
 			      now - stats->start_group_wait_time);
 	cfqg_stats_clear_waiting(stats);
@@ -512,20 +513,20 @@ static void cfqg_stats_set_start_group_wait_time(struct cfq_group *cfqg,
 		return;
 	if (cfqg == curr_cfqg)
 		return;
-	stats->start_group_wait_time = sched_clock();
+	stats->start_group_wait_time = ktime_get_ns();
 	cfqg_stats_mark_waiting(stats);
 }
 
 /* This should be called with the queue_lock held. */
 static void cfqg_stats_end_empty_time(struct cfqg_stats *stats)
 {
-	unsigned long long now;
+	u64 now;
 
 	if (!cfqg_stats_empty(stats))
 		return;
 
-	now = sched_clock();
-	if (time_after64(now, stats->start_empty_time))
+	now = ktime_get_ns();
+	if (now > stats->start_empty_time)
 		blkg_stat_add(&stats->empty_time,
 			      now - stats->start_empty_time);
 	cfqg_stats_clear_empty(stats);
@@ -551,7 +552,7 @@ static void cfqg_stats_set_start_empty_time(struct cfq_group *cfqg)
 	if (cfqg_stats_empty(stats))
 		return;
 
-	stats->start_empty_time = sched_clock();
+	stats->start_empty_time = ktime_get_ns();
 	cfqg_stats_mark_empty(stats);
 }
 
@@ -560,9 +561,9 @@ static void cfqg_stats_update_idle_time(struct cfq_group *cfqg)
 	struct cfqg_stats *stats = &cfqg->stats;
 
 	if (cfqg_stats_idling(stats)) {
-		unsigned long long now = sched_clock();
+		u64 now = ktime_get_ns();
 
-		if (time_after64(now, stats->start_idle_time))
+		if (now > stats->start_idle_time)
 			blkg_stat_add(&stats->idle_time,
 				      now - stats->start_idle_time);
 		cfqg_stats_clear_idling(stats);
@@ -575,7 +576,7 @@ static void cfqg_stats_set_start_idle_time(struct cfq_group *cfqg)
 
 	BUG_ON(cfqg_stats_idling(stats));
 
-	stats->start_idle_time = sched_clock();
+	stats->start_idle_time = ktime_get_ns();
 	cfqg_stats_mark_idling(stats);
 }
 
@@ -703,18 +704,18 @@ static inline void cfqg_stats_update_io_merged(struct cfq_group *cfqg, int op,
 }
 
 static inline void cfqg_stats_update_completion(struct cfq_group *cfqg,
-			uint64_t start_time, uint64_t io_start_time, int op,
+			uint64_t start_time_ns, uint64_t io_start_time_ns, int op,
 			int op_flags)
 {
 	struct cfqg_stats *stats = &cfqg->stats;
-	unsigned long long now = sched_clock();
+	u64 now = ktime_get_ns();
 
-	if (time_after64(now, io_start_time))
+	if (time_after64(now, io_start_time_ns))
 		blkg_rwstat_add(&stats->service_time, op, op_flags,
-				now - io_start_time);
-	if (time_after64(io_start_time, start_time))
+				now - io_start_time_ns);
+	if (time_after64(io_start_time_ns, start_time_ns))
 		blkg_rwstat_add(&stats->wait_time, op, op_flags,
-				io_start_time - start_time);
+				io_start_time_ns - start_time_ns);
 }
 
 /* @stats = 0 */
@@ -800,7 +801,7 @@ static inline void cfqg_stats_update_io_remove(struct cfq_group *cfqg, int op,
 static inline void cfqg_stats_update_io_merged(struct cfq_group *cfqg, int op,
 			int op_flags) { }
 static inline void cfqg_stats_update_completion(struct cfq_group *cfqg,
-			uint64_t start_time, uint64_t io_start_time, int op,
+			uint64_t start_time_ns, uint64_t io_start_time_ns, int op,
 			int op_flags) { }
 
 #endif	/* CONFIG_CFQ_GROUP_IOSCHED */
@@ -1003,21 +1004,11 @@ static inline u64 max_vdisktime(u64 min_vdisktime, u64 vdisktime)
 	return min_vdisktime;
 }
 
-static inline u64 min_vdisktime(u64 min_vdisktime, u64 vdisktime)
-{
-	s64 delta = (s64)(vdisktime - min_vdisktime);
-	if (delta < 0)
-		min_vdisktime = vdisktime;
-
-	return min_vdisktime;
-}
-
 static void update_min_vdisktime(struct cfq_rb_root *st)
 {
-	struct cfq_group *cfqg;
+	if (!RB_EMPTY_ROOT(&st->rb.rb_root)) {
+		struct cfq_group *cfqg = rb_entry_cfqg(st->rb.rb_leftmost);
 
-	if (st->left) {
-		cfqg = rb_entry_cfqg(st->left);
 		st->min_vdisktime = max_vdisktime(st->min_vdisktime,
 						  cfqg->vdisktime);
 	}
@@ -1199,46 +1190,28 @@ cfq_choose_req(struct cfq_data *cfqd, struct request *rq1, struct request *rq2, 
 	}
 }
 
-/*
- * The below is leftmost cache rbtree addon
- */
 static struct cfq_queue *cfq_rb_first(struct cfq_rb_root *root)
 {
 	/* Service tree is empty */
 	if (!root->count)
 		return NULL;
 
-	if (!root->left)
-		root->left = rb_first(&root->rb);
-
-	if (root->left)
-		return rb_entry(root->left, struct cfq_queue, rb_node);
-
-	return NULL;
+	return rb_entry(rb_first_cached(&root->rb), struct cfq_queue, rb_node);
 }
 
 static struct cfq_group *cfq_rb_first_group(struct cfq_rb_root *root)
 {
-	if (!root->left)
-		root->left = rb_first(&root->rb);
-
-	if (root->left)
-		return rb_entry_cfqg(root->left);
-
-	return NULL;
-}
-
-static void rb_erase_init(struct rb_node *n, struct rb_root *root)
-{
-	rb_erase(n, root);
-	RB_CLEAR_NODE(n);
+	return rb_entry_cfqg(rb_first_cached(&root->rb));
 }
 
 static void cfq_rb_erase(struct rb_node *n, struct cfq_rb_root *root)
 {
-	if (root->left == n)
-		root->left = NULL;
-	rb_erase_init(n, &root->rb);
+	if (root->rb_rightmost == n)
+		root->rb_rightmost = rb_prev(n);
+
+	rb_erase_cached(n, &root->rb);
+	RB_CLEAR_NODE(n);
+
 	--root->count;
 }
 
@@ -1288,29 +1261,30 @@ cfqg_key(struct cfq_rb_root *st, struct cfq_group *cfqg)
 static void
 __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
 {
-	struct rb_node **node = &st->rb.rb_node;
+	struct rb_node **node = &st->rb.rb_root.rb_node;
 	struct rb_node *parent = NULL;
 	struct cfq_group *__cfqg;
 	s64 key = cfqg_key(st, cfqg);
-	int left = 1;
+	bool leftmost = true, rightmost = true;
 
 	while (*node != NULL) {
 		parent = *node;
 		__cfqg = rb_entry_cfqg(parent);
 
-		if (key < cfqg_key(st, __cfqg))
+		if (key < cfqg_key(st, __cfqg)) {
 			node = &parent->rb_left;
-		else {
+			rightmost = false;
+		} else {
 			node = &parent->rb_right;
-			left = 0;
+			leftmost = false;
 		}
 	}
 
-	if (left)
-		st->left = &cfqg->rb_node;
+	if (rightmost)
+		st->rb_rightmost = &cfqg->rb_node;
 
 	rb_link_node(&cfqg->rb_node, parent, node);
-	rb_insert_color(&cfqg->rb_node, &st->rb);
+	rb_insert_color_cached(&cfqg->rb_node, &st->rb, leftmost);
 }
 
 /*
@@ -1411,7 +1385,7 @@ cfq_group_notify_queue_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
 	 * so that groups get lesser vtime based on their weights, so that
 	 * if group does not loose all if it was not continuously backlogged.
 	 */
-	n = rb_last(&st->rb);
+	n = st->rb_rightmost;
 	if (n) {
 		__cfqg = rb_entry_cfqg(n);
 		cfqg->vdisktime = __cfqg->vdisktime +
@@ -1693,14 +1667,20 @@ static void cfq_pd_offline(struct blkg_policy_data *pd)
 	int i;
 
 	for (i = 0; i < IOPRIO_BE_NR; i++) {
-		if (cfqg->async_cfqq[0][i])
+		if (cfqg->async_cfqq[0][i]) {
 			cfq_put_queue(cfqg->async_cfqq[0][i]);
-		if (cfqg->async_cfqq[1][i])
+			cfqg->async_cfqq[0][i] = NULL;
+		}
+		if (cfqg->async_cfqq[1][i]) {
 			cfq_put_queue(cfqg->async_cfqq[1][i]);
+			cfqg->async_cfqq[1][i] = NULL;
+		}
 	}
 
-	if (cfqg->async_idle_cfqq)
+	if (cfqg->async_idle_cfqq) {
 		cfq_put_queue(cfqg->async_idle_cfqq);
+		cfqg->async_idle_cfqq = NULL;
+	}
 
 	/*
 	 * @blkg is going offline and will be ignored by
@@ -2304,14 +2284,14 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
 	struct cfq_queue *__cfqq;
 	u64 rb_key;
 	struct cfq_rb_root *st;
-	int left;
+	bool leftmost = true;
 	int new_cfqq = 1;
 	u64 now = ktime_get_ns();
 
 	st = st_for(cfqq->cfqg, cfqq_class(cfqq), cfqq_type(cfqq));
 	if (cfq_class_idle(cfqq)) {
 		rb_key = CFQ_IDLE_DELAY;
-		parent = rb_last(&st->rb);
+		parent = st->rb_rightmost;
 		if (parent && parent != &cfqq->rb_node) {
 			__cfqq = rb_entry(parent, struct cfq_queue, rb_node);
 			rb_key += __cfqq->rb_key;
@@ -2345,10 +2325,9 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
 		cfqq->service_tree = NULL;
 	}
 
-	left = 1;
 	parent = NULL;
 	cfqq->service_tree = st;
-	p = &st->rb.rb_node;
+	p = &st->rb.rb_root.rb_node;
 	while (*p) {
 		parent = *p;
 		__cfqq = rb_entry(parent, struct cfq_queue, rb_node);
@@ -2360,16 +2339,13 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
 			p = &parent->rb_left;
 		else {
 			p = &parent->rb_right;
-			left = 0;
+			leftmost = false;
 		}
 	}
 
-	if (left)
-		st->left = &cfqq->rb_node;
-
 	cfqq->rb_key = rb_key;
 	rb_link_node(&cfqq->rb_node, parent, p);
-	rb_insert_color(&cfqq->rb_node, &st->rb);
+	rb_insert_color_cached(&cfqq->rb_node, &st->rb, leftmost);
 	st->count++;
 	if (add_front || !new_cfqq)
 		return;
@@ -2815,7 +2791,7 @@ static struct cfq_queue *cfq_get_next_queue(struct cfq_data *cfqd)
 	/* There is nothing to dispatch */
 	if (!st)
 		return NULL;
-	if (RB_EMPTY_ROOT(&st->rb))
+	if (RB_EMPTY_ROOT(&st->rb.rb_root))
 		return NULL;
 	return cfq_rb_first(st);
 }
@@ -2834,9 +2810,11 @@ static struct cfq_queue *cfq_get_next_queue_forced(struct cfq_data *cfqd)
 	if (!cfqg)
 		return NULL;
 
-	for_each_cfqg_st(cfqg, i, j, st)
-		if ((cfqq = cfq_rb_first(st)) != NULL)
+	for_each_cfqg_st(cfqg, i, j, st) {
+		cfqq = cfq_rb_first(st);
+		if (cfqq)
 			return cfqq;
+	}
 	return NULL;
 }
 
@@ -3299,7 +3277,7 @@ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd)
 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
 	struct cfq_group *cfqg;
 
-	if (RB_EMPTY_ROOT(&st->rb))
+	if (RB_EMPTY_ROOT(&st->rb.rb_root))
 		return NULL;
 	cfqg = cfq_rb_first_group(st);
 	update_min_vdisktime(st);
@@ -3939,6 +3917,8 @@ cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct cfq_io_cq *cic,
 		goto out;
 	}
 
+	/* cfq_init_cfqq() assumes cfqq->ioprio_class is initialized. */
+	cfqq->ioprio_class = IOPRIO_CLASS_NONE;
 	cfq_init_cfqq(cfqd, cfqq, current->pid, is_sync);
 	cfq_init_prio_data(cfqq, cic);
 	cfq_link_cfqq_cfqg(cfqq, cfqg);

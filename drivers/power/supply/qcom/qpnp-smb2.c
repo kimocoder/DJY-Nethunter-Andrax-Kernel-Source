@@ -554,9 +554,6 @@ static int smb2_parse_dt(struct smb2 *chip)
 	chg->fcc_stepper_enable = of_property_read_bool(node,
 					"qcom,fcc-stepping-enable");
 
-	chg->ufp_only_mode = of_property_read_bool(node,
-					"qcom,ufp-only-mode");
-
 	return 0;
 }
 
@@ -1260,7 +1257,9 @@ static enum power_supply_property smb2_batt_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 	POWER_SUPPLY_PROP_CHARGE_FULL,
+	POWER_SUPPLY_PROP_FORCE_RECHARGE,
 	POWER_SUPPLY_PROP_FCC_STEPPER_ENABLE,
+	POWER_SUPPLY_PROP_OP_DISABLE_CHARGE,
 };
 
 static int smb2_batt_get_prop(struct power_supply *psy,
@@ -1290,6 +1289,9 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		rc = smblib_get_prop_batt_capacity(chg, val);
+		break;
+	case POWER_SUPPLY_PROP_OP_DISABLE_CHARGE:
+		val->intval = chg->chg_disabled;
 		break;
 /* david.liu@bsp, 20171023 Battery & Charging porting */
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
@@ -1350,6 +1352,9 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_SW_JEITA_ENABLED:
 		val->intval = chg->sw_jeita_enabled;
 		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+		rc = smblib_get_prop_batt_voltage_now(chg, val);
+		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		val->intval = get_client_vote(chg->fv_votable,
 				BATT_PROFILE_VOTER);
@@ -1360,6 +1365,10 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_VOLTAGE_QNOVO:
 		val->intval = get_client_vote_locked(chg->fv_votable,
 				QNOVO_VOTER);
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_NOW:
+		rc = smblib_get_prop_from_bms(chg,
+				POWER_SUPPLY_PROP_CURRENT_NOW, val);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_QNOVO:
 		val->intval = get_client_vote_locked(chg->fcc_votable,
@@ -1372,6 +1381,9 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
 		val->intval = get_client_vote(chg->fcc_votable,
 					      FG_ESR_VOTER);
+		break;
+	case POWER_SUPPLY_PROP_TEMP:
+		rc = smblib_get_prop_batt_temp(chg, val);
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
 		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
@@ -1400,13 +1412,15 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 		val->intval = 0;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-	case POWER_SUPPLY_PROP_CHARGE_FULL:
-	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-	case POWER_SUPPLY_PROP_TEMP:
-		rc = smblib_get_prop_from_bms(chg, psp, val);
+		rc = smblib_get_prop_from_bms(chg,
+				POWER_SUPPLY_PROP_CHARGE_COUNTER, val);
 		break;
-	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		rc = smblib_get_prop_from_bms(chg, psp, val);
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		rc = smblib_get_prop_from_bms(chg,
+				POWER_SUPPLY_PROP_CHARGE_FULL, val);
+		break;
+	case POWER_SUPPLY_PROP_FORCE_RECHARGE:
+		val->intval = 0;
 		break;
 	case POWER_SUPPLY_PROP_FCC_STEPPER_ENABLE:
 		val->intval = chg->fcc_stepper_enable;
@@ -1454,6 +1468,16 @@ static int smb2_batt_set_prop(struct power_supply *psy,
 		if (__debug_mask == PR_OP_DEBUG
 			|| val->intval == 900000)
 			op_usb_icl_set(chg, val->intval);
+		break;
+	case POWER_SUPPLY_PROP_OP_DISABLE_CHARGE:
+		vote(chg->chg_disable_votable, FORCE_RECHARGE_VOTER,
+					(bool)val->intval, 0);
+		if (val->intval) {
+			switch_mode_to_normal();
+			op_set_fast_chg_allow(chg, false);
+		}
+		chg->chg_disabled = (bool)val->intval;
+		pr_debug("user set disable chg %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
 		rc = smblib_set_prop_chg_voltage(chg, val);
@@ -1559,6 +1583,18 @@ static int smb2_batt_set_prop(struct power_supply *psy,
 		chg->die_health = val->intval;
 		power_supply_changed(chg->batt_psy);
 		break;
+	case POWER_SUPPLY_PROP_FORCE_RECHARGE:
+			/* toggle charging to force recharge */
+			vote(chg->chg_disable_votable, FORCE_RECHARGE_VOTER,
+					true, 0);
+			/* charge disable delay */
+			msleep(50);
+			vote(chg->chg_disable_votable, FORCE_RECHARGE_VOTER,
+					false, 0);
+		break;
+	case POWER_SUPPLY_PROP_FCC_STEPPER_ENABLE:
+		chg->fcc_stepper_enable = val->intval;
+		break;
 	default:
 		rc = -EINVAL;
 	}
@@ -1589,6 +1625,7 @@ static int smb2_batt_prop_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_STEP_CHARGING_ENABLED:
 	case POWER_SUPPLY_PROP_SW_JEITA_ENABLED:
 	case POWER_SUPPLY_PROP_DIE_HEALTH:
+	case POWER_SUPPLY_PROP_OP_DISABLE_CHARGE:
 		return 1;
 	default:
 		break;
@@ -2305,44 +2342,20 @@ static int smb2_post_init(struct smb2 *chip)
 {
 	struct smb_charger *chg = &chip->chg;
 	int rc;
-	u8 stat;
 
 	/* In case the usb path is suspended, we would have missed disabling
 	 * the icl change interrupt because the interrupt could have been
 	 * not requested
 	 */
 	rerun_election(chg->usb_icl_votable);
-
-	/* Force charger in Sink Only mode */
-	if (chg->ufp_only_mode) {
-		rc = smblib_read(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
-				&stat);
-		if (rc < 0) {
-			dev_err(chg->dev,
-				"Couldn't read SOFTWARE_CTRL_REG rc=%d\n", rc);
-			return rc;
-		}
-
-		if (!(stat & UFP_EN_CMD_BIT)) {
-			/* configure charger in UFP only mode */
-			rc  = smblib_force_ufp(chg);
-			if (rc < 0) {
-				dev_err(chg->dev,
-					"Couldn't force UFP mode rc=%d\n", rc);
-				return rc;
-			}
-		}
-	} else {
-		/* configure power role for dual-role */
-		rc = smblib_masked_write(chg,
-					TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
-					TYPEC_POWER_ROLE_CMD_MASK, 0);
-		if (rc < 0) {
-			dev_err(chg->dev,
-				"Couldn't configure power role for DRP rc=%d\n",
-				rc);
-			return rc;
-		}
+	/* yangfb@bsp, 20180124 ,for EID-1772 */
+	/* configure power role for UDP-role */
+	rc = smblib_masked_write(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
+				 TYPEC_POWER_ROLE_CMD_MASK, UFP_EN_CMD_BIT);
+	if (rc < 0) {
+		dev_err(chg->dev,
+			"Couldn't configure power role for UDP rc=%d\n", rc);
+		return rc;
 	}
 	rerun_election(chg->usb_irq_enable_votable);
 
@@ -3123,9 +3136,8 @@ static void smb2_shutdown(struct platform_device *pdev)
 	/* disable all interrupts */
 	smb2_disable_interrupts(chg);
 
-	if (!chg->ufp_only_mode)
-		/* configure power role for UFP */
-		smblib_masked_write(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
+	/* configure power role for UFP */
+	smblib_masked_write(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
 				TYPEC_POWER_ROLE_CMD_MASK, UFP_EN_CMD_BIT);
 
 	/* force HVDCP to 5V */

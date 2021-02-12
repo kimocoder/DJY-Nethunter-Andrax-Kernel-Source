@@ -655,6 +655,7 @@ struct hfi_bit_depth {
 };
 
 struct hfi_picture_type {
+	u32 is_sync_frame;
 	u32 picture_type;
 };
 

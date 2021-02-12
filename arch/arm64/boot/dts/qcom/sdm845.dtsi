@@ -60,7 +60,6 @@
 			reg = <0x0 0x0>;
 			enable-method = "psci";
 			efficiency = <1024>;
-			clock-frequency = <1766400000>;
 			cache-size = <0x8000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
@@ -98,7 +97,6 @@
 			reg = <0x0 0x100>;
 			enable-method = "psci";
 			efficiency = <1024>;
-			clock-frequency = <1766400000>;
 			cache-size = <0x8000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
@@ -130,7 +128,6 @@
 			reg = <0x0 0x200>;
 			enable-method = "psci";
 			efficiency = <1024>;
-			clock-frequency = <1766400000>;
 			cache-size = <0x8000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
@@ -162,7 +159,6 @@
 			reg = <0x0 0x300>;
 			enable-method = "psci";
 			efficiency = <1024>;
-			clock-frequency = <1766400000>;
 			cache-size = <0x8000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
@@ -194,7 +190,6 @@
 			reg = <0x0 0x400>;
 			enable-method = "psci";
 			efficiency = <1740>;
-			clock-frequency = <2803200000>;
 			cache-size = <0x20000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			qcom,lmh-dcvs = <&lmh_dcvs1>;
@@ -226,7 +221,6 @@
 			reg = <0x0 0x500>;
 			enable-method = "psci";
 			efficiency = <1740>;
-			clock-frequency = <2803200000>;
 			cache-size = <0x20000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			qcom,lmh-dcvs = <&lmh_dcvs1>;
@@ -258,7 +252,6 @@
 			reg = <0x0 0x600>;
 			enable-method = "psci";
 			efficiency = <1740>;
-			clock-frequency = <2803200000>;
 			cache-size = <0x20000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			qcom,lmh-dcvs = <&lmh_dcvs1>;
@@ -290,7 +283,6 @@
 			reg = <0x0 0x700>;
 			enable-method = "psci";
 			efficiency = <1740>;
-			clock-frequency = <2803200000>;
 			cache-size = <0x20000>;
 			cpu-release-addr = <0x0 0x90000000>;
 			qcom,lmh-dcvs = <&lmh_dcvs1>;
@@ -488,7 +480,7 @@
 	};
 
 	chosen {
-		bootargs = "quiet rcupdate.rcu_expedited=1 noirqdebug";
+		bootargs = "rcupdate.rcu_expedited=1";
 	};
 
 	soc: soc { };
@@ -669,7 +661,7 @@
 			alloc-ranges = <0 0x00000000 0 0xffffffff>;
 			reusable;
 			alignment = <0 0x400000>;
-			size = <0 0x8000000>;
+			size = <0 0x2000000>;
 			linux,cma-default;
 		};
 	};
@@ -1557,7 +1549,6 @@
 		vdd_mss-supply = <&pm8005_s2_level>;
 		vdd_mss-uV = <RPMH_REGULATOR_LEVEL_TURBO>;
 		qcom,firmware-name = "modem";
-		qcom,sequential-fw-load;
 		qcom,pil-self-auth;
 		qcom,sysmon-id = <0>;
 		qcom,minidump-id = <3>;
@@ -2517,7 +2508,6 @@
 		qcom,support-fde;
 		qcom,no-clock-support;
 		qcom,fde-key-size;
-		qcom,commonlib64-loaded-by-uefi;
 		qcom,msm-bus,name = "qseecom-noc";
 		qcom,msm-bus,num-cases = <4>;
 		qcom,msm-bus,num-paths = <1>;

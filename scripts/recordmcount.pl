@@ -106,6 +106,7 @@
 # 9) Move the result back to the original object.
 #
 
+use warnings;
 use strict;
 
 my $P = $0;
