@@ -348,7 +348,7 @@ schedtune_accept_deltas(int nrg_delta, int cap_delta,
  *    implementation especially for the computation of the per-CPU boost
  *    value
  */
-#define BOOSTGROUPS_COUNT 6
+#define BOOSTGROUPS_COUNT 5
 
 /* Array of configured boostgroups */
 static struct schedtune *allocated_group[BOOSTGROUPS_COUNT] = {
@@ -390,6 +390,11 @@ static inline void init_sched_boost(struct schedtune *st)
 	st->sched_boost_enabled_backup = st->sched_boost_enabled;
 	st->colocate = false;
 	st->colocate_update_disabled = false;
+}
+
+bool same_schedtune(struct task_struct *tsk1, struct task_struct *tsk2)
+{
+	return task_schedtune(tsk1) == task_schedtune(tsk2);
 }
 
 void update_cgroup_boost_settings(void)
@@ -699,23 +704,6 @@ static int sched_colocate_write(struct cgroup_subsys_state *css,
 	st->colocate = !!colocate;
 	st->colocate_update_disabled = true;
 	return 0;
-}
-
-bool schedtune_task_colocated(struct task_struct *p)
-{
-	struct schedtune *st;
-	bool colocated;
-
-	if (unlikely(!schedtune_initialized))
-		return false;
-
-	/* Get task boost value */
-	rcu_read_lock();
-	st = task_schedtune(p);
-	colocated = st->colocate;
-	rcu_read_unlock();
-
-	return colocated;
 }
 
 #else /* CONFIG_SCHED_WALT */
@@ -1169,7 +1157,7 @@ static struct schedtune *getSchedtune(char *st_name)
 {
 	int idx;
 
-	for (idx = 0; idx < BOOSTGROUPS_COUNT; ++idx) {
+	for (idx = 1; idx < BOOSTGROUPS_COUNT; ++idx) {
 		char name_buf[NAME_MAX + 1];
 		struct schedtune *st = allocated_group[idx];
 

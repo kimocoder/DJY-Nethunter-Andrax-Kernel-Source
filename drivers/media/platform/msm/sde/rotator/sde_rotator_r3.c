@@ -72,12 +72,12 @@
 	do { \
 		SDEROT_DBG("SDEREG.W:[%s:0x%X] <= 0x%X\n", #off, (off),\
 				(u32)(data));\
-		writel_relaxed( \
+		writel_relaxed_no_log( \
 				(REGDMA_OP_REGWRITE | \
 				 ((off) & REGDMA_ADDR_OFFSET_MASK)), \
 				p); \
 		p += sizeof(u32); \
-		writel_relaxed(data, p); \
+		writel_relaxed_no_log(data, p); \
 		p += sizeof(u32); \
 	} while (0)
 
@@ -85,14 +85,14 @@
 	do { \
 		SDEROT_DBG("SDEREG.M:[%s:0x%X] <= 0x%X\n", #off, (off),\
 				(u32)(data));\
-		writel_relaxed( \
+		writel_relaxed_no_log( \
 				(REGDMA_OP_REGMODIFY | \
 				 ((off) & REGDMA_ADDR_OFFSET_MASK)), \
 				p); \
 		p += sizeof(u32); \
-		writel_relaxed(mask, p); \
+		writel_relaxed_no_log(mask, p); \
 		p += sizeof(u32); \
-		writel_relaxed(data, p); \
+		writel_relaxed_no_log(data, p); \
 		p += sizeof(u32); \
 	} while (0)
 
@@ -100,25 +100,25 @@
 	do { \
 		SDEROT_DBG("SDEREG.B:[%s:0x%X:0x%X]\n", #off, (off),\
 				(u32)(len));\
-		writel_relaxed( \
+		writel_relaxed_no_log( \
 				(REGDMA_OP_BLKWRITE_INC | \
 				 ((off) & REGDMA_ADDR_OFFSET_MASK)), \
 				p); \
 		p += sizeof(u32); \
-		writel_relaxed(len, p); \
+		writel_relaxed_no_log(len, p); \
 		p += sizeof(u32); \
 	} while (0)
 
 #define SDE_REGDMA_BLKWRITE_DATA(p, data) \
 	do { \
 		SDEROT_DBG("SDEREG.I:[:] <= 0x%X\n", (u32)(data));\
-		writel_relaxed(data, p); \
+		writel_relaxed_no_log(data, p); \
 		p += sizeof(u32); \
 	} while (0)
 
 #define SDE_REGDMA_READ(p, data) \
 	do { \
-		data = readl_relaxed(p); \
+		data = readl_relaxed_no_log(p); \
 		p += sizeof(u32); \
 	} while (0)
 
@@ -1710,7 +1710,7 @@ static u32 sde_hw_rotator_start_no_regdma(struct sde_hw_rotator_context *ctx,
 	/* Write all command stream to Rotator blocks */
 	/* Rotator will start right away after command stream finish writing */
 	while (mem_rdptr < wrptr) {
-		u32 op = REGDMA_OP_MASK & readl_relaxed(mem_rdptr);
+		u32 op = REGDMA_OP_MASK & readl_relaxed_no_log(mem_rdptr);
 
 		switch (op) {
 		case REGDMA_OP_NOP:
@@ -3376,6 +3376,8 @@ static ssize_t sde_hw_rotator_show_caps(struct sde_rot_mgr *mgr,
 
 	if (hw_data->downscale_caps)
 		SPRINT("downscale_ratios=%s\n", hw_data->downscale_caps);
+
+	SPRINT("max_line_width=%d\n", sde_rotator_get_maxlinewidth(mgr));
 
 #undef SPRINT
 	return cnt;

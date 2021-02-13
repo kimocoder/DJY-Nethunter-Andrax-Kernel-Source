@@ -257,12 +257,6 @@ ipv4_connected:
 
 	err = ip6_datagram_dst_update(sk, true);
 	if (err) {
-		/* Reset daddr and dport so that udp_v6_early_demux()
-		 * fails to find this socket
-		 */
-		memset(&sk->sk_v6_daddr, 0, sizeof(sk->sk_v6_daddr));
-		inet->inet_dport = 0;
-
 		/* Restore the socket peer info, to keep it consistent with
 		 * the old socket state
 		 */

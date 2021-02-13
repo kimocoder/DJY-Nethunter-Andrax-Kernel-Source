@@ -21,6 +21,8 @@ source "drivers/gpu/msm/Kconfig"
 
 source "drivers/gpu/drm/Kconfig"
 
+source "drivers/video/klapse/Kconfig"
+
 menu "Frame buffer Devices"
 source "drivers/video/fbdev/Kconfig"
 endmenu

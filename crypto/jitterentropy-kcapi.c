@@ -39,6 +39,7 @@
 
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/module.h>
 #include <linux/fips.h>
 #include <linux/time.h>
 #include <linux/crypto.h>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018,2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1442,7 +1442,7 @@ int gmu_start(struct kgsl_device *device)
 
 		/* Vote for 300MHz DDR for GMU to init */
 		ret = msm_bus_scale_client_update_request(gmu->pcl,
-				pwr->pwrlevels[pwr->num_pwrlevels - 1].bus_freq);
+				pwr->pwrlevels[pwr->default_pwrlevel].bus_freq);
 		if (ret)
 			dev_err(&gmu->pdev->dev,
 				"Failed to allocate gmu b/w: %d\n", ret);
@@ -1457,7 +1457,7 @@ int gmu_start(struct kgsl_device *device)
 			goto error_gmu;
 
 		/* Request default DCVS level */
-		gmu_change_gpu_pwrlevel(device, pwr->num_pwrlevels - 1);
+		gmu_change_gpu_pwrlevel(device, pwr->default_pwrlevel);
 		msm_bus_scale_client_update_request(gmu->pcl, 0);
 		break;
 
@@ -1485,7 +1485,7 @@ int gmu_start(struct kgsl_device *device)
 		if (ret)
 			goto error_gmu;
 
-		gmu_change_gpu_pwrlevel(device, pwr->num_pwrlevels - 1);
+		gmu_change_gpu_pwrlevel(device, pwr->default_pwrlevel);
 		break;
 
 	case KGSL_STATE_RESET:
@@ -1507,7 +1507,8 @@ int gmu_start(struct kgsl_device *device)
 				goto error_gmu;
 
 			/* Send DCVS level prior to reset*/
-			gmu_change_gpu_pwrlevel(device, pwr->num_pwrlevels - 1);
+			gmu_change_gpu_pwrlevel(device,
+				pwr->default_pwrlevel);
 		} else {
 			/* GMU fast boot */
 			hfi_stop(gmu);
@@ -1692,28 +1693,25 @@ int adreno_gmu_fenced_write(struct adreno_device *adreno_dev,
 		 * was successful
 		 */
 		if (!(status & fence_mask))
-			break;
+			return 0;
 		/* Wait a small amount of time before trying again */
 		udelay(GMU_WAKEUP_DELAY_US);
 
 		/* Try to write the fenced register again */
 		adreno_writereg(adreno_dev, offset, val);
-	}
 
-	if (i < GMU_SHORT_WAKEUP_RETRY_LIMIT)
-		return 0;
-
-	if (i == GMU_LONG_WAKEUP_RETRY_LIMIT) {
-		dev_err(adreno_dev->dev.dev,
-			"Timed out waiting %d usecs to write fenced register 0x%x\n",
-			(i * GMU_WAKEUP_DELAY_US),
-			reg_offset);
-		return -ETIMEDOUT;
+		if (i == GMU_SHORT_WAKEUP_RETRY_LIMIT)
+			dev_err(adreno_dev->dev.dev,
+				"Waited %d usecs to write fenced register 0x%x. Continuing to wait...\n",
+				(GMU_SHORT_WAKEUP_RETRY_LIMIT *
+				GMU_WAKEUP_DELAY_US),
+				reg_offset);
 	}
 
 	dev_err(adreno_dev->dev.dev,
-		"Waited %d usecs to write fenced register 0x%x\n",
-		i * GMU_WAKEUP_DELAY_US, reg_offset);
+		"Timed out waiting %d usecs to write fenced register 0x%x\n",
+		GMU_LONG_WAKEUP_RETRY_LIMIT * GMU_WAKEUP_DELAY_US,
+		reg_offset);
 
-	return 0;
+	return -ETIMEDOUT;
 }

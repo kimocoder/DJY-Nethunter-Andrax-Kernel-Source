@@ -366,7 +366,6 @@ struct sock {
 		struct sk_buff	*tail;
 	} sk_backlog;
 #define sk_rmem_alloc sk_backlog.rmem_alloc
-
 	int			sk_forward_alloc;
 #ifdef CONFIG_NET_RX_BUSY_POLL
 	unsigned int		sk_ll_usec;
@@ -943,16 +942,14 @@ static inline void sock_rps_reset_rxhash(struct sock *sk)
 #endif
 }
 
-#define sk_wait_event(__sk, __timeo, __condition, __wait)		\
+#define sk_wait_event(__sk, __timeo, __condition)			\
 	({	int __rc;						\
 		release_sock(__sk);					\
 		__rc = __condition;					\
 		if (!__rc) {						\
-			*(__timeo) = wait_woken(__wait,			\
-						TASK_INTERRUPTIBLE,	\
-						*(__timeo));		\
+			*(__timeo) = schedule_timeout(*(__timeo));	\
 		}							\
-		sched_annotate_sleep();					\
+		sched_annotate_sleep();						\
 		lock_sock(__sk);					\
 		__rc = __condition;					\
 		__rc;							\

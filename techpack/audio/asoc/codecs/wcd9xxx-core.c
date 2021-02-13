@@ -658,6 +658,11 @@ static ssize_t wcd9xxx_slimslave_reg_show(char __user *ubuf, size_t count,
 		reg_val = wcd9xxx_interface_reg_read(debugCodec, i);
 		len = snprintf(tmp_buf, sizeof(tmp_buf),
 			"0x%.3x: 0x%.2x\n", i, reg_val);
+		if (len < 0) {
+			pr_err("%s: fail to fill the buffer\n", __func__);
+			total = -EFAULT;
+			goto copy_err;
+		}
 
 		if ((total + len) >= count - 1)
 			break;
@@ -852,7 +857,7 @@ static int wcd9xxx_i2c_write_device(struct wcd9xxx *wcd9xxx, u16 reg, u8 *value,
 	struct i2c_msg *msg;
 	int ret = 0;
 	u8 reg_addr = 0;
-	u8 data[64 + 1];
+	u8 data[bytes + 1];
 	struct wcd9xxx_i2c *wcd9xxx_i2c;
 
 	wcd9xxx_i2c = wcd9xxx_i2c_get_device_info(wcd9xxx, reg);

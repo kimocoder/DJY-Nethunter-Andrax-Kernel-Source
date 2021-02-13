@@ -68,8 +68,8 @@
 #ifdef CONFIG_LD_DEAD_CODE_DATA_ELIMINATION
 #define TEXT_MAIN .text .text.[0-9a-zA-Z_]*
 #define TEXT_CFI_MAIN .text.cfi .text.[0-9a-zA-Z_]*.cfi
-#define DATA_MAIN .data .data.[0-9a-zA-Z_]* .data..compoundliteral* .data..L_MergedGlobals*
-#define BSS_MAIN .bss .bss.[0-9a-zA-Z_]* .bss..compoundliteral* .bss..L_MergedGlobals*
+#define DATA_MAIN .data .data.[0-9a-zA-Z_]*
+#define BSS_MAIN .bss .bss.[0-9a-zA-Z_]*
 #else
 #define TEXT_MAIN .text
 #define TEXT_CFI_MAIN .text.cfi
@@ -132,7 +132,7 @@
 #ifdef CONFIG_KPROBES
 #define KPROBE_BLACKLIST()	. = ALIGN(8);				      \
 				VMLINUX_SYMBOL(__start_kprobe_blacklist) = .; \
-				KEEP(*(_kprobe_blacklist))		      \
+				*(_kprobe_blacklist)			      \
 				VMLINUX_SYMBOL(__stop_kprobe_blacklist) = .;
 #else
 #define KPROBE_BLACKLIST()
@@ -152,10 +152,10 @@
 
 #ifdef CONFIG_TRACING
 #define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
-			 KEEP(*(__trace_printk_fmt)) /* Trace_printk fmt' pointer */ \
+			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
 			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
 #define TRACEPOINT_STR() VMLINUX_SYMBOL(__start___tracepoint_str) = .;	\
-			 KEEP(*(__tracepoint_str)) /* Trace_printk fmt' pointer */ \
+			 *(__tracepoint_str) /* Trace_printk fmt' pointer */ \
 			 VMLINUX_SYMBOL(__stop___tracepoint_str) = .;
 #else
 #define TRACE_PRINTKS()
@@ -165,7 +165,7 @@
 #ifdef CONFIG_FTRACE_SYSCALLS
 #define TRACE_SYSCALLS() . = ALIGN(8);					\
 			 VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
-			 KEEP(*(__syscalls_metadata))			\
+			 *(__syscalls_metadata)				\
 			 VMLINUX_SYMBOL(__stop_syscalls_metadata) = .;
 #else
 #define TRACE_SYSCALLS()
@@ -174,7 +174,7 @@
 #ifdef CONFIG_SERIAL_EARLYCON
 #define EARLYCON_TABLE() . = ALIGN(8);				\
 			 VMLINUX_SYMBOL(__earlycon_table) = .;	\
-			 KEEP(*(__earlycon_table))		\
+			 *(__earlycon_table)			\
 			 VMLINUX_SYMBOL(__earlycon_table_end) = .;
 #else
 #define EARLYCON_TABLE()
@@ -202,7 +202,7 @@
 #define ACPI_PROBE_TABLE(name)						\
 	. = ALIGN(8);							\
 	VMLINUX_SYMBOL(__##name##_acpi_probe_table) = .;		\
-	KEEP(*(__##name##_acpi_probe_table))				\
+	*(__##name##_acpi_probe_table)					\
 	VMLINUX_SYMBOL(__##name##_acpi_probe_table_end) = .;
 #else
 #define ACPI_PROBE_TABLE(name)
@@ -211,7 +211,7 @@
 #define KERNEL_DTB()							\
 	STRUCT_ALIGN();							\
 	VMLINUX_SYMBOL(__dtb_start) = .;				\
-	KEEP(*(.dtb.init.rodata))					\
+	*(.dtb.init.rodata)						\
 	VMLINUX_SYMBOL(__dtb_end) = .;
 
 /*
@@ -229,11 +229,11 @@
 	/* implement dynamic printk debug */				\
 	. = ALIGN(8);                                                   \
 	VMLINUX_SYMBOL(__start___jump_table) = .;                       \
-	KEEP(*(__jump_table))                                           \
+	*(__jump_table)                                                 \
 	VMLINUX_SYMBOL(__stop___jump_table) = .;                        \
 	. = ALIGN(8);							\
 	VMLINUX_SYMBOL(__start___verbose) = .;                          \
-	KEEP(*(__verbose))                                              \
+	*(__verbose)                                                    \
 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
 	LIKELY_PROFILE()		       				\
 	BRANCH_PROFILE()						\
@@ -290,10 +290,10 @@
 		VMLINUX_SYMBOL(__start_rodata) = .;			\
 		*(.rodata) *(.rodata.*)					\
 		RO_AFTER_INIT_DATA	/* Read only after init */	\
-		KEEP(*(__vermagic))	/* Kernel version magic */	\
+		*(__vermagic)		/* Kernel version magic */	\
 		. = ALIGN(8);						\
 		VMLINUX_SYMBOL(__start___tracepoints_ptrs) = .;		\
-		KEEP(*(__tracepoints_ptrs)) /* Tracepoints: pointer array */ \
+		*(__tracepoints_ptrs)	/* Tracepoints: pointer array */\
 		VMLINUX_SYMBOL(__stop___tracepoints_ptrs) = .;		\
 		*(__tracepoints_strings)/* Tracepoints: strings */	\
 	}								\
@@ -335,7 +335,7 @@
 	/* Built-in firmware blobs */					\
 	.builtin_fw        : AT(ADDR(.builtin_fw) - LOAD_OFFSET) {	\
 		VMLINUX_SYMBOL(__start_builtin_fw) = .;			\
-		KEEP(*(.builtin_fw))					\
+		*(.builtin_fw)						\
 		VMLINUX_SYMBOL(__end_builtin_fw) = .;			\
 	}								\
 									\
@@ -413,7 +413,7 @@
 									\
 	/* Kernel symbol table: strings */				\
         __ksymtab_strings : AT(ADDR(__ksymtab_strings) - LOAD_OFFSET) {	\
-		*(__ksymtab_strings)					\
+		KEEP(*(__ksymtab_strings))				\
 	}								\
 									\
 	/* __*init sections */						\
@@ -433,7 +433,7 @@
 	/* Built-in module versions. */					\
 	__modver : AT(ADDR(__modver) - LOAD_OFFSET) {			\
 		VMLINUX_SYMBOL(__start___modver) = .;			\
-		KEEP(*(__modver))					\
+		*(__modver)						\
 		VMLINUX_SYMBOL(__stop___modver) = .;			\
 		. = ALIGN((align));					\
 		VMLINUX_SYMBOL(__end_rodata) = .;			\
@@ -462,8 +462,6 @@
  */
 #define TEXT_TEXT							\
 		ALIGN_FUNCTION();					\
-		*(.text..ftrace)					\
-		*(TEXT_CFI_MAIN) 					\
 		*(.text.hot .text.hot.*)				\
 		*(TEXT_MAIN .text.fixup)				\
 		*(.text.unlikely .text.unlikely.*)			\
@@ -550,9 +548,9 @@
 #ifdef CONFIG_CONSTRUCTORS
 #define KERNEL_CTORS()	. = ALIGN(8);			   \
 			VMLINUX_SYMBOL(__ctors_start) = .; \
-			KEEP(*(.ctors))			   \
-			KEEP(*(SORT(.init_array.*)))	   \
-			KEEP(*(.init_array))		   \
+			*(.ctors)			   \
+			*(SORT(.init_array.*))		   \
+			*(.init_array)			   \
 			VMLINUX_SYMBOL(__ctors_end) = .;
 #else
 #define KERNEL_CTORS()
@@ -690,7 +688,7 @@
 	. = ALIGN(4);							\
 	.tracedata : AT(ADDR(.tracedata) - LOAD_OFFSET) {		\
 		VMLINUX_SYMBOL(__tracedata_start) = .;			\
-		KEEP(*(.tracedata))					\
+		*(.tracedata)						\
 		VMLINUX_SYMBOL(__tracedata_end) = .;			\
 	}
 #else

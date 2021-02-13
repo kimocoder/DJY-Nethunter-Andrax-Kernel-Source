@@ -95,35 +95,22 @@ __rb_rotate_set_parents(struct rb_node *old, struct rb_node *new,
 
 static __always_inline void
 __rb_insert(struct rb_node *node, struct rb_root *root,
-	    bool newleft, struct rb_node **leftmost,
 	    void (*augment_rotate)(struct rb_node *old, struct rb_node *new))
 {
 	struct rb_node *parent = rb_red_parent(node), *gparent, *tmp;
 
-	if (newleft)
-		*leftmost = node;
-
 	while (true) {
 		/*
-		 * Loop invariant: node is red.
+		 * Loop invariant: node is red
+		 *
+		 * If there is a black parent, we are done.
+		 * Otherwise, take some corrective action as we don't
+		 * want a red root or two consecutive red nodes.
 		 */
-		if (unlikely(!parent)) {
-			/*
-			 * The inserted node is root. Either this is the
-			 * first node, or we recursed at Case 1 below and
-			 * are no longer violating 4).
-			 */
+		if (!parent) {
 			rb_set_parent_color(node, NULL, RB_BLACK);
 			break;
-		}
-
-		/*
-		 * If there is a black parent, we are done.
-		 * Otherwise, take some corrective action as,
-		 * per 4), we don't want a red root or two
-		 * consecutive red nodes.
-		 */
-		if(rb_is_black(parent))
+		} else if (rb_is_black(parent))
 			break;
 
 		gparent = rb_red_parent(parent);
@@ -132,7 +119,7 @@ __rb_insert(struct rb_node *node, struct rb_root *root,
 		if (parent != tmp) {	/* parent == gparent->rb_left */
 			if (tmp && rb_is_red(tmp)) {
 				/*
-				 * Case 1 - node's uncle is red (color flips).
+				 * Case 1 - color flips
 				 *
 				 *       G            g
 				 *      / \          / \
@@ -155,8 +142,7 @@ __rb_insert(struct rb_node *node, struct rb_root *root,
 			tmp = parent->rb_right;
 			if (node == tmp) {
 				/*
-				 * Case 2 - node's uncle is black and node is
-				 * the parent's right child (left rotate at parent).
+				 * Case 2 - left rotate at parent
 				 *
 				 *      G             G
 				 *     / \           / \
@@ -180,8 +166,7 @@ __rb_insert(struct rb_node *node, struct rb_root *root,
 			}
 
 			/*
-			 * Case 3 - node's uncle is black and node is
-			 * the parent's left child (right rotate at gparent).
+			 * Case 3 - right rotate at gparent
 			 *
 			 *        G           P
 			 *       / \         / \
@@ -432,37 +417,18 @@ static const struct rb_augment_callbacks dummy_callbacks = {
 
 void rb_insert_color(struct rb_node *node, struct rb_root *root)
 {
-	__rb_insert(node, root, false, NULL, dummy_rotate);
+	__rb_insert(node, root, dummy_rotate);
 }
 EXPORT_SYMBOL(rb_insert_color);
 
 void rb_erase(struct rb_node *node, struct rb_root *root)
 {
 	struct rb_node *rebalance;
-	rebalance = __rb_erase_augmented(node, root,
-					 NULL, &dummy_callbacks);
+	rebalance = __rb_erase_augmented(node, root, &dummy_callbacks);
 	if (rebalance)
 		____rb_erase_color(rebalance, root, dummy_rotate);
 }
 EXPORT_SYMBOL(rb_erase);
-
-void rb_insert_color_cached(struct rb_node *node,
-			    struct rb_root_cached *root, bool leftmost)
-{
-	__rb_insert(node, &root->rb_root, leftmost,
-		    &root->rb_leftmost, dummy_rotate);
-}
-EXPORT_SYMBOL(rb_insert_color_cached);
-
-void rb_erase_cached(struct rb_node *node, struct rb_root_cached *root)
-{
-	struct rb_node *rebalance;
-	rebalance = __rb_erase_augmented(node, &root->rb_root,
-					 &root->rb_leftmost, &dummy_callbacks);
-	if (rebalance)
-		____rb_erase_color(rebalance, &root->rb_root, dummy_rotate);
-}
-EXPORT_SYMBOL(rb_erase_cached);
 
 /*
  * Augmented rbtree manipulation functions.
@@ -472,10 +438,9 @@ EXPORT_SYMBOL(rb_erase_cached);
  */
 
 void __rb_insert_augmented(struct rb_node *node, struct rb_root *root,
-			   bool newleft, struct rb_node **leftmost,
 	void (*augment_rotate)(struct rb_node *old, struct rb_node *new))
 {
-	__rb_insert(node, root, newleft, leftmost, augment_rotate);
+	__rb_insert(node, root, augment_rotate);
 }
 EXPORT_SYMBOL(__rb_insert_augmented);
 
@@ -520,7 +485,7 @@ struct rb_node *rb_next(const struct rb_node *node)
 	 * as we can.
 	 */
 	if (node->rb_right) {
-		node = node->rb_right;
+		node = node->rb_right; 
 		while (node->rb_left)
 			node=node->rb_left;
 		return (struct rb_node *)node;
@@ -552,7 +517,7 @@ struct rb_node *rb_prev(const struct rb_node *node)
 	 * as we can.
 	 */
 	if (node->rb_left) {
-		node = node->rb_left;
+		node = node->rb_left; 
 		while (node->rb_right)
 			node=node->rb_right;
 		return (struct rb_node *)node;

@@ -1784,7 +1784,6 @@ static int drbg_kcapi_sym_ctr(struct drbg_state *drbg,
 		memcpy(outbuf, drbg->outscratchpad, cryptlen);
 
 		outlen -= cryptlen;
-		outbuf += cryptlen;
 	}
 	ret = 0;
 

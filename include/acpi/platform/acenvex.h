@@ -53,7 +53,7 @@
  *
  *****************************************************************************/
 
-#if defined(_LINUX) || defined(__linux__) || defined(__KERNEL__)
+#if defined(_LINUX) || defined(__linux__)
 #include <acpi/platform/aclinuxex.h>
 
 #elif defined(__DragonFly__)

@@ -1,11 +1,11 @@
 {
   "kernel": {
     "name": "OnePlus 6/6T NetHunter Kernel",
-    "version": "v2.0.8",
-    "link": "https://github.com/kimocoder/android_kernel_oneplus_oneplus6/blob/nethunter-10.0/kali-nethunter-kernel/oneplus_kernel_v2.zip?raw=true",
+    "version": "v2.0.5",
+    "link": "https://github.com/kimocoder/android_kernel_oneplus_oneplus6/blob/nethunter-10.0/kali-nethunter-kernel/oneplus_kernel.zip?raw=true",
     "changelog_url": "https://raw.githubusercontent.com/kimocoder/android_kernel_oneplus_oneplus6/nethunter-10.0/app/changelog.txt",
-    "date": "2021-02-07",
-    "sha1": "732f6490008771c9ad9c672f1ac03d1a678e49df"
+    "date": "2021-02-06",
+    "sha1": "1085c666ae438d05bb104f40bbf91930b77d19a8"
   },
   "support": {
     "link": "https://www.gitlab.com/kalilinux/nethunter"

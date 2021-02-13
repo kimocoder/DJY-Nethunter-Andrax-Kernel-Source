@@ -3,12 +3,9 @@
 # link vmlinux
 #
 # vmlinux is linked from the objects selected by $(KBUILD_VMLINUX_INIT) and
-# $(KBUILD_VMLINUX_MAIN) and $(KBUILD_VMLINUX_LIBS). Most are built-in.o files
-# from top-level directories in the kernel tree, others are specified in
-# arch/$(ARCH)/Makefile. Ordering when linking is important, and
-# $(KBUILD_VMLINUX_INIT) must be first. $(KBUILD_VMLINUX_LIBS) are archives
-# which are linked conditionally (not within --whole-archive), and do not
-# require symbol indexes added.
+# $(KBUILD_VMLINUX_MAIN). Most are built-in.o files from top-level directories
+# in the kernel tree, others are specified in arch/$(ARCH)/Makefile.
+# Ordering when linking is important, and $(KBUILD_VMLINUX_INIT) must be first.
 #
 # vmlinux
 #   ^
@@ -18,9 +15,6 @@
 #   |
 #   +--< $(KBUILD_VMLINUX_MAIN)
 #   |    +--< drivers/built-in.o mm/built-in.o + more
-#   |
-#   +--< $(KBUILD_VMLINUX_LIBS)
-#   |    +--< lib/lib.a + more
 #   |
 #   +-< ${kallsymso} (see description in KALLSYMS section)
 #
@@ -43,10 +37,9 @@ info()
 	fi
 }
 
-# Thin archive build here makes a final archive with symbol table and indexes
-# from vmlinux objects INIT and MAIN, which can be used as input to linker.
-# KBUILD_VMLINUX_LIBS archives should already have symbol table and indexes
-# added.
+# Thin archive build here makes a final archive with
+# symbol table and indexes from vmlinux objects, which can be
+# used as input to linker.
 #
 # Traditional incremental style of link does not require this step
 #
@@ -101,17 +94,11 @@ modpost_link()
 	local objects
 
 	if [ -n "${CONFIG_THIN_ARCHIVES}" ]; then
-		objects="--whole-archive				\
-			built-in.o					\
-			--no-whole-archive				\
-			--start-group					\
-			${KBUILD_VMLINUX_LIBS}				\
-			--end-group"
+		objects="--whole-archive built-in.o"
 	else
 		objects="${KBUILD_VMLINUX_INIT}				\
 			--start-group					\
 			${KBUILD_VMLINUX_MAIN}				\
-			${KBUILD_VMLINUX_LIBS}				\
 			--end-group"
 	fi
 
@@ -157,18 +144,11 @@ vmlinux_link()
 		fi
 
 		if [[ -n "${CONFIG_THIN_ARCHIVES}" && -z "${CONFIG_LTO_CLANG}" ]]; then
-			objects="--whole-archive			\
-				built-in.o				\
-				--no-whole-archive			\
-				--start-group				\
-				${KBUILD_VMLINUX_LIBS}			\
-				--end-group				\
-				${1}"
+			objects="--whole-archive built-in.o ${1}"
 		else
 			objects="${KBUILD_VMLINUX_INIT}			\
 				--start-group				\
 				${KBUILD_VMLINUX_MAIN}			\
-				${KBUILD_VMLINUX_LIBS}			\
 				--end-group				\
 				${1}"
 		fi
@@ -176,18 +156,11 @@ vmlinux_link()
 		${ld} ${ldflags} -o ${2} -T ${lds} ${objects}
 	else
 		if [ -n "${CONFIG_THIN_ARCHIVES}" ]; then
-			objects="-Wl,--whole-archive			\
-				built-in.o				\
-				-Wl,--no-whole-archive			\
-				-Wl,--start-group			\
-				${KBUILD_VMLINUX_LIBS}			\
-				-Wl,--end-group				\
-				${1}"
+			objects="-Wl,--whole-archive built-in.o ${1}"
 		else
 			objects="${KBUILD_VMLINUX_INIT}			\
 				-Wl,--start-group			\
 				${KBUILD_VMLINUX_MAIN}			\
-				${KBUILD_VMLINUX_LIBS}			\
 				-Wl,--end-group				\
 				${1}"
 		fi
@@ -362,15 +335,6 @@ if [ ! -z ${RTIC_MPGEN+x} ]; then
 	KBUILD_VMLINUX_MAIN+=" "
 	KBUILD_VMLINUX_MAIN+=$RTIC_MP_O
 fi
-
-archive_builtin
-
-#link vmlinux.o
-info LD vmlinux.o
-modpost_link vmlinux.o
-
-# modpost vmlinux.o to check for section mismatches
-${MAKE} -f "${srctree}/scripts/Makefile.modpost" vmlinux.o
 
 kallsymso=""
 kallsyms_vmlinux=""

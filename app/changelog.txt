@@ -1,10 +1,9 @@
 Project name: OnePlus 6/6T NetHunter Kernel
-  * Merged linux-stable 4.9.256
-  * Updated QCACLD-3 WiFi SoC driver
+  * New QCACLD-3 WiFi SoC driver
   * Added a fast charge driver
   * Added Klapse v5.0 support
   * Added Eagle DTS (sound) support
-  * Turned off a lot off debug messages
+  * Turned off QCACLD debug messages (dmesg)
   * Merged linux-stable 4.9.255
   * Added new 8188eu drivers (with rtl8xxxu)
   * Tweaked the defconfig

@@ -1572,6 +1572,9 @@ struct sched_class {
 #ifdef CONFIG_SCHED_WALT
 	void (*fixup_walt_sched_stats)(struct rq *rq, struct task_struct *p,
 				      u32 new_task_load, u32 new_pred_demand);
+	void (*fixup_cumulative_runnable_avg)(struct rq *rq,
+					      struct task_struct *task,
+					      u64 new_task_load);
 #endif
 };
 
@@ -1880,7 +1883,7 @@ static inline unsigned long capacity_orig_of(int cpu)
 	return cpu_rq(cpu)->cpu_capacity_orig;
 }
 
-extern bool walt_disabled;
+extern unsigned int walt_disabled;
 
 static inline unsigned long task_util(struct task_struct *p)
 {
@@ -2376,12 +2379,19 @@ static inline void cpufreq_update_util(struct rq *rq, unsigned int flags)
 	struct update_util_data *data;
 
 	data = rcu_dereference_sched(*per_cpu_ptr(&cpufreq_update_util_data,
-						  cpu_of(rq)));
+					cpu_of(rq)));
 	if (data)
 		data->func(data, sched_ktime_clock(), flags);
 }
+
+static inline void cpufreq_update_this_cpu(struct rq *rq, unsigned int flags)
+{
+	if (cpu_of(rq) == smp_processor_id())
+		cpufreq_update_util(rq, flags);
+}
 #else
 static inline void cpufreq_update_util(struct rq *rq, unsigned int flags) {}
+static inline void cpufreq_update_this_cpu(struct rq *rq, unsigned int flags) {}
 #endif /* CONFIG_CPU_FREQ */
 
 #ifdef arch_scale_freq_capacity
@@ -2693,14 +2703,15 @@ extern void clear_top_tasks_bitmap(unsigned long *bitmap);
 #if defined(CONFIG_SCHED_TUNE) && defined(CONFIG_CGROUP_SCHEDTUNE)
 extern bool task_sched_boost(struct task_struct *p);
 extern int sync_cgroup_colocation(struct task_struct *p, bool insert);
-extern bool schedtune_task_colocated(struct task_struct *p);
+extern bool same_schedtune(struct task_struct *tsk1, struct task_struct *tsk2);
 extern void update_cgroup_boost_settings(void);
 extern void restore_cgroup_boost_settings(void);
 
 #else
-static inline bool schedtune_task_colocated(struct task_struct *p)
+static inline bool
+same_schedtune(struct task_struct *tsk1, struct task_struct *tsk2)
 {
-	return false;
+	return true;
 }
 
 static inline bool task_sched_boost(struct task_struct *p)
@@ -2967,4 +2978,14 @@ find_first_cpu_bit(struct task_struct *p, const cpumask_t *search_cpus,
 		   bool *do_rotate, struct find_first_cpu_bit_env *env);
 #else
 #define find_first_cpu_bit(...) -1
+#endif
+
+#ifdef CONFIG_SMP
+static inline void sched_irq_work_queue(struct irq_work *work)
+{
+	if (likely(cpu_online(raw_smp_processor_id())))
+		irq_work_queue(work);
+	else
+		irq_work_queue_on(work, cpumask_any(cpu_online_mask));
+}
 #endif

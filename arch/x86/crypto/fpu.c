@@ -11,188 +11,143 @@
  *
  */
 
-#include <crypto/internal/skcipher.h>
+#include <crypto/algapi.h>
 #include <linux/err.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/crypto.h>
 #include <asm/fpu/api.h>
 
 struct crypto_fpu_ctx {
-	struct crypto_sync_skcipher *child;
+	struct crypto_blkcipher *child;
 };
 
-static int crypto_fpu_setkey(struct crypto_skcipher *parent, const u8 *key,
+static int crypto_fpu_setkey(struct crypto_tfm *parent, const u8 *key,
 			     unsigned int keylen)
 {
-	struct crypto_fpu_ctx *ctx = crypto_skcipher_ctx(parent);
-	struct crypto_sync_skcipher *child = ctx->child;
+	struct crypto_fpu_ctx *ctx = crypto_tfm_ctx(parent);
+	struct crypto_blkcipher *child = ctx->child;
 	int err;
 
-	crypto_sync_skcipher_clear_flags(child, CRYPTO_TFM_REQ_MASK);
-	crypto_sync_skcipher_set_flags(child,
-				       crypto_skcipher_get_flags(parent) &
-					 CRYPTO_TFM_REQ_MASK);
-	err = crypto_sync_skcipher_setkey(child, key, keylen);
-	crypto_skcipher_set_flags(parent,
-				  crypto_sync_skcipher_get_flags(child) &
-					  CRYPTO_TFM_RES_MASK);
+	crypto_blkcipher_clear_flags(child, CRYPTO_TFM_REQ_MASK);
+	crypto_blkcipher_set_flags(child, crypto_tfm_get_flags(parent) &
+				   CRYPTO_TFM_REQ_MASK);
+	err = crypto_blkcipher_setkey(child, key, keylen);
+	crypto_tfm_set_flags(parent, crypto_blkcipher_get_flags(child) &
+				     CRYPTO_TFM_RES_MASK);
 	return err;
 }
 
-static int crypto_fpu_encrypt(struct skcipher_request *req)
+static int crypto_fpu_encrypt(struct blkcipher_desc *desc_in,
+			      struct scatterlist *dst, struct scatterlist *src,
+			      unsigned int nbytes)
 {
-	struct crypto_skcipher *tfm = crypto_skcipher_reqtfm(req);
-	struct crypto_fpu_ctx *ctx = crypto_skcipher_ctx(tfm);
-	struct crypto_sync_skcipher *child = ctx->child;
-	SYNC_SKCIPHER_REQUEST_ON_STACK(subreq, child);
 	int err;
-
-	skcipher_request_set_sync_tfm(subreq, child);
-	skcipher_request_set_callback(subreq, 0, NULL, NULL);
-	skcipher_request_set_crypt(subreq, req->src, req->dst, req->cryptlen,
-				   req->iv);
+	struct crypto_fpu_ctx *ctx = crypto_blkcipher_ctx(desc_in->tfm);
+	struct crypto_blkcipher *child = ctx->child;
+	struct blkcipher_desc desc = {
+		.tfm = child,
+		.info = desc_in->info,
+		.flags = desc_in->flags & ~CRYPTO_TFM_REQ_MAY_SLEEP,
+	};
 
 	kernel_fpu_begin();
-	err = crypto_skcipher_encrypt(subreq);
+	err = crypto_blkcipher_crt(desc.tfm)->encrypt(&desc, dst, src, nbytes);
 	kernel_fpu_end();
-
-	skcipher_request_zero(subreq);
 	return err;
 }
 
-static int crypto_fpu_decrypt(struct skcipher_request *req)
+static int crypto_fpu_decrypt(struct blkcipher_desc *desc_in,
+			      struct scatterlist *dst, struct scatterlist *src,
+			      unsigned int nbytes)
 {
-	struct crypto_skcipher *tfm = crypto_skcipher_reqtfm(req);
-	struct crypto_fpu_ctx *ctx = crypto_skcipher_ctx(tfm);
-	struct crypto_sync_skcipher *child = ctx->child;
-	SYNC_SKCIPHER_REQUEST_ON_STACK(subreq, child);
 	int err;
-
-	skcipher_request_set_sync_tfm(subreq, child);
-	skcipher_request_set_callback(subreq, 0, NULL, NULL);
-	skcipher_request_set_crypt(subreq, req->src, req->dst, req->cryptlen,
-				   req->iv);
+	struct crypto_fpu_ctx *ctx = crypto_blkcipher_ctx(desc_in->tfm);
+	struct crypto_blkcipher *child = ctx->child;
+	struct blkcipher_desc desc = {
+		.tfm = child,
+		.info = desc_in->info,
+		.flags = desc_in->flags & ~CRYPTO_TFM_REQ_MAY_SLEEP,
+	};
 
 	kernel_fpu_begin();
-	err = crypto_skcipher_decrypt(subreq);
+	err = crypto_blkcipher_crt(desc.tfm)->decrypt(&desc, dst, src, nbytes);
 	kernel_fpu_end();
-
-	skcipher_request_zero(subreq);
 	return err;
 }
 
-static int crypto_fpu_init_tfm(struct crypto_skcipher *tfm)
+static int crypto_fpu_init_tfm(struct crypto_tfm *tfm)
 {
-	struct skcipher_instance *inst = skcipher_alg_instance(tfm);
-	struct crypto_fpu_ctx *ctx = crypto_skcipher_ctx(tfm);
-	struct crypto_skcipher_spawn *spawn;
-	struct crypto_skcipher *cipher;
+	struct crypto_instance *inst = crypto_tfm_alg_instance(tfm);
+	struct crypto_spawn *spawn = crypto_instance_ctx(inst);
+	struct crypto_fpu_ctx *ctx = crypto_tfm_ctx(tfm);
+	struct crypto_blkcipher *cipher;
 
-	spawn = skcipher_instance_ctx(inst);
-	cipher = crypto_spawn_skcipher(spawn);
+	cipher = crypto_spawn_blkcipher(spawn);
 	if (IS_ERR(cipher))
 		return PTR_ERR(cipher);
 
-	ctx->child = (struct crypto_sync_skcipher *)cipher;
-
+	ctx->child = cipher;
 	return 0;
 }
 
-static void crypto_fpu_exit_tfm(struct crypto_skcipher *tfm)
+static void crypto_fpu_exit_tfm(struct crypto_tfm *tfm)
 {
-	struct crypto_fpu_ctx *ctx = crypto_skcipher_ctx(tfm);
-
-	crypto_free_sync_skcipher(ctx->child);
+	struct crypto_fpu_ctx *ctx = crypto_tfm_ctx(tfm);
+	crypto_free_blkcipher(ctx->child);
 }
 
-static void crypto_fpu_free(struct skcipher_instance *inst)
+static struct crypto_instance *crypto_fpu_alloc(struct rtattr **tb)
 {
-	crypto_drop_skcipher(skcipher_instance_ctx(inst));
-	kfree(inst);
-}
-
-static int crypto_fpu_create(struct crypto_template *tmpl, struct rtattr **tb)
-{
-	struct crypto_skcipher_spawn *spawn;
-	struct skcipher_instance *inst;
-	struct crypto_attr_type *algt;
-	struct skcipher_alg *alg;
-	const char *cipher_name;
+	struct crypto_instance *inst;
+	struct crypto_alg *alg;
 	int err;
 
-	algt = crypto_get_attr_type(tb);
-	if (IS_ERR(algt))
-		return PTR_ERR(algt);
-
-	if ((algt->type ^ (CRYPTO_ALG_INTERNAL | CRYPTO_ALG_TYPE_SKCIPHER)) &
-	    algt->mask)
-		return -EINVAL;
-
-	if (!(algt->mask & CRYPTO_ALG_INTERNAL))
-		return -EINVAL;
-
-	cipher_name = crypto_attr_alg_name(tb[1]);
-	if (IS_ERR(cipher_name))
-		return PTR_ERR(cipher_name);
-
-	inst = kzalloc(sizeof(*inst) + sizeof(*spawn), GFP_KERNEL);
-	if (!inst)
-		return -ENOMEM;
-
-	spawn = skcipher_instance_ctx(inst);
-
-	crypto_set_skcipher_spawn(spawn, skcipher_crypto_instance(inst));
-	err = crypto_grab_skcipher(spawn, cipher_name, CRYPTO_ALG_INTERNAL,
-				   CRYPTO_ALG_INTERNAL | CRYPTO_ALG_ASYNC);
+	err = crypto_check_attr_type(tb, CRYPTO_ALG_TYPE_BLKCIPHER);
 	if (err)
-		goto out_free_inst;
+		return ERR_PTR(err);
 
-	alg = crypto_skcipher_spawn_alg(spawn);
+	alg = crypto_get_attr_alg(tb, CRYPTO_ALG_TYPE_BLKCIPHER,
+				  CRYPTO_ALG_TYPE_MASK);
+	if (IS_ERR(alg))
+		return ERR_CAST(alg);
 
-	err = crypto_inst_setname(skcipher_crypto_instance(inst), "fpu",
-				  &alg->base);
-	if (err)
-		goto out_drop_skcipher;
+	inst = crypto_alloc_instance("fpu", alg);
+	if (IS_ERR(inst))
+		goto out_put_alg;
 
-	inst->alg.base.cra_flags = CRYPTO_ALG_INTERNAL;
-	inst->alg.base.cra_priority = alg->base.cra_priority;
-	inst->alg.base.cra_blocksize = alg->base.cra_blocksize;
-	inst->alg.base.cra_alignmask = alg->base.cra_alignmask;
+	inst->alg.cra_flags = alg->cra_flags;
+	inst->alg.cra_priority = alg->cra_priority;
+	inst->alg.cra_blocksize = alg->cra_blocksize;
+	inst->alg.cra_alignmask = alg->cra_alignmask;
+	inst->alg.cra_type = alg->cra_type;
+	inst->alg.cra_blkcipher.ivsize = alg->cra_blkcipher.ivsize;
+	inst->alg.cra_blkcipher.min_keysize = alg->cra_blkcipher.min_keysize;
+	inst->alg.cra_blkcipher.max_keysize = alg->cra_blkcipher.max_keysize;
+	inst->alg.cra_ctxsize = sizeof(struct crypto_fpu_ctx);
+	inst->alg.cra_init = crypto_fpu_init_tfm;
+	inst->alg.cra_exit = crypto_fpu_exit_tfm;
+	inst->alg.cra_blkcipher.setkey = crypto_fpu_setkey;
+	inst->alg.cra_blkcipher.encrypt = crypto_fpu_encrypt;
+	inst->alg.cra_blkcipher.decrypt = crypto_fpu_decrypt;
 
-	inst->alg.ivsize = crypto_skcipher_alg_ivsize(alg);
-	inst->alg.min_keysize = crypto_skcipher_alg_min_keysize(alg);
-	inst->alg.max_keysize = crypto_skcipher_alg_max_keysize(alg);
+out_put_alg:
+	crypto_mod_put(alg);
+	return inst;
+}
 
-	inst->alg.base.cra_ctxsize = sizeof(struct crypto_fpu_ctx);
-
-	inst->alg.init = crypto_fpu_init_tfm;
-	inst->alg.exit = crypto_fpu_exit_tfm;
-
-	inst->alg.setkey = crypto_fpu_setkey;
-	inst->alg.encrypt = crypto_fpu_encrypt;
-	inst->alg.decrypt = crypto_fpu_decrypt;
-
-	inst->free = crypto_fpu_free;
-
-	err = skcipher_register_instance(tmpl, inst);
-	if (err)
-		goto out_drop_skcipher;
-
-out:
-	return err;
-
-out_drop_skcipher:
-	crypto_drop_skcipher(spawn);
-out_free_inst:
+static void crypto_fpu_free(struct crypto_instance *inst)
+{
+	crypto_drop_spawn(crypto_instance_ctx(inst));
 	kfree(inst);
-	goto out;
 }
 
 static struct crypto_template crypto_fpu_tmpl = {
 	.name = "fpu",
-	.create = crypto_fpu_create,
+	.alloc = crypto_fpu_alloc,
+	.free = crypto_fpu_free,
 	.module = THIS_MODULE,
 };
 

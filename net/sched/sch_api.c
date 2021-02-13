@@ -251,15 +251,6 @@ int qdisc_set_default(const char *name)
 	return ops ? 0 : -ENOENT;
 }
 
-#ifdef CONFIG_NET_SCH_DEFAULT
-/* Set default value from kernel config */
-static int __init sch_default_qdisc(void)
-{
-	return qdisc_set_default(CONFIG_DEFAULT_NET_SCH);
-}
-late_initcall(sch_default_qdisc);
-#endif
-
 /* We know handle. Find qdisc among all qdisc's attached to device
  * (root qdisc, all its children, children of children etc.)
  * Note: caller either uses rtnl or rcu_read_lock()
@@ -402,8 +393,7 @@ struct qdisc_rate_table *qdisc_get_rtab(struct tc_ratespec *r,
 {
 	struct qdisc_rate_table *rtab;
 
-	if (tab == NULL || r->rate == 0 ||
-	    r->cell_log == 0 || r->cell_log >= 32 ||
+	if (tab == NULL || r->rate == 0 || r->cell_log == 0 ||
 	    nla_len(tab) != TC_RTAB_SIZE)
 		return NULL;
 

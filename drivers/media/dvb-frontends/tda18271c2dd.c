@@ -24,7 +24,9 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/moduleparam.h>
+/*
+*  #include <linux/moduleparam.h>
+*/
 #include <linux/init.h>
 #include <linux/delay.h>
 #include <linux/firmware.h>
@@ -678,7 +680,6 @@ static int PowerScan(struct tda_state *state,
 			Count = 200000;
 			wait = true;
 		}
-		status = status;
 		if (status < 0)
 			break;
 		if (CID_Gain >= CID_Target) {

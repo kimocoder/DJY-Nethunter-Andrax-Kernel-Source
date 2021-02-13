@@ -58,7 +58,7 @@ static void crypto_ctr_crypt_final(struct blkcipher_walk *walk,
 	unsigned int bsize = crypto_cipher_blocksize(tfm);
 	unsigned long alignmask = crypto_cipher_alignmask(tfm);
 	u8 *ctrblk = walk->iv;
-	u8 tmp[MAX_CIPHER_BLOCKSIZE + MAX_CIPHER_ALIGNMASK];
+	u8 tmp[bsize + alignmask];
 	u8 *keystream = PTR_ALIGN(tmp + 0, alignmask + 1);
 	u8 *src = walk->src.virt.addr;
 	u8 *dst = walk->dst.virt.addr;
@@ -107,7 +107,7 @@ static int crypto_ctr_crypt_inplace(struct blkcipher_walk *walk,
 	unsigned int nbytes = walk->nbytes;
 	u8 *ctrblk = walk->iv;
 	u8 *src = walk->src.virt.addr;
-	u8 tmp[MAX_CIPHER_BLOCKSIZE + MAX_CIPHER_ALIGNMASK];
+	u8 tmp[bsize + alignmask];
 	u8 *keystream = PTR_ALIGN(tmp + 0, alignmask + 1);
 
 	do {
@@ -312,7 +312,7 @@ static int crypto_rfc3686_init_tfm(struct crypto_skcipher *tfm)
 	unsigned long align;
 	unsigned int reqsize;
 
-	cipher = crypto_spawn_skcipher(spawn);
+	cipher = crypto_spawn_skcipher2(spawn);
 	if (IS_ERR(cipher))
 		return PTR_ERR(cipher);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -52,6 +52,21 @@ u64 walt_load_reported_window;
 
 static struct irq_work walt_cpufreq_irq_work;
 static struct irq_work walt_migration_irq_work;
+
+void
+walt_fixup_cumulative_runnable_avg(struct rq *rq,
+				   struct task_struct *p, u64 new_task_load)
+{
+	s64 task_load_delta = (s64)new_task_load - task_load(p);
+	struct walt_sched_stats *stats = &rq->walt_stats;
+
+	stats->cumulative_runnable_avg += task_load_delta;
+	if ((s64)stats->cumulative_runnable_avg < 0)
+		panic("cra less than zero: tld: %lld, task_load(p) = %u\n",
+			task_load_delta, task_load(p));
+
+	walt_fixup_cum_window_demand(rq, task_load_delta);
+}
 
 u64 sched_ktime_clock(void)
 {
@@ -109,18 +124,22 @@ static void release_rq_locks_irqrestore(const cpumask_t *cpus,
 	local_irq_restore(*flags);
 }
 
+#ifdef CONFIG_HZ_300
 /*
- * Window size (in ns). Adjust for the tick size so that the window
- * rollover occurs just before the tick boundary.
+ * Tick interval becomes to 3333333 due to
+ * rounding error when HZ=300.
  */
-/* Min window size (in ns) = 10ms */
-#define MIN_SCHED_RAVG_WINDOW ((10000000 / TICK_NSEC) * TICK_NSEC)
+#define MIN_SCHED_RAVG_WINDOW (3333333 * 6)
+#else
+/* Min window size (in ns) = 20ms */
+#define MIN_SCHED_RAVG_WINDOW 20000000
+#endif
 
 /* Max window size (in ns) = 1s */
-#define MAX_SCHED_RAVG_WINDOW ((1000000000 / TICK_NSEC) * TICK_NSEC)
+#define MAX_SCHED_RAVG_WINDOW 1000000000
 
-/* true -> use PELT based load stats, false -> use window-based load stats */
-bool __read_mostly walt_disabled = false;
+/* 1 -> use PELT based load stats, 0 -> use window-based load stats */
+unsigned int __read_mostly walt_disabled = 0;
 
 __read_mostly unsigned int sysctl_sched_cpu_high_irqload = (10 * NSEC_PER_MSEC);
 
@@ -145,9 +164,8 @@ __read_mostly unsigned int sched_window_stats_policy =
 __read_mostly unsigned int sysctl_sched_window_stats_policy =
 	WINDOW_STATS_MAX_RECENT_AVG;
 
-/* Window size (in ns) = 20ms */
-__read_mostly unsigned int sched_ravg_window =
-					    (20000000 / TICK_NSEC) * TICK_NSEC;
+/* Window size (in ns) */
+__read_mostly unsigned int sched_ravg_window = MIN_SCHED_RAVG_WINDOW;
 
 /*
  * A after-boot constant divisor for cpu_util_freq_walt() to apply the load
@@ -204,25 +222,16 @@ __read_mostly unsigned int sysctl_sched_freq_reporting_policy;
 static int __init set_sched_ravg_window(char *str)
 {
 	unsigned int window_size;
-	unsigned int adj_window;
 
 	get_option(&str, &window_size);
 
-	/* Adjust for CONFIG_HZ */
-	adj_window = (window_size / TICK_NSEC) * TICK_NSEC;
-
-	/* Warn if we're a bit too far away from the expected window size */
-	WARN(adj_window < window_size - NSEC_PER_MSEC,
-	     "tick-adjusted window size %u, original was %u\n", adj_window,
-	     window_size);
-
-	if (adj_window < MIN_SCHED_RAVG_WINDOW ||
-			adj_window > MAX_SCHED_RAVG_WINDOW) {
+	if (window_size < MIN_SCHED_RAVG_WINDOW ||
+			window_size > MAX_SCHED_RAVG_WINDOW) {
 		WARN_ON(1);
 		return -EINVAL;
 	}
 
-	sched_ravg_window = adj_window;
+	sched_ravg_window = window_size;
 	return 0;
 }
 
@@ -329,14 +338,19 @@ update_window_start(struct rq *rq, u64 wallclock, int event)
 
 int register_cpu_cycle_counter_cb(struct cpu_cycle_counter_cb *cb)
 {
+	unsigned long flags;
+
 	mutex_lock(&cluster_lock);
 	if (!cb->get_cpu_cycle_counter) {
 		mutex_unlock(&cluster_lock);
 		return -EINVAL;
 	}
 
+	acquire_rq_locks_irqsave(cpu_possible_mask, &flags);
 	cpu_cycle_counter_cb = *cb;
 	use_cycle_counter = true;
+	release_rq_locks_irqrestore(cpu_possible_mask, &flags);
+
 	mutex_unlock(&cluster_lock);
 
 	return 0;
@@ -894,7 +908,7 @@ void fixup_busy_time(struct task_struct *p, int new_cpu)
 	if (!same_freq_domain(new_cpu, task_cpu(p))) {
 		src_rq->notif_pending = true;
 		dest_rq->notif_pending = true;
-		irq_work_queue(&walt_migration_irq_work);
+		sched_irq_work_queue(&walt_migration_irq_work);
 	}
 
 	if (p == src_rq->ed_task) {
@@ -1962,7 +1976,7 @@ static inline void run_walt_irq_work(u64 old_window_start, struct rq *rq)
 	result = atomic64_cmpxchg(&walt_irq_work_lastq_ws, old_window_start,
 				   rq->window_start);
 	if (result == old_window_start)
-		irq_work_queue(&walt_cpufreq_irq_work);
+		sched_irq_work_queue(&walt_cpufreq_irq_work);
 }
 
 /* Reflect task activity on its demand and cpu's busy time statistics */
@@ -2550,6 +2564,7 @@ static void transfer_busy_time(struct rq *rq, struct related_thread_group *grp,
  * Enable colocation and frequency aggregation for all threads in a process.
  * The children inherits the group id from the parent.
  */
+unsigned int __read_mostly sysctl_sched_enable_thread_grouping;
 
 /* Maximum allowed threshold before freq aggregation must be enabled */
 #define MAX_FREQ_AGGR_THRESH 1000
@@ -2843,25 +2858,34 @@ void add_new_task_to_grp(struct task_struct *new)
 {
 	unsigned long flags;
 	struct related_thread_group *grp;
+	struct task_struct *leader = new->group_leader;
+	unsigned int leader_grp_id = sched_get_group_id(leader);
 
-	/*
-	 * If the task does not belong to colocated schedtune
-	 * cgroup, nothing to do. We are checking this without
-	 * lock. Even if there is a race, it will be added
-	 * to the co-located cgroup via cgroup attach.
-	 */
-	if (!schedtune_task_colocated(new))
+	if (!sysctl_sched_enable_thread_grouping &&
+	    leader_grp_id != DEFAULT_CGROUP_COLOC_ID)
 		return;
 
-	grp = lookup_related_thread_group(DEFAULT_CGROUP_COLOC_ID);
+	if (thread_group_leader(new))
+		return;
+
+	if (leader_grp_id == DEFAULT_CGROUP_COLOC_ID) {
+		if (!same_schedtune(new, leader))
+			return;
+	}
+
 	write_lock_irqsave(&related_thread_group_lock, flags);
+
+	rcu_read_lock();
+	grp = task_related_thread_group(leader);
+	rcu_read_unlock();
 
 	/*
 	 * It's possible that someone already added the new task to the
-	 * group. or it might have taken out from the colocated schedtune
-	 * cgroup. check these conditions under lock.
+	 * group. A leader's thread group is updated prior to calling
+	 * this function. It's also possible that the leader has exited
+	 * the group. In either case, there is nothing else to do.
 	 */
-	if (!schedtune_task_colocated(new) || new->grp) {
+	if (!grp || new->grp) {
 		write_unlock_irqrestore(&related_thread_group_lock, flags);
 		return;
 	}

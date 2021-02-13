@@ -124,7 +124,8 @@ struct devfreq_governor {
 
 	const char name[DEVFREQ_NAME_LEN];
 	const unsigned int immutable;
-	int (*get_target_freq)(struct devfreq *this, unsigned long *freq);
+	int (*get_target_freq)(struct devfreq *this, unsigned long *freq,
+				u32 *flag);
 	int (*event_handler)(struct devfreq *devfreq,
 				unsigned int event, void *data);
 };
@@ -182,6 +183,8 @@ struct devfreq {
 
 	unsigned long min_freq;
 	unsigned long max_freq;
+	bool is_boost_device;
+	bool max_boost;
 	bool stop_polling;
 
 	/* information for device frequency transition */
@@ -313,6 +316,9 @@ struct devfreq_passive_data {
 };
 #endif
 
+/* Caution: devfreq->lock must be locked before calling update_devfreq */
+extern int update_devfreq(struct devfreq *devfreq);
+
 #else /* !CONFIG_PM_DEVFREQ */
 static inline struct devfreq *devfreq_add_device(struct device *dev,
 					  struct devfreq_dev_profile *profile,
@@ -415,6 +421,11 @@ static inline struct devfreq *devfreq_get_devfreq_by_phandle(struct device *dev,
 }
 
 static inline int devfreq_update_stats(struct devfreq *df)
+{
+	return -EINVAL;
+}
+
+static inline int update_devfreq(struct devfreq *devfreq)
 {
 	return -EINVAL;
 }
