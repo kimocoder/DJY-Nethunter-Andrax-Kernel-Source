@@ -1,12 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * composite.c - infrastructure for Composite USB Gadgets
  *
  * Copyright (C) 2006-2008 David Brownell
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
  */
 
 /* #define VERBOSE_DEBUG */
@@ -858,6 +854,7 @@ static int bos_desc(struct usb_composite_dev *cdev)
 		ssp_cap->bReserved = 0;
 		ssp_cap->wReserved = 0;
 
+
 		/* SSAC = 1 (2 attributes) */
 		ssp_cap->bmAttributes = cpu_to_le32(1);
 
@@ -881,6 +878,7 @@ static int bos_desc(struct usb_composite_dev *cdev)
 		 *   LP  =  1 (SuperSpeedPlus)
 		 *   LSM = 10 (10 Gbps)
 		 */
+
 		ssp_cap->bmSublinkSpeedAttr[1] =
 			cpu_to_le32((3 << 4) | (1 << 14) |
 				    (0xa << 16) | (1 << 7));

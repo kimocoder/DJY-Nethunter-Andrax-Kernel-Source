@@ -146,11 +146,11 @@ void peak_usb_set_ts_now(struct peak_time_ref *time_ref, u32 ts_now)
 /*
  * compute timeval according to current ts and time_ref data
  */
-void peak_usb_get_ts_tv(struct peak_time_ref *time_ref, u32 ts,
-			struct timeval *tv)
+void peak_usb_get_ts_time(struct peak_time_ref *time_ref, u32 ts, ktime_t *time)
 {
 	/* protect from getting timeval before setting now */
 	if (time_ref->tv_host.tv_sec > 0) {
+		struct timeval tv;
 		u64 delta_us;
 		s64 delta_ts = 0;
 
@@ -203,10 +203,11 @@ void peak_usb_get_ts_tv(struct peak_time_ref *time_ref, u32 ts,
 		delta_us = delta_ts * time_ref->adapter->us_per_ts_scale;
 		delta_us >>= time_ref->adapter->us_per_ts_shift;
 
-		*tv = time_ref->tv_host_0;
-		peak_usb_add_us(tv, (u32)delta_us);
+		tv = time_ref->tv_host_0;
+		peak_usb_add_us(&tv, (u32)delta_us);
+		*time = timeval_to_ktime(tv);
 	} else {
-		*tv = ktime_to_timeval(ktime_get());
+		*time = ktime_get();
 	}
 }
 
@@ -217,10 +218,8 @@ int peak_usb_netif_rx(struct sk_buff *skb,
 		      struct peak_time_ref *time_ref, u32 ts_low, u32 ts_high)
 {
 	struct skb_shared_hwtstamps *hwts = skb_hwtstamps(skb);
-	struct timeval tv;
 
-	peak_usb_get_ts_tv(time_ref, ts_low, &tv);
-	hwts->hwtstamp = timeval_to_ktime(tv);
+	peak_usb_get_ts_time(time_ref, ts_low, &hwts->hwtstamp);
 
 	return netif_rx(skb);
 }

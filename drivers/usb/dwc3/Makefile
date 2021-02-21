@@ -1,4 +1,7 @@
 # define_trace.h needs to know how to find our header
+
+EXTRA_CFLAGS += -Wno-unused-label
+
 CFLAGS_trace.o				:= -I$(src)
 CFLAGS_dwc3-msm.o			:= -Idrivers/usb/host -Idrivers/base/power
 
