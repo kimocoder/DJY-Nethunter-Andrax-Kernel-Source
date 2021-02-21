@@ -1,3 +1,5 @@
+EXTRA_CFLAGS += -Wno-pointer-bool-conversion
+
 obj-$(CONFIG_ATH10K) += ath10k_core.o
 ath10k_core-y += mac.o \
 		 debug.o \
