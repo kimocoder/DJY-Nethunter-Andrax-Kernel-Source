@@ -1,5 +1,4 @@
 EXTRA_CFLAGS += -Wno-constant-conversion
-EXTRA_CFLAGS += -Wno-pointer-bool-conversion
 
 ath9k-y +=	beacon.o \
 		gpio.o \

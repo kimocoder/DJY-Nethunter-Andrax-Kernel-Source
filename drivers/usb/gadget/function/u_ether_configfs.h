@@ -186,20 +186,7 @@ out:									\
 		return ret;						\
 	}								\
 									\
-	static ssize_t _f_##_opts_ifname_store(struct config_item *item, \
-					       const char *page, size_t len)\
-	{								\
-		struct f_##_f_##_opts *opts = to_f_##_f_##_opts(item);	\
-		int ret = -EBUSY;					\
-									\
-		mutex_lock(&opts->lock);				\
-		if (!opts->refcnt)					\
-			ret = gether_set_ifname(opts->net, page, len);	\
-		mutex_unlock(&opts->lock);				\
-		return ret ?: len;					\
-	}								\
-									\
-	CONFIGFS_ATTR(_f_##_opts_, ifname)
+	CONFIGFS_ATTR_RO(_f_##_opts_, ifname)
 
 #define USB_ETHERNET_CONFIGFS_ITEM_ATTR_WCEIS(_f_)			\
 	static ssize_t _f_##_opts_wceis_show(struct config_item *item,	\

@@ -88,7 +88,7 @@ struct f_midi {
 	struct snd_rawmidi_substream *out_substream[MAX_PORTS];
 
 	unsigned long		out_triggered;
-	struct work_struct	work;
+	struct tasklet_struct	tasklet;
 	unsigned int in_ports;
 	unsigned int out_ports;
 	int index;
@@ -706,11 +706,9 @@ drop_out:
 	f_midi_drop_out_substreams(midi);
 }
 
-static void f_midi_in_work(struct work_struct *work)
+static void f_midi_in_tasklet(unsigned long data)
 {
-	struct f_midi *midi;
-
-	midi = container_of(work, struct f_midi, work);
+	struct f_midi *midi = (struct f_midi *) data;
 	f_midi_transmit(midi);
 }
 
@@ -747,7 +745,7 @@ static void f_midi_in_trigger(struct snd_rawmidi_substream *substream, int up)
 	VDBG(midi, "%s() %d\n", __func__, up);
 	midi->in_ports_array[substream->number].active = up;
 	if (up)
-		queue_work(system_highpri_wq, &midi->work);
+		tasklet_hi_schedule(&midi->tasklet);
 }
 
 static int f_midi_out_open(struct snd_rawmidi_substream *substream)
@@ -884,7 +882,7 @@ static int f_midi_bind(struct usb_configuration *c, struct usb_function *f)
 	int status, n, jack = 1, i = 0, j = 0;
 
 	midi->gadget = cdev->gadget;
-	INIT_WORK(&midi->work, f_midi_in_work);
+	tasklet_init(&midi->tasklet, f_midi_in_tasklet, (unsigned long) midi);
 	status = f_midi_register_card(midi);
 	if (status < 0)
 		goto fail_register;
