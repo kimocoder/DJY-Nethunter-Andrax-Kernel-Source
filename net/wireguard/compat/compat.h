@@ -704,7 +704,8 @@ static inline void *skb_put_data(struct sk_buff *skb, const void *data, unsigned
 #endif
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
 static inline void le32_to_cpu_array(u32 *buf, unsigned int words)
 {
 	while (words--) {
@@ -720,6 +721,7 @@ static inline void cpu_to_le32_array(u32 *buf, unsigned int words)
 	}
 }
 #endif
+
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #include <crypto/algapi.h>
