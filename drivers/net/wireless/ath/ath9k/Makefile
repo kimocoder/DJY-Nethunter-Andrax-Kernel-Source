@@ -1,4 +1,7 @@
+# SPDX-License-Identifier: ISC
+
 EXTRA_CFLAGS += -Wno-constant-conversion
+EXTRA_CFLAGS += -Wno-pointer-bool-conversion
 
 ath9k-y +=	beacon.o \
 		gpio.o \
@@ -62,8 +65,9 @@ obj-$(CONFIG_ATH9K_COMMON) += ath9k_common.o
 ath9k_common-y:=	common.o \
 			common-init.o \
 			common-beacon.o \
-			common-debug.o \
-			common-spectral.o
+
+ath9k_common-$(CONFIG_ATH9K_COMMON_DEBUG) += common-debug.o
+ath9k_common-$(CONFIG_ATH9K_COMMON_SPECTRAL) += common-spectral.o
 
 ath9k_htc-y +=	htc_hst.o \
 		hif_usb.o \
