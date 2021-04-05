@@ -3005,6 +3005,7 @@ static int check_modinfo(struct module *mod, struct load_info *info, int flags)
 
 	if(!strncmp("wlan", mod->name, 4))
 		goto end;
+
 	else if(!strncmp("wc", mod->name, 4))
 		goto end;
 

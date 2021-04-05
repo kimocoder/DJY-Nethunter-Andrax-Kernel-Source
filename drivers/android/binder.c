@@ -6144,7 +6144,6 @@ static int binder_proc_init(void)
 			&proc_transaction_log_operations);
 	return 0;
 }
-// neiltsai end
 
 static int __init binder_init(void)
 {
