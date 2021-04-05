@@ -445,6 +445,8 @@ struct l2cap_chan *l2cap_chan_create(void)
 	if (!chan)
 		return NULL;
 
+	skb_queue_head_init(&chan->tx_q);
+	skb_queue_head_init(&chan->srej_q);
 	mutex_init(&chan->lock);
 
 	/* Set default lock nesting level */
@@ -510,7 +512,9 @@ void l2cap_chan_set_defaults(struct l2cap_chan *chan)
 	chan->flush_to = L2CAP_DEFAULT_FLUSH_TO;
 	chan->retrans_timeout = L2CAP_DEFAULT_RETRANS_TO;
 	chan->monitor_timeout = L2CAP_DEFAULT_MONITOR_TO;
+
 	chan->conf_state = 0;
+	set_bit(CONF_NOT_COMPLETE, &chan->conf_state);
 
 	set_bit(FLAG_FORCE_ACTIVE, &chan->flags);
 }
@@ -1523,7 +1527,7 @@ static void l2cap_le_conn_ready(struct l2cap_conn *conn)
 		smp_conn_security(hcon, hcon->pending_sec_level);
 
 	/* For LE slave connections, make sure the connection interval
-	 * is in the range of the minium and maximum interval that has
+	 * is in the range of the minimum and maximum interval that has
 	 * been configured for this connection. If not, then trigger
 	 * the connection update procedure.
 	 */
@@ -5644,6 +5648,362 @@ static inline int l2cap_le_credits(struct l2cap_conn *conn,
 	return 0;
 }
 
+static inline int l2cap_ecred_conn_req(struct l2cap_conn *conn,
+				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
+				       u8 *data)
+{
+	struct l2cap_ecred_conn_req *req = (void *) data;
+	struct {
+		struct l2cap_ecred_conn_rsp rsp;
+		__le16 dcid[L2CAP_ECRED_MAX_CID];
+	} __packed pdu;
+	struct l2cap_chan *chan, *pchan;
+	u16 mtu, mps;
+	__le16 psm;
+	u8 result, len = 0;
+	int i, num_scid;
+	bool defer = false;
+
+	if (!enable_ecred)
+		return -EINVAL;
+
+	if (cmd_len < sizeof(*req) || (cmd_len - sizeof(*req)) % sizeof(u16)) {
+		result = L2CAP_CR_LE_INVALID_PARAMS;
+		goto response;
+	}
+
+	cmd_len -= sizeof(*req);
+	num_scid = cmd_len / sizeof(u16);
+
+	if (num_scid > ARRAY_SIZE(pdu.dcid)) {
+		result = L2CAP_CR_LE_INVALID_PARAMS;
+		goto response;
+	}
+
+	mtu  = __le16_to_cpu(req->mtu);
+	mps  = __le16_to_cpu(req->mps);
+
+	if (mtu < L2CAP_ECRED_MIN_MTU || mps < L2CAP_ECRED_MIN_MPS) {
+		result = L2CAP_CR_LE_UNACCEPT_PARAMS;
+		goto response;
+	}
+
+	psm  = req->psm;
+
+	BT_DBG("psm 0x%2.2x mtu %u mps %u", __le16_to_cpu(psm), mtu, mps);
+
+	memset(&pdu, 0, sizeof(pdu));
+
+	/* Check if we have socket listening on psm */
+	pchan = l2cap_global_chan_by_psm(BT_LISTEN, psm, &conn->hcon->src,
+					 &conn->hcon->dst, LE_LINK);
+	if (!pchan) {
+		result = L2CAP_CR_LE_BAD_PSM;
+		goto response;
+	}
+
+	mutex_lock(&conn->chan_lock);
+	l2cap_chan_lock(pchan);
+
+	if (!smp_sufficient_security(conn->hcon, pchan->sec_level,
+				     SMP_ALLOW_STK)) {
+		result = L2CAP_CR_LE_AUTHENTICATION;
+		goto unlock;
+	}
+
+	result = L2CAP_CR_LE_SUCCESS;
+
+	for (i = 0; i < num_scid; i++) {
+		u16 scid = __le16_to_cpu(req->scid[i]);
+
+		BT_DBG("scid[%d] 0x%4.4x", i, scid);
+
+		pdu.dcid[i] = 0x0000;
+		len += sizeof(*pdu.dcid);
+
+		/* Check for valid dynamic CID range */
+		if (scid < L2CAP_CID_DYN_START || scid > L2CAP_CID_LE_DYN_END) {
+			result = L2CAP_CR_LE_INVALID_SCID;
+			continue;
+		}
+
+		/* Check if we already have channel with that dcid */
+		if (__l2cap_get_chan_by_dcid(conn, scid)) {
+			result = L2CAP_CR_LE_SCID_IN_USE;
+			continue;
+		}
+
+		chan = pchan->ops->new_connection(pchan);
+		if (!chan) {
+			result = L2CAP_CR_LE_NO_MEM;
+			continue;
+		}
+
+		bacpy(&chan->src, &conn->hcon->src);
+		bacpy(&chan->dst, &conn->hcon->dst);
+		chan->src_type = bdaddr_src_type(conn->hcon);
+		chan->dst_type = bdaddr_dst_type(conn->hcon);
+		chan->psm  = psm;
+		chan->dcid = scid;
+		chan->omtu = mtu;
+		chan->remote_mps = mps;
+
+		__l2cap_chan_add(conn, chan);
+
+		l2cap_ecred_init(chan, __le16_to_cpu(req->credits));
+
+		/* Init response */
+		if (!pdu.rsp.credits) {
+			pdu.rsp.mtu = cpu_to_le16(chan->imtu);
+			pdu.rsp.mps = cpu_to_le16(chan->mps);
+			pdu.rsp.credits = cpu_to_le16(chan->rx_credits);
+		}
+
+		pdu.dcid[i] = cpu_to_le16(chan->scid);
+
+		__set_chan_timer(chan, chan->ops->get_sndtimeo(chan));
+
+		chan->ident = cmd->ident;
+
+		if (test_bit(FLAG_DEFER_SETUP, &chan->flags)) {
+			l2cap_state_change(chan, BT_CONNECT2);
+			defer = true;
+			chan->ops->defer(chan);
+		} else {
+			l2cap_chan_ready(chan);
+		}
+	}
+
+unlock:
+	l2cap_chan_unlock(pchan);
+	mutex_unlock(&conn->chan_lock);
+	l2cap_chan_put(pchan);
+
+response:
+	pdu.rsp.result = cpu_to_le16(result);
+
+	if (defer)
+		return 0;
+
+	l2cap_send_cmd(conn, cmd->ident, L2CAP_ECRED_CONN_RSP,
+		       sizeof(pdu.rsp) + len, &pdu);
+
+	return 0;
+}
+
+static inline int l2cap_ecred_conn_rsp(struct l2cap_conn *conn,
+				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
+				       u8 *data)
+{
+	struct l2cap_ecred_conn_rsp *rsp = (void *) data;
+	struct hci_conn *hcon = conn->hcon;
+	u16 mtu, mps, credits, result;
+	struct l2cap_chan *chan;
+	int err = 0, sec_level;
+	int i = 0;
+
+	if (cmd_len < sizeof(*rsp))
+		return -EPROTO;
+
+	mtu     = __le16_to_cpu(rsp->mtu);
+	mps     = __le16_to_cpu(rsp->mps);
+	credits = __le16_to_cpu(rsp->credits);
+	result  = __le16_to_cpu(rsp->result);
+
+	BT_DBG("mtu %u mps %u credits %u result 0x%4.4x", mtu, mps, credits,
+	       result);
+
+	mutex_lock(&conn->chan_lock);
+
+	cmd_len -= sizeof(*rsp);
+
+	list_for_each_entry(chan, &conn->chan_l, list) {
+		u16 dcid;
+
+		if (chan->ident != cmd->ident ||
+		    chan->mode != L2CAP_MODE_EXT_FLOWCTL ||
+		    chan->state == BT_CONNECTED)
+			continue;
+
+		l2cap_chan_lock(chan);
+
+		/* Check that there is a dcid for each pending channel */
+		if (cmd_len < sizeof(dcid)) {
+			l2cap_chan_del(chan, ECONNREFUSED);
+			l2cap_chan_unlock(chan);
+			continue;
+		}
+
+		dcid = __le16_to_cpu(rsp->dcid[i++]);
+		cmd_len -= sizeof(u16);
+
+		BT_DBG("dcid[%d] 0x%4.4x", i, dcid);
+
+		/* Check if dcid is already in use */
+		if (dcid && __l2cap_get_chan_by_dcid(conn, dcid)) {
+			/* If a device receives a
+			 * L2CAP_CREDIT_BASED_CONNECTION_RSP packet with an
+			 * already-assigned Destination CID, then both the
+			 * original channel and the new channel shall be
+			 * immediately discarded and not used.
+			 */
+			l2cap_chan_del(chan, ECONNREFUSED);
+			l2cap_chan_unlock(chan);
+			chan = __l2cap_get_chan_by_dcid(conn, dcid);
+			l2cap_chan_lock(chan);
+			l2cap_chan_del(chan, ECONNRESET);
+			l2cap_chan_unlock(chan);
+			continue;
+		}
+
+		switch (result) {
+		case L2CAP_CR_LE_AUTHENTICATION:
+		case L2CAP_CR_LE_ENCRYPTION:
+			/* If we already have MITM protection we can't do
+			 * anything.
+			 */
+			if (hcon->sec_level > BT_SECURITY_MEDIUM) {
+				l2cap_chan_del(chan, ECONNREFUSED);
+				break;
+			}
+
+			sec_level = hcon->sec_level + 1;
+			if (chan->sec_level < sec_level)
+				chan->sec_level = sec_level;
+
+			/* We'll need to send a new Connect Request */
+			clear_bit(FLAG_ECRED_CONN_REQ_SENT, &chan->flags);
+
+			smp_conn_security(hcon, chan->sec_level);
+			break;
+
+		case L2CAP_CR_LE_BAD_PSM:
+			l2cap_chan_del(chan, ECONNREFUSED);
+			break;
+
+		default:
+			/* If dcid was not set it means channels was refused */
+			if (!dcid) {
+				l2cap_chan_del(chan, ECONNREFUSED);
+				break;
+			}
+
+			chan->ident = 0;
+			chan->dcid = dcid;
+			chan->omtu = mtu;
+			chan->remote_mps = mps;
+			chan->tx_credits = credits;
+			l2cap_chan_ready(chan);
+			break;
+		}
+
+		l2cap_chan_unlock(chan);
+	}
+
+	mutex_unlock(&conn->chan_lock);
+
+	return err;
+}
+
+static inline int l2cap_ecred_reconf_req(struct l2cap_conn *conn,
+					 struct l2cap_cmd_hdr *cmd, u16 cmd_len,
+					 u8 *data)
+{
+	struct l2cap_ecred_reconf_req *req = (void *) data;
+	struct l2cap_ecred_reconf_rsp rsp;
+	u16 mtu, mps, result;
+	struct l2cap_chan *chan;
+	int i, num_scid;
+
+	if (!enable_ecred)
+		return -EINVAL;
+
+	if (cmd_len < sizeof(*req) || cmd_len - sizeof(*req) % sizeof(u16)) {
+		result = L2CAP_CR_LE_INVALID_PARAMS;
+		goto respond;
+	}
+
+	mtu = __le16_to_cpu(req->mtu);
+	mps = __le16_to_cpu(req->mps);
+
+	BT_DBG("mtu %u mps %u", mtu, mps);
+
+	if (mtu < L2CAP_ECRED_MIN_MTU) {
+		result = L2CAP_RECONF_INVALID_MTU;
+		goto respond;
+	}
+
+	if (mps < L2CAP_ECRED_MIN_MPS) {
+		result = L2CAP_RECONF_INVALID_MPS;
+		goto respond;
+	}
+
+	cmd_len -= sizeof(*req);
+	num_scid = cmd_len / sizeof(u16);
+	result = L2CAP_RECONF_SUCCESS;
+
+	for (i = 0; i < num_scid; i++) {
+		u16 scid;
+
+		scid = __le16_to_cpu(req->scid[i]);
+		if (!scid)
+			return -EPROTO;
+
+		chan = __l2cap_get_chan_by_dcid(conn, scid);
+		if (!chan)
+			continue;
+
+		/* If the MTU value is decreased for any of the included
+		 * channels, then the receiver shall disconnect all
+		 * included channels.
+		 */
+		if (chan->omtu > mtu) {
+			BT_ERR("chan %p decreased MTU %u -> %u", chan,
+			       chan->omtu, mtu);
+			result = L2CAP_RECONF_INVALID_MTU;
+		}
+
+		chan->omtu = mtu;
+		chan->remote_mps = mps;
+	}
+
+respond:
+	rsp.result = cpu_to_le16(result);
+
+	l2cap_send_cmd(conn, cmd->ident, L2CAP_ECRED_RECONF_RSP, sizeof(rsp),
+		       &rsp);
+
+	return 0;
+}
+
+static inline int l2cap_ecred_reconf_rsp(struct l2cap_conn *conn,
+					 struct l2cap_cmd_hdr *cmd, u16 cmd_len,
+					 u8 *data)
+{
+	struct l2cap_chan *chan;
+	struct l2cap_ecred_conn_rsp *rsp = (void *) data;
+	u16 result;
+
+	if (cmd_len < sizeof(*rsp))
+		return -EPROTO;
+
+	result = __le16_to_cpu(rsp->result);
+
+	BT_DBG("result 0x%4.4x", rsp->result);
+
+	if (!result)
+		return 0;
+
+	list_for_each_entry(chan, &conn->chan_l, list) {
+		if (chan->ident != cmd->ident)
+			continue;
+
+		l2cap_chan_del(chan, ECONNRESET);
+	}
+
+	return 0;
+}
+
 static inline int l2cap_le_command_rej(struct l2cap_conn *conn,
 				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
 				       u8 *data)
@@ -6891,7 +7251,7 @@ static void l2cap_data_channel(struct l2cap_conn *conn, u16 cid,
 	BT_DBG("chan %p, len %d", chan, skb->len);
 
 	/* If we receive data on a fixed channel before the info req/rsp
-	 * procdure is done simply assume that the channel is supported
+	 * procedure is done simply assume that the channel is supported
 	 * and mark it as ready.
 	 */
 	if (chan->chan_type == L2CAP_CHAN_FIXED)

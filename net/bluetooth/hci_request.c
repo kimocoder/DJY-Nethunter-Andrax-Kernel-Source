@@ -852,7 +852,305 @@ void __hci_req_disable_advertising(struct hci_request *req)
 {
 	u8 enable = 0x00;
 
-	hci_req_add(req, HCI_OP_LE_SET_ADV_ENABLE, sizeof(enable), &enable);
+	if (!hci_dev_test_flag(req->hdev, HCI_BREDR_ENABLED))
+		return;
+
+	if (hci_dev_test_flag(req->hdev, HCI_EVENT_FILTER_CONFIGURED)) {
+		memset(&f, 0, sizeof(f));
+		f.flt_type = HCI_FLT_CLEAR_ALL;
+		hci_req_add(req, HCI_OP_SET_EVENT_FLT, 1, &f);
+	}
+}
+
+static u32 get_adv_instance_flags(struct hci_dev *hdev, u8 instance)
+{
+	struct bdaddr_list_with_flags *b;
+	struct hci_cp_set_event_filter f;
+	struct hci_dev *hdev = req->hdev;
+	u8 scan = SCAN_DISABLED;
+	bool scanning = test_bit(HCI_PSCAN, &hdev->flags);
+
+	if (!hci_dev_test_flag(hdev, HCI_BREDR_ENABLED))
+		return;
+
+	if (instance == 0x00) {
+		/* Instance 0 always manages the "Tx Power" and "Flags"
+		 * fields
+		 */
+		flags = MGMT_ADV_FLAG_TX_POWER | MGMT_ADV_FLAG_MANAGED_FLAGS;
+
+		/* For instance 0, the HCI_ADVERTISING_CONNECTABLE setting
+		 * corresponds to the "connectable" instance flag.
+		 */
+		if (hci_dev_test_flag(hdev, HCI_ADVERTISING_CONNECTABLE))
+			flags |= MGMT_ADV_FLAG_CONNECTABLE;
+
+		if (hci_dev_test_flag(hdev, HCI_LIMITED_DISCOVERABLE))
+			flags |= MGMT_ADV_FLAG_LIMITED_DISCOV;
+		else if (hci_dev_test_flag(hdev, HCI_DISCOVERABLE))
+			flags |= MGMT_ADV_FLAG_DISCOV;
+
+		return flags;
+	}
+
+	if (scan && !scanning) {
+		set_bit(SUSPEND_SCAN_ENABLE, hdev->suspend_tasks);
+		hci_req_add(req, HCI_OP_WRITE_SCAN_ENABLE, 1, &scan);
+	} else if (!scan && scanning) {
+		set_bit(SUSPEND_SCAN_DISABLE, hdev->suspend_tasks);
+		hci_req_add(req, HCI_OP_WRITE_SCAN_ENABLE, 1, &scan);
+	}
+}
+
+	return adv_instance->flags;
+}
+
+static bool adv_use_rpa(struct hci_dev *hdev, uint32_t flags)
+{
+	/* If privacy is not enabled don't use RPA */
+	if (!hci_dev_test_flag(hdev, HCI_PRIVACY))
+		return false;
+
+	/* If basic privacy mode is enabled use RPA */
+	if (!hci_dev_test_flag(hdev, HCI_LIMITED_PRIVACY))
+		return true;
+
+	/* If limited privacy mode is enabled don't use RPA if we're
+	 * both discoverable and bondable.
+	 */
+	if ((flags & MGMT_ADV_FLAG_DISCOV) &&
+	    hci_dev_test_flag(hdev, HCI_BONDABLE))
+		return false;
+
+	/* We're neither bondable nor discoverable in the limited
+	 * privacy mode, therefore use RPA.
+	 */
+	return true;
+}
+
+void __hci_req_enable_advertising(struct hci_request *req)
+{
+	struct hci_dev *hdev = req->hdev;
+	struct hci_cp_le_set_adv_param cp;
+	u8 own_addr_type, enable = 0x01;
+	bool connectable;
+	u32 flags;
+
+	if (hci_conn_num(hdev, LE_LINK) > 0)
+		return;
+
+	if (hci_dev_test_flag(hdev, HCI_LE_ADV))
+		__hci_req_disable_advertising(req);
+
+	/* Clear the HCI_LE_ADV bit temporarily so that the
+	 * hci_update_random_address knows that it's safe to go ahead
+	 * and write a new random address. The flag will be set back on
+	 * as soon as the SET_ADV_ENABLE HCI command completes.
+	 */
+	hci_dev_clear_flag(hdev, HCI_LE_ADV);
+
+	flags = get_adv_instance_flags(hdev, hdev->cur_adv_instance);
+
+	/* If the "connectable" instance flag was not set, then choose between
+	 * ADV_IND and ADV_NONCONN_IND based on the global connectable setting.
+	 */
+	connectable = (flags & MGMT_ADV_FLAG_CONNECTABLE) ||
+		      mgmt_get_connectable(hdev);
+
+	return hci_req_run(&req, NULL);
+}
+
+static void suspend_req_complete(struct hci_dev *hdev, u8 status, u16 opcode)
+{
+	bt_dev_dbg(hdev, "Request complete opcode=0x%x, status=0x%x", opcode,
+		   status);
+	if (test_bit(SUSPEND_SCAN_ENABLE, hdev->suspend_tasks) ||
+	    test_bit(SUSPEND_SCAN_DISABLE, hdev->suspend_tasks)) {
+		clear_bit(SUSPEND_SCAN_ENABLE, hdev->suspend_tasks);
+		clear_bit(SUSPEND_SCAN_DISABLE, hdev->suspend_tasks);
+		wake_up(&hdev->suspend_wait_q);
+	}
+
+	if (test_bit(SUSPEND_SET_ADV_FILTER, hdev->suspend_tasks)) {
+		clear_bit(SUSPEND_SET_ADV_FILTER, hdev->suspend_tasks);
+		wake_up(&hdev->suspend_wait_q);
+	}
+}
+
+static void hci_req_add_set_adv_filter_enable(struct hci_request *req,
+					      bool enable)
+{
+	struct hci_dev *hdev = req->hdev;
+
+	switch (hci_get_adv_monitor_offload_ext(hdev)) {
+	case HCI_ADV_MONITOR_EXT_MSFT:
+		msft_req_add_set_filter_enable(req, enable);
+		break;
+	default:
+		return;
+	}
+
+	/* No need to block when enabling since it's on resume path */
+	if (hdev->suspended && !enable)
+		set_bit(SUSPEND_SET_ADV_FILTER, hdev->suspend_tasks);
+}
+
+/* Call with hci_dev_lock */
+void hci_req_prepare_suspend(struct hci_dev *hdev, enum suspended_state next)
+{
+	int old_state;
+	struct hci_conn *conn;
+	struct hci_request req;
+	u8 page_scan;
+	int disconnect_counter;
+
+	if (next == hdev->suspend_state) {
+		bt_dev_dbg(hdev, "Same state before and after: %d", next);
+		goto done;
+	}
+
+	hdev->suspend_state = next;
+	hci_req_init(&req, hdev);
+
+	if (next == BT_SUSPEND_DISCONNECT) {
+		/* Mark device as suspended */
+		hdev->suspended = true;
+
+		/* Pause discovery if not already stopped */
+		old_state = hdev->discovery.state;
+		if (old_state != DISCOVERY_STOPPED) {
+			set_bit(SUSPEND_PAUSE_DISCOVERY, hdev->suspend_tasks);
+			hci_discovery_set_state(hdev, DISCOVERY_STOPPING);
+			queue_work(hdev->req_workqueue, &hdev->discov_update);
+		}
+
+		hdev->discovery_paused = true;
+		hdev->discovery_old_state = old_state;
+
+		/* Stop directed advertising */
+		old_state = hci_dev_test_flag(hdev, HCI_ADVERTISING);
+		if (old_state) {
+			set_bit(SUSPEND_PAUSE_ADVERTISING, hdev->suspend_tasks);
+			cancel_delayed_work(&hdev->discov_off);
+			queue_delayed_work(hdev->req_workqueue,
+					   &hdev->discov_off, 0);
+		}
+
+		/* Pause other advertisements */
+		if (hdev->adv_instance_cnt)
+			__hci_req_pause_adv_instances(&req);
+
+		hdev->advertising_paused = true;
+		hdev->advertising_old_state = old_state;
+
+		/* Disable page scan if enabled */
+		if (test_bit(HCI_PSCAN, &hdev->flags)) {
+			page_scan = SCAN_DISABLED;
+			hci_req_add(&req, HCI_OP_WRITE_SCAN_ENABLE, 1,
+				    &page_scan);
+			set_bit(SUSPEND_SCAN_DISABLE, hdev->suspend_tasks);
+		}
+
+		/* Disable LE passive scan if enabled */
+		if (hci_dev_test_flag(hdev, HCI_LE_SCAN)) {
+			cancel_interleave_scan(hdev);
+			hci_req_add_le_scan_disable(&req, false);
+		}
+
+		/* Disable advertisement filters */
+		hci_req_add_set_adv_filter_enable(&req, false);
+
+		/* Prevent disconnects from causing scanning to be re-enabled */
+		hdev->scanning_paused = true;
+
+		/* Run commands before disconnecting */
+		hci_req_run(&req, suspend_req_complete);
+
+		disconnect_counter = 0;
+		/* Soft disconnect everything (power off) */
+		list_for_each_entry(conn, &hdev->conn_hash.list, list) {
+			hci_disconnect(conn, HCI_ERROR_REMOTE_POWER_OFF);
+			disconnect_counter++;
+		}
+
+		if (disconnect_counter > 0) {
+			bt_dev_dbg(hdev,
+				   "Had %d disconnects. Will wait on them",
+				   disconnect_counter);
+			set_bit(SUSPEND_DISCONNECTING, hdev->suspend_tasks);
+		}
+	} else if (next == BT_SUSPEND_CONFIGURE_WAKE) {
+		/* Unpause to take care of updating scanning params */
+		hdev->scanning_paused = false;
+		/* Enable event filter for paired devices */
+		hci_req_set_event_filter(&req);
+		/* Enable passive scan at lower duty cycle */
+		__hci_update_background_scan(&req);
+		/* Pause scan changes again. */
+		hdev->scanning_paused = true;
+		hci_req_run(&req, suspend_req_complete);
+	} else {
+		hdev->suspended = false;
+		hdev->scanning_paused = false;
+
+		/* Clear any event filters and restore scan state */
+		hci_req_clear_event_filter(&req);
+		__hci_req_update_scan(&req);
+
+		/* Reset passive/background scanning to normal */
+		__hci_update_background_scan(&req);
+		/* Enable all of the advertisement filters */
+		hci_req_add_set_adv_filter_enable(&req, true);
+
+		/* Unpause directed advertising */
+		hdev->advertising_paused = false;
+		if (hdev->advertising_old_state) {
+			set_bit(SUSPEND_UNPAUSE_ADVERTISING,
+				hdev->suspend_tasks);
+			hci_dev_set_flag(hdev, HCI_ADVERTISING);
+			queue_work(hdev->req_workqueue,
+				   &hdev->discoverable_update);
+			hdev->advertising_old_state = 0;
+		}
+
+		/* Resume other advertisements */
+		if (hdev->adv_instance_cnt)
+			__hci_req_resume_adv_instances(&req);
+
+		/* Unpause discovery */
+		hdev->discovery_paused = false;
+		if (hdev->discovery_old_state != DISCOVERY_STOPPED &&
+		    hdev->discovery_old_state != DISCOVERY_STOPPING) {
+			set_bit(SUSPEND_UNPAUSE_DISCOVERY, hdev->suspend_tasks);
+			hci_discovery_set_state(hdev, DISCOVERY_STARTING);
+			queue_work(hdev->req_workqueue, &hdev->discov_update);
+		}
+
+		hci_req_run(&req, suspend_req_complete);
+	}
+
+	hdev->suspend_state = next;
+
+done:
+	clear_bit(SUSPEND_PREPARE_NOTIFIER, hdev->suspend_tasks);
+	wake_up(&hdev->suspend_wait_q);
+}
+
+static bool adv_cur_instance_is_scannable(struct hci_dev *hdev)
+{
+	return adv_instance_is_scannable(hdev, hdev->cur_adv_instance);
+}
+
+void __hci_req_disable_advertising(struct hci_request *req)
+{
+	if (ext_adv_capable(req->hdev)) {
+		__hci_req_disable_ext_adv_instance(req, 0x00);
+
+	} else {
+		u8 enable = 0x00;
+
+		hci_req_add(req, HCI_OP_LE_SET_ADV_ENABLE, sizeof(enable), &enable);
+	}
 }
 
 static u32 get_adv_instance_flags(struct hci_dev *hdev, u8 instance)
@@ -912,15 +1210,63 @@ static bool adv_use_rpa(struct hci_dev *hdev, uint32_t flags)
 	return true;
 }
 
+static bool is_advertising_allowed(struct hci_dev *hdev, bool connectable)
+{
+	/* If there is no connection we are OK to advertise. */
+	if (hci_conn_num(hdev, LE_LINK) == 0)
+		return true;
+
+	/* Check le_states if there is any connection in slave role. */
+	if (hdev->conn_hash.le_num_slave > 0) {
+		/* Slave connection state and non connectable mode bit 20. */
+		if (!connectable && !(hdev->le_states[2] & 0x10))
+			return false;
+
+		/* Slave connection state and connectable mode bit 38
+		 * and scannable bit 21.
+		 */
+		if (connectable && (!(hdev->le_states[4] & 0x40) ||
+				    !(hdev->le_states[2] & 0x20)))
+			return false;
+	}
+
+	/* Check le_states if there is any connection in master role. */
+	if (hci_conn_num(hdev, LE_LINK) != hdev->conn_hash.le_num_slave) {
+		/* Master connection state and non connectable mode bit 18. */
+		if (!connectable && !(hdev->le_states[2] & 0x02))
+			return false;
+
+		/* Master connection state and connectable mode bit 35 and
+		 * scannable 19.
+		 */
+		if (connectable && (!(hdev->le_states[4] & 0x08) ||
+				    !(hdev->le_states[2] & 0x08)))
+			return false;
+	}
+
+	return true;
+}
+
 void __hci_req_enable_advertising(struct hci_request *req)
 {
 	struct hci_dev *hdev = req->hdev;
+	struct adv_info *adv_instance;
 	struct hci_cp_le_set_adv_param cp;
 	u8 own_addr_type, enable = 0x01;
 	bool connectable;
+	u16 adv_min_interval, adv_max_interval;
 	u32 flags;
 
-	if (hci_conn_num(hdev, LE_LINK) > 0)
+	flags = get_adv_instance_flags(hdev, hdev->cur_adv_instance);
+	adv_instance = hci_find_adv_instance(hdev, hdev->cur_adv_instance);
+
+	/* If the "connectable" instance flag was not set, then choose between
+	 * ADV_IND and ADV_NONCONN_IND based on the global connectable setting.
+	 */
+	connectable = (flags & MGMT_ADV_FLAG_CONNECTABLE) ||
+		      mgmt_get_connectable(hdev);
+
+	if (!is_advertising_allowed(hdev, connectable))
 		return;
 
 	if (hci_dev_test_flag(hdev, HCI_LE_ADV))
@@ -932,14 +1278,6 @@ void __hci_req_enable_advertising(struct hci_request *req)
 	 * as soon as the SET_ADV_ENABLE HCI command completes.
 	 */
 	hci_dev_clear_flag(hdev, HCI_LE_ADV);
-
-	flags = get_adv_instance_flags(hdev, hdev->cur_adv_instance);
-
-	/* If the "connectable" instance flag was not set, then choose between
-	 * ADV_IND and ADV_NONCONN_IND based on the global connectable setting.
-	 */
-	connectable = (flags & MGMT_ADV_FLAG_CONNECTABLE) ||
-		      mgmt_get_connectable(hdev);
 
 	/* Set require_privacy to true only when non-connectable
 	 * advertising is used. In that case it is fine to use a
@@ -1107,8 +1445,23 @@ static u8 create_instance_adv_data(struct hci_dev *hdev, u8 instance, u8 *ptr)
 	if (instance_flags & MGMT_ADV_FLAG_DISCOV)
 		flags |= LE_AD_GENERAL;
 
-	if (instance_flags & MGMT_ADV_FLAG_LIMITED_DISCOV)
-		flags |= LE_AD_LIMITED;
+	if (connectable) {
+		if (secondary_adv)
+			cp.evt_properties = cpu_to_le16(LE_EXT_ADV_CONN_IND);
+		else
+			cp.evt_properties = cpu_to_le16(LE_LEGACY_ADV_IND);
+	} else if (adv_instance_is_scannable(hdev, instance) ||
+		   (flags & MGMT_ADV_PARAM_SCAN_RSP)) {
+		if (secondary_adv)
+			cp.evt_properties = cpu_to_le16(LE_EXT_ADV_SCAN_IND);
+		else
+			cp.evt_properties = cpu_to_le16(LE_LEGACY_ADV_SCAN_IND);
+	} else {
+		if (secondary_adv)
+			cp.evt_properties = cpu_to_le16(LE_EXT_ADV_NON_CONN_IND);
+		else
+			cp.evt_properties = cpu_to_le16(LE_LEGACY_NONCONN_IND);
+	}
 
 	if (!hci_dev_test_flag(hdev, HCI_BREDR_ENABLED))
 		flags |= LE_AD_NO_BREDR;
@@ -2153,7 +2506,8 @@ bool hci_req_stop_discovery(struct hci_request *req)
 
 		if (hci_dev_test_flag(hdev, HCI_LE_SCAN)) {
 			cancel_delayed_work(&hdev->le_scan_disable);
-			hci_req_add_le_scan_disable(req);
+			cancel_delayed_work(&hdev->le_scan_restart);
+			hci_req_add_le_scan_disable(req, false);
 		}
 
 		ret = true;

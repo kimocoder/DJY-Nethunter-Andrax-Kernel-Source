@@ -739,32 +739,9 @@ static int intel_setup(struct hci_uart *hu)
 
 	set_bit(STATE_DOWNLOADING, &intel->flags);
 
-	/* Start the firmware download transaction with the Init fragment
-	 * represented by the 128 bytes of CSS header.
-	 */
-	err = btintel_secure_send(hdev, 0x00, 128, fw->data);
-	if (err < 0) {
-		bt_dev_err(hdev, "Failed to send firmware header (%d)", err);
-		goto done;
-	}
-
-	/* Send the 256 bytes of public key information from the firmware
-	 * as the PKey fragment.
-	 */
-	err = btintel_secure_send(hdev, 0x03, 256, fw->data + 128);
-	if (err < 0) {
-		bt_dev_err(hdev, "Failed to send firmware public key (%d)",
-			   err);
-		goto done;
-	}
-
-	/* Send the 256 bytes of signature information from the firmware
-	 * as the Sign fragment.
-	 */
-	err = btintel_secure_send(hdev, 0x02, 256, fw->data + 388);
-	if (err < 0) {
-		bt_dev_err(hdev, "Failed to send firmware signature (%d)",
-			   err);
+	/* Start firmware downloading and get boot parameter */
+	err = btintel_download_firmware(hdev, &ver, fw, &boot_param);
+	if (err < 0)
 		goto done;
 	}
 
@@ -849,7 +826,10 @@ static int intel_setup(struct hci_uart *hu)
 done:
 	release_firmware(fw);
 
-	if (err < 0)
+	/* Check if there was an error and if is not -EALREADY which means the
+	 * firmware has already been loaded.
+	 */
+	if (err < 0 && err != -EALREADY)
 		return err;
 
 	/* We need to restore the default speed before Intel reset */

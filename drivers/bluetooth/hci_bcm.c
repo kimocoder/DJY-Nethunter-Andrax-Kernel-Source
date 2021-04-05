@@ -46,6 +46,53 @@
 
 #define BCM_AUTOSUSPEND_DELAY	5000 /* default autosleep delay */
 
+#define BCM_NUM_SUPPLIES 2
+
+/**
+ * struct bcm_device_data - device specific data
+ * @no_early_set_baudrate: Disallow set baudrate before driver setup()
+ */
+struct bcm_device_data {
+	bool	no_early_set_baudrate;
+	bool	drive_rts_on_open;
+};
+
+/**
+ * struct bcm_device - device driver resources
+ * @serdev_hu: HCI UART controller struct
+ * @list: bcm_device_list node
+ * @dev: physical UART slave
+ * @name: device name logged by bt_dev_*() functions
+ * @device_wakeup: BT_WAKE pin,
+ *	assert = Bluetooth device must wake up or remain awake,
+ *	deassert = Bluetooth device may sleep when sleep criteria are met
+ * @shutdown: BT_REG_ON pin,
+ *	power up or power down Bluetooth device internal regulators
+ * @reset: BT_RST_N pin,
+ *	active low resets the Bluetooth logic core
+ * @set_device_wakeup: callback to toggle BT_WAKE pin
+ *	either by accessing @device_wakeup or by calling @btlp
+ * @set_shutdown: callback to toggle BT_REG_ON pin
+ *	either by accessing @shutdown or by calling @btpu/@btpd
+ * @btlp: Apple ACPI method to toggle BT_WAKE pin ("Bluetooth Low Power")
+ * @btpu: Apple ACPI method to drive BT_REG_ON pin high ("Bluetooth Power Up")
+ * @btpd: Apple ACPI method to drive BT_REG_ON pin low ("Bluetooth Power Down")
+ * @txco_clk: external reference frequency clock used by Bluetooth device
+ * @lpo_clk: external LPO clock used by Bluetooth device
+ * @supplies: VBAT and VDDIO supplies used by Bluetooth device
+ * @res_enabled: whether clocks and supplies are prepared and enabled
+ * @init_speed: default baudrate of Bluetooth device;
+ *	the host UART is initially set to this baudrate so that
+ *	it can configure the Bluetooth device for @oper_speed
+ * @oper_speed: preferred baudrate of Bluetooth device;
+ *	set to 0 if @init_speed is already the preferred baudrate
+ * @irq: interrupt triggered by HOST_WAKE_BT pin
+ * @irq_active_low: whether @irq is active low
+ * @hu: pointer to HCI UART controller struct,
+ *	used to disable flow control during runtime suspend and system sleep
+ * @is_suspended: whether flow control is currently disabled
+ * @no_early_set_baudrate: don't set_baudrate before setup()
+ */
 struct bcm_device {
 	struct list_head	list;
 
@@ -54,6 +101,14 @@ struct bcm_device {
 	const char		*name;
 	struct gpio_desc	*device_wakeup;
 	struct gpio_desc	*shutdown;
+	struct gpio_desc	*reset;
+	int			(*set_device_wakeup)(struct bcm_device *, bool);
+	int			(*set_shutdown)(struct bcm_device *, bool);
+#ifdef CONFIG_ACPI
+	acpi_handle		btlp, btpu, btpd;
+	int			gpio_count;
+	int			gpio_int_idx;
+#endif
 
 	struct clk		*clk;
 	bool			clk_enabled;
@@ -689,8 +744,91 @@ static int bcm_resource(struct acpi_resource *ares, void *data)
 		break;
 	}
 
-	/* Always tell the ACPI core to skip this resource */
-	return 1;
+	return 0;
+}
+
+static int bcm_apple_set_device_wakeup(struct bcm_device *dev, bool awake)
+{
+	if (ACPI_FAILURE(acpi_execute_simple_method(dev->btlp, NULL, !awake)))
+		return -EIO;
+
+	return 0;
+}
+
+static int bcm_apple_set_shutdown(struct bcm_device *dev, bool powered)
+{
+	if (ACPI_FAILURE(acpi_evaluate_object(powered ? dev->btpu : dev->btpd,
+					      NULL, NULL, NULL)))
+		return -EIO;
+
+	return 0;
+}
+
+static int bcm_apple_get_resources(struct bcm_device *dev)
+{
+	struct acpi_device *adev = ACPI_COMPANION(dev->dev);
+	const union acpi_object *obj;
+
+	if (!adev ||
+	    ACPI_FAILURE(acpi_get_handle(adev->handle, "BTLP", &dev->btlp)) ||
+	    ACPI_FAILURE(acpi_get_handle(adev->handle, "BTPU", &dev->btpu)) ||
+	    ACPI_FAILURE(acpi_get_handle(adev->handle, "BTPD", &dev->btpd)))
+		return -ENODEV;
+
+	if (!acpi_dev_get_property(adev, "baud", ACPI_TYPE_BUFFER, &obj) &&
+	    obj->buffer.length == 8)
+		dev->init_speed = *(u64 *)obj->buffer.pointer;
+
+	dev->set_device_wakeup = bcm_apple_set_device_wakeup;
+	dev->set_shutdown = bcm_apple_set_shutdown;
+
+	return 0;
+}
+#else
+static inline int bcm_apple_get_resources(struct bcm_device *dev)
+{
+	return -EOPNOTSUPP;
+}
+#endif /* CONFIG_ACPI */
+
+static int bcm_gpio_set_device_wakeup(struct bcm_device *dev, bool awake)
+{
+	gpiod_set_value_cansleep(dev->device_wakeup, awake);
+	return 0;
+}
+
+static int bcm_gpio_set_shutdown(struct bcm_device *dev, bool powered)
+{
+	gpiod_set_value_cansleep(dev->shutdown, powered);
+	if (dev->reset)
+		/*
+		 * The reset line is asserted on powerdown and deasserted
+		 * on poweron so the inverse of powered is used. Notice
+		 * that the GPIO line BT_RST_N needs to be specified as
+		 * active low in the device tree or similar system
+		 * description.
+		 */
+		gpiod_set_value_cansleep(dev->reset, !powered);
+	return 0;
+}
+
+/* Try a bunch of names for TXCO */
+static struct clk *bcm_get_txco(struct device *dev)
+{
+	struct clk *clk;
+
+	/* New explicit name */
+	clk = devm_clk_get(dev, "txco");
+	if (!IS_ERR(clk) || PTR_ERR(clk) == -EPROBE_DEFER)
+		return clk;
+
+	/* Deprecated name */
+	clk = devm_clk_get(dev, "extclk");
+	if (!IS_ERR(clk) || PTR_ERR(clk) == -EPROBE_DEFER)
+		return clk;
+
+	/* Original code used no name at all */
+	return devm_clk_get(dev, NULL);
 }
 
 static int bcm_acpi_probe(struct bcm_device *dev)
@@ -719,6 +857,21 @@ static int bcm_acpi_probe(struct bcm_device *dev)
 						GPIOD_OUT_LOW);
 	if (IS_ERR(dev->shutdown))
 		return PTR_ERR(dev->shutdown);
+
+	dev->reset = devm_gpiod_get_optional(dev->dev, "reset",
+					     GPIOD_OUT_LOW);
+	if (IS_ERR(dev->reset))
+		return PTR_ERR(dev->reset);
+
+	dev->set_device_wakeup = bcm_gpio_set_device_wakeup;
+	dev->set_shutdown = bcm_gpio_set_shutdown;
+
+	dev->supplies[0].supply = "vbat";
+	dev->supplies[1].supply = "vddio";
+	err = devm_regulator_bulk_get(dev->dev, BCM_NUM_SUPPLIES,
+				      dev->supplies);
+	if (err)
+		return err;
 
 	/* IRQ can be declared in ACPI table as Interrupt or GpioInt */
 	dev->irq = platform_get_irq(pdev, 0);
@@ -858,6 +1011,98 @@ static struct platform_driver bcm_driver = {
 	.remove = bcm_remove,
 	.driver = {
 		.name = "hci_bcm",
+		.acpi_match_table = ACPI_PTR(bcm_acpi_match),
+		.pm = &bcm_pm_ops,
+	},
+};
+
+static int bcm_serdev_probe(struct serdev_device *serdev)
+{
+	struct bcm_device *bcmdev;
+	const struct bcm_device_data *data;
+	int err;
+
+	bcmdev = devm_kzalloc(&serdev->dev, sizeof(*bcmdev), GFP_KERNEL);
+	if (!bcmdev)
+		return -ENOMEM;
+
+	bcmdev->dev = &serdev->dev;
+#ifdef CONFIG_PM
+	bcmdev->hu = &bcmdev->serdev_hu;
+#endif
+	bcmdev->serdev_hu.serdev = serdev;
+	serdev_device_set_drvdata(serdev, bcmdev);
+
+	/* Initialize routing field to an unused value */
+	bcmdev->pcm_int_params[0] = 0xff;
+
+	if (has_acpi_companion(&serdev->dev))
+		err = bcm_acpi_probe(bcmdev);
+	else
+		err = bcm_of_probe(bcmdev);
+	if (err)
+		return err;
+
+	err = bcm_get_resources(bcmdev);
+	if (err)
+		return err;
+
+	if (!bcmdev->shutdown) {
+		dev_warn(&serdev->dev,
+			 "No reset resource, using default baud rate\n");
+		bcmdev->oper_speed = bcmdev->init_speed;
+	}
+
+	err = bcm_gpio_set_power(bcmdev, false);
+	if (err)
+		dev_err(&serdev->dev, "Failed to power down\n");
+
+	data = device_get_match_data(bcmdev->dev);
+	if (data) {
+		bcmdev->no_early_set_baudrate = data->no_early_set_baudrate;
+		bcmdev->drive_rts_on_open = data->drive_rts_on_open;
+	}
+
+	return hci_uart_register_device(&bcmdev->serdev_hu, &bcm_proto);
+}
+
+static void bcm_serdev_remove(struct serdev_device *serdev)
+{
+	struct bcm_device *bcmdev = serdev_device_get_drvdata(serdev);
+
+	hci_uart_unregister_device(&bcmdev->serdev_hu);
+}
+
+#ifdef CONFIG_OF
+static struct bcm_device_data bcm4354_device_data = {
+	.no_early_set_baudrate = true,
+};
+
+static struct bcm_device_data bcm43438_device_data = {
+	.drive_rts_on_open = true,
+};
+
+static const struct of_device_id bcm_bluetooth_of_match[] = {
+	{ .compatible = "brcm,bcm20702a1" },
+	{ .compatible = "brcm,bcm4329-bt" },
+	{ .compatible = "brcm,bcm4330-bt" },
+	{ .compatible = "brcm,bcm4334-bt" },
+	{ .compatible = "brcm,bcm4345c5" },
+	{ .compatible = "brcm,bcm4330-bt" },
+	{ .compatible = "brcm,bcm43438-bt", .data = &bcm43438_device_data },
+	{ .compatible = "brcm,bcm43540-bt", .data = &bcm4354_device_data },
+	{ .compatible = "brcm,bcm4335a0" },
+	{ },
+};
+MODULE_DEVICE_TABLE(of, bcm_bluetooth_of_match);
+#endif
+
+static struct serdev_device_driver bcm_serdev_driver = {
+	.probe = bcm_serdev_probe,
+	.remove = bcm_serdev_remove,
+	.driver = {
+		.name = "hci_uart_bcm",
+		.of_match_table = of_match_ptr(bcm_bluetooth_of_match),
 		.acpi_match_table = ACPI_PTR(bcm_acpi_match),
 		.pm = &bcm_pm_ops,
 	},
